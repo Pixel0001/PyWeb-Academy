@@ -193,12 +193,12 @@ export default function CourseDetailPage({ course }) {
                 >
                   Înscrie-te acum
                 </a>
-                <a href="tel:+37360000000"
+                <a href="tel:+37368113314"
                   style={{ display: 'block', textAlign: 'center', backgroundColor: 'transparent', color: 'var(--color-primary)', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.9rem', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', textDecoration: 'none', border: '1.5px solid var(--border-light)', transition: 'all 0.2s' }}
                   onMouseOver={e => e.currentTarget.style.borderColor = 'var(--color-primary-light)'}
                   onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
                 >
-                  Sună-ne pentru detalii
+                  📞 068 113 314
                 </a>
               </div>
 
