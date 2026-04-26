@@ -36,7 +36,7 @@ export default function Navbar({ forceOpaque = false }) {
       boxShadow: transparent ? 'none' : '0 1px 8px rgba(13,27,75,0.06)',
       transition: 'background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
     }}>
-      <div style={{
+      <div className="nav-inner" style={{
         maxWidth: 1200,
         margin: '0 auto',
         padding: '0 1.5rem',
@@ -50,6 +50,7 @@ export default function Navbar({ forceOpaque = false }) {
           <Image
             src="/PyWeb Academy logo.png"
             alt="PyWeb Academy"
+            className="nav-logo"
             width={160}
             height={52}
             style={{ objectFit: 'contain', filter: transparent ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s ease' }}
@@ -85,8 +86,8 @@ export default function Navbar({ forceOpaque = false }) {
         </div>
 
         {/* Mobile Hamburger */}
-        <button onClick={() => setMenuOpen(!menuOpen)} className="show-mobile"
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}
+        <button onClick={() => setMenuOpen(!menuOpen)} className="show-mobile hamburger-btn"
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
           aria-label="Meniu"
         >
           <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, transition: 'var(--transition)', transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
@@ -97,17 +98,57 @@ export default function Navbar({ forceOpaque = false }) {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div style={{ backgroundColor: 'var(--bg-card)', borderTop: '1px solid var(--border-light)', padding: '1rem 1.5rem' }}>
-          {navLinks.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
-              style={{ display: 'block', padding: '0.75rem 0', fontWeight: 500, color: 'var(--text-heading)', textDecoration: 'none', borderBottom: '1px solid var(--border-light)', fontFamily: 'var(--font-body)' }}
+        <div style={{
+          backgroundColor: 'var(--bg-card)',
+          borderTop: '1px solid var(--border-light)',
+          padding: '0.5rem 0 1.25rem',
+          maxHeight: 'calc(100vh - 68px)',
+          overflowY: 'auto',
+        }}>
+          {/* Nav links */}
+          <div style={{ padding: '0 1.25rem' }}>
+            {navLinks.map((link) => (
+              <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  padding: '0.875rem 0',
+                  fontWeight: 600, fontSize: '1rem',
+                  color: 'var(--text-heading)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid var(--border-light)',
+                  fontFamily: 'var(--font-body)',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* CTA buttons */}
+          <div style={{ padding: '1.25rem 1.25rem 0', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <a href="#contact" onClick={() => setMenuOpen(false)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'var(--color-primary)', color: '#fff',
+                fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.9375rem',
+                padding: '0.875rem 1rem', borderRadius: '0.75rem',
+                textDecoration: 'none', letterSpacing: '-0.01em',
+              }}
             >
-              {link.label}
+              Înregistrează-te gratuit
             </a>
-          ))}
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-            <Link href="/login" className="btn-outline" style={{ flex: 1, display: 'flex', justifyContent: 'center', fontSize: '0.875rem' }}>Autentificare</Link>
-            <a href="#contact" className="btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', fontSize: '0.875rem' }}>Înregistrează-te</a>
+            <Link href="/login" onClick={() => setMenuOpen(false)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'transparent', color: 'var(--text-body)',
+                fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: '0.875rem',
+                padding: '0.75rem 1rem', borderRadius: '0.75rem',
+                textDecoration: 'none', border: '1.5px solid var(--border-light)',
+              }}
+            >
+              Autentificare
+            </Link>
           </div>
         </div>
       )}
@@ -115,7 +156,10 @@ export default function Navbar({ forceOpaque = false }) {
       <style jsx>{`
         @media (max-width: 768px) {
           .hide-mobile { display: none !important; }
-          .show-mobile { display: block !important; }
+          .show-mobile { display: flex !important; }
+          .nav-inner { height: 58px !important; padding: 0 1rem !important; }
+          .nav-logo { width: 130px !important; height: 42px !important; }
+          .hamburger-btn { padding: 0.625rem !important; }
         }
       `}</style>
     </nav>
