@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { notifyTeacherActivity } from '@/lib/telegram'
 
 // POST - Add student to teacher's group
 export async function POST(request, { params }) {
@@ -87,6 +88,14 @@ export async function POST(request, { params }) {
         }
       }
     })
+
+    // Notificare Telegram - Thread Activități Profesori
+    const details = `👤 Elev: <b>${groupStudent.student.fullName}</b>
+📚 Grupa: ${groupStudent.group.name}
+🎓 Curs: ${groupStudent.group.course?.title || 'N/A'}
+➕ Adăugat în grupă`
+    notifyTeacherActivity('student', session.user.name || session.user.email, details)
+      .catch(err => console.error('Telegram notification error:', err))
 
     return NextResponse.json(groupStudent, { status: 201 })
   } catch (error) {
