@@ -1,0 +1,346 @@
+// Configurația permisiunilor granulare pentru sistem
+// SUPERADMIN are automat toate permisiunile
+// ADMIN poate avea permisiuni selective setate de SUPERADMIN
+
+export const PERMISSIONS = {
+  // Înscrieri (formulare de pe site)
+  'inscrieri.view': {
+    label: 'Vezi înscrierile',
+    description: 'Poate vedea și gestiona formularele de înscriere (status, notițe)',
+    category: 'Înscrieri'
+  },
+  'inscrieri.delete': {
+    label: 'Șterge înscrierile',
+    description: 'Poate șterge formularele de înscriere (necesită 2FA)',
+    category: 'Înscrieri'
+  },
+
+  // Contact (mesaje de pe site)
+  'contact.view': {
+    label: 'Vezi mesajele',
+    description: 'Poate vedea și gestiona mesajele de contact (status, notițe)',
+    category: 'Contact'
+  },
+  'contact.delete': {
+    label: 'Șterge mesajele',
+    description: 'Poate șterge mesajele de contact (necesită 2FA)',
+    category: 'Contact'
+  },
+
+  // Elevi
+  'students.view': {
+    label: 'Vezi elevii',
+    description: 'Poate vedea lista de elevi',
+    category: 'Elevi'
+  },
+  'students.create': {
+    label: 'Creează elevi',
+    description: 'Poate adăuga elevi noi',
+    category: 'Elevi'
+  },
+  'students.edit': {
+    label: 'Editează elevi',
+    description: 'Poate modifica datele elevilor',
+    category: 'Elevi'
+  },
+  'students.delete': {
+    label: 'Șterge elevi',
+    description: 'Poate șterge elevi',
+    category: 'Elevi'
+  },
+
+  // Grupe
+  'groups.view': {
+    label: 'Vezi grupele',
+    description: 'Poate vedea lista de grupe',
+    category: 'Grupe'
+  },
+  'groups.create': {
+    label: 'Creează grupe',
+    description: 'Poate crea grupe noi',
+    category: 'Grupe'
+  },
+  'groups.edit': {
+    label: 'Editează grupe',
+    description: 'Poate modifica setările grupelor',
+    category: 'Grupe'
+  },
+  'groups.delete': {
+    label: 'Șterge grupe',
+    description: 'Poate șterge grupe',
+    category: 'Grupe'
+  },
+
+  // Elevi în grupe
+  'groups.students.view': {
+    label: 'Vezi elevii din grupe',
+    description: 'Poate vedea elevii înscriși în grupe',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.add': {
+    label: 'Adaugă elevi în grupe',
+    description: 'Poate adăuga elevi în grupe',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.remove': {
+    label: 'Elimină elevi din grupe',
+    description: 'Poate elimina elevi din grupe',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.transfer': {
+    label: 'Transferă elevi',
+    description: 'Poate transfera elevi între grupe',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.status': {
+    label: 'Schimbă status elevi',
+    description: 'Poate schimba statusul elevilor (activ, pauză, plecat)',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.lessons': {
+    label: 'Modifică lecții',
+    description: 'Poate modifica numărul de lecții ale elevilor',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.absences': {
+    label: 'Modifică absențe',
+    description: 'Poate modifica absențele elevilor',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.payments.view': {
+    label: 'Vezi plățile',
+    description: 'Poate vedea istoricul plăților elevilor din grupe',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.payments.create': {
+    label: 'Adaugă plăți',
+    description: 'Poate înregistra plăți noi pentru elevi',
+    category: 'Elevi în Grupe'
+  },
+  'groups.students.payments.delete': {
+    label: 'Șterge plăți',
+    description: 'Poate șterge plăți',
+    category: 'Elevi în Grupe'
+  },
+
+  // Plăți (statistici generale)
+  'payments.view': {
+    label: 'Vezi statistici plăți',
+    description: 'Poate vedea statisticile generale de plăți',
+    category: 'Plăți'
+  },
+
+  // Profesori
+  'teachers.view': {
+    label: 'Vezi profesorii',
+    description: 'Poate vedea lista de profesori',
+    category: 'Profesori'
+  },
+  'teachers.create': {
+    label: 'Creează profesori',
+    description: 'Poate adăuga profesori noi',
+    category: 'Profesori'
+  },
+  'teachers.edit': {
+    label: 'Editează profesori',
+    description: 'Poate modifica datele profesorilor',
+    category: 'Profesori'
+  },
+  'teachers.delete': {
+    label: 'Șterge profesori',
+    description: 'Poate șterge profesori',
+    category: 'Profesori'
+  },
+
+  // Cursuri
+  'courses.view': {
+    label: 'Vezi cursurile',
+    description: 'Poate vedea lista de cursuri',
+    category: 'Cursuri'
+  },
+  'courses.create': {
+    label: 'Creează cursuri',
+    description: 'Poate adăuga cursuri noi',
+    category: 'Cursuri'
+  },
+  'courses.edit': {
+    label: 'Editează cursuri',
+    description: 'Poate modifica cursurile',
+    category: 'Cursuri'
+  },
+  'courses.delete': {
+    label: 'Șterge cursuri',
+    description: 'Poate șterge cursuri',
+    category: 'Cursuri'
+  },
+
+  // Filiale
+  'branches.view': {
+    label: 'Vezi filialele',
+    description: 'Poate vedea lista de filiale',
+    category: 'Filiale'
+  },
+  'branches.create': {
+    label: 'Creează filiale',
+    description: 'Poate adăuga filiale noi',
+    category: 'Filiale'
+  },
+  'branches.edit': {
+    label: 'Editează filiale',
+    description: 'Poate modifica filialele',
+    category: 'Filiale'
+  },
+  'branches.delete': {
+    label: 'Șterge filiale',
+    description: 'Poate șterge filiale',
+    category: 'Filiale'
+  },
+
+  // Sesiuni/Prezențe
+  'sessions.view': {
+    label: 'Vezi sesiunile',
+    description: 'Poate vedea sesiunile de curs',
+    category: 'Sesiuni'
+  },
+
+  // Recuperări
+  'makeup.view': {
+    label: 'Vezi recuperările',
+    description: 'Poate vedea cererile de recuperare',
+    category: 'Recuperări'
+  },
+  'makeup.create': {
+    label: 'Creează recuperări',
+    description: 'Poate programa recuperări noi',
+    category: 'Recuperări'
+  },
+  'makeup.edit': {
+    label: 'Editează recuperări',
+    description: 'Poate modifica programările de recuperare',
+    category: 'Recuperări'
+  },
+  'makeup.delete': {
+    label: 'Șterge recuperări',
+    description: 'Poate șterge programări de recuperare',
+    category: 'Recuperări'
+  },
+
+  // Notificări
+  'notifications.view': {
+    label: 'Vezi notificările',
+    description: 'Poate vedea notificările',
+    category: 'Notificări'
+  },
+
+  // Recenzii
+  'reviews.view': {
+    label: 'Vezi recenziile',
+    description: 'Poate vedea recenziile',
+    category: 'Recenzii'
+  },
+  'reviews.create': {
+    label: 'Creează recenzii',
+    description: 'Poate adăuga recenzii noi',
+    category: 'Recenzii'
+  },
+  'reviews.edit': {
+    label: 'Editează recenzii',
+    description: 'Poate modifica recenziile',
+    category: 'Recenzii'
+  },
+  'reviews.delete': {
+    label: 'Șterge recenzii',
+    description: 'Poate șterge recenzii',
+    category: 'Recenzii'
+  },
+
+  // Orar
+  'schedule.view': {
+    label: 'Vezi orarul',
+    description: 'Poate vedea orarul complet',
+    category: 'Orar'
+  },
+
+  // Audit & Securitate
+  'audit.view': {
+    label: 'Vezi audit logs',
+    description: 'Poate vedea jurnalul de activitate',
+    category: 'Securitate'
+  },
+  'security.view': {
+    label: 'Vezi setările de securitate',
+    description: 'Poate vedea alertele de securitate',
+    category: 'Securitate'
+  },
+  'security.manage': {
+    label: 'Gestionează securitatea',
+    description: 'Poate gestiona setările de securitate',
+    category: 'Securitate'
+  },
+
+  // Absențe ratate
+  'missed-sessions.view': {
+    label: 'Vezi sesiunile ratate',
+    description: 'Poate vedea absențele',
+    category: 'Sesiuni'
+  }
+}
+
+// Grupează permisiunile pe categorii
+export const getPermissionsByCategory = () => {
+  const categories = {}
+  
+  Object.entries(PERMISSIONS).forEach(([key, value]) => {
+    if (!categories[value.category]) {
+      categories[value.category] = []
+    }
+    categories[value.category].push({
+      key,
+      ...value
+    })
+  })
+  
+  return categories
+}
+
+// Verifică dacă un utilizator are o permisiune
+export const hasPermission = (user, permission) => {
+  // SUPERADMIN are toate permisiunile
+  if (user?.role === 'SUPERADMIN') return true
+  
+  // Verifică dacă are permisiunea specifică
+  return user?.permissions?.includes(permission) || false
+}
+
+// Verifică dacă un utilizator are cel puțin una din permisiuni
+export const hasAnyPermission = (user, permissions) => {
+  if (user?.role === 'SUPERADMIN') return true
+  return permissions.some(p => user?.permissions?.includes(p))
+}
+
+// Verifică dacă un utilizator are toate permisiunile
+export const hasAllPermissions = (user, permissions) => {
+  if (user?.role === 'SUPERADMIN') return true
+  return permissions.every(p => user?.permissions?.includes(p))
+}
+
+// Export lista de categorii pentru ordine
+export const PERMISSION_CATEGORIES = [
+  'Înscrieri',
+  'Contact',
+  'Elevi',
+  'Grupe',
+  'Elevi în Grupe',
+  'Plăți',
+  'Profesori',
+  'Cursuri',
+  'Filiale',
+  'Sesiuni',
+  'Recuperări',
+  'Notificări',
+  'Recenzii',
+  'Orar',
+  'Securitate'
+]
+
+export default PERMISSIONS
