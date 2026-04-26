@@ -434,15 +434,28 @@ export default function HomePage({ courses = [], reviews = [] }) {
       {/* ── 1. HERO — full image cu overlay ──────────────────────────── */}
       <section style={{ position: 'relative', height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
 
-        {/* Background image */}
+        {/* Background image — desktop */}
         <img
           src="/copil care invata2.png"
           alt="Adolescenți care programează"
+          className="hero-bg-desktop"
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'center 30%',
             display: 'block',
+          }}
+        />
+        {/* Background image — mobile */}
+        <img
+          src="/copil care invata2 telefon.png"
+          alt="Adolescenți care programează"
+          className="hero-bg-mobile"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center top',
+            display: 'none',
           }}
         />
 
@@ -795,6 +808,10 @@ export default function HomePage({ courses = [], reviews = [] }) {
       <style jsx>{`
         /* ── MOBILE ────────────────────────────── */
         @media (max-width: 640px) {
+          /* Hero images swap */
+          .hero-bg-desktop { display: none !important; }
+          .hero-bg-mobile { display: block !important; }
+
           /* Hero */
           .hero-content {
             padding: 1.5rem 1.25rem 4rem !important;
