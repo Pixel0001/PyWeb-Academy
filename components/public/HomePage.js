@@ -513,19 +513,22 @@ export default function HomePage({ courses = [], reviews = [] }) {
           }}
         />
 
-        {/* Gradient overlay — umbră subtilă jos pentru lizibilitatea textului */}
+        {/* Gradient overlay */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.55) 100%)',
+          background: isMobile
+            ? 'rgba(0,0,0,0.45)'
+            : 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.55) 100%)',
         }} />
 
         {/* Content */}
         <div className="hero-content" style={{
           position: 'relative', zIndex: 1,
-          flex: 1, display: 'flex', alignItems: 'flex-end',
+          flex: 1, display: 'flex',
+          alignItems: isMobile ? 'center' : 'flex-end',
           justifyContent: isMobile ? 'center' : 'flex-start',
-          maxWidth: 1200, margin: '0', width: '100%',
-          padding: isMobile ? '3.5rem 1.25rem 5rem' : '3.5rem 3.5rem 6rem',
+          maxWidth: isMobile ? '100%' : 1200, margin: '0', width: '100%',
+          padding: isMobile ? '0 1.25rem' : '3.5rem 3.5rem 6rem',
         }}>
           <div style={{ maxWidth: isMobile ? '100%' : 620, textAlign: isMobile ? 'center' : 'left' }}>
 
