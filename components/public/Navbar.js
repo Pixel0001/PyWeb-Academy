@@ -15,11 +15,20 @@ const navLinks = [
 export default function Navbar({ forceOpaque = false }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   const transparent = !forceOpaque && !scrolled && !menuOpen
@@ -36,73 +45,79 @@ export default function Navbar({ forceOpaque = false }) {
       boxShadow: transparent ? 'none' : '0 1px 8px rgba(13,27,75,0.06)',
       transition: 'background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
     }}>
-      <div className="nav-inner" style={{
+      <div style={{
         maxWidth: 1200,
         margin: '0 auto',
-        padding: '0 1.5rem',
+        padding: isMobile ? '0 1rem' : '0 1.5rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 68,
+        height: isMobile ? 58 : 68,
       }}>
         {/* Logo */}
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Image
             src="/PyWeb Academy logo.png"
             alt="PyWeb Academy"
-            className="nav-logo"
-            width={160}
-            height={52}
+            width={isMobile ? 130 : 160}
+            height={isMobile ? 42 : 52}
             style={{ objectFit: 'contain', filter: transparent ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s ease' }}
             priority
           />
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hide-mobile" style={{ display: 'flex', gap: '0.125rem', alignItems: 'center' }}>
-          {navLinks.map((link) => (
-            <a key={link.href} href={link.href}
-              style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
-              onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)'; e.currentTarget.style.backgroundColor = transparent ? 'rgba(255,255,255,0.12)' : 'var(--color-accent-light)' }}
-              onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)'; e.currentTarget.style.backgroundColor = 'transparent' }}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center' }}>
+            {navLinks.map((link) => (
+              <a key={link.href} href={link.href}
+                style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
+                onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)'; e.currentTarget.style.backgroundColor = transparent ? 'rgba(255,255,255,0.12)' : 'var(--color-accent-light)' }}
+                onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)'; e.currentTarget.style.backgroundColor = 'transparent' }}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Desktop Actions */}
-        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Link href="/login"
-            style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
-            onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)' }}
-            onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)' }}
-          >
-            Autentificare
-          </Link>
-          <a href="#contact" className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.6rem 1.4rem' }}>
-            Înregistrează-te
-          </a>
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Link href="/login"
+              style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
+              onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)' }}
+              onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)' }}
+            >
+              Autentificare
+            </Link>
+            <a href="#contact" className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.6rem 1.4rem' }}>
+              Înregistrează-te
+            </a>
+          </div>
+        )}
 
         {/* Mobile Hamburger */}
-        <button onClick={() => setMenuOpen(!menuOpen)} className="show-mobile hamburger-btn"
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
-          aria-label="Meniu"
-        >
-          <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, transition: 'var(--transition)', transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
-          <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, margin: '5px 0', opacity: menuOpen ? 0 : 1, transition: 'var(--transition)' }} />
-          <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, transition: 'var(--transition)', transform: menuOpen ? 'rotate(-45deg) translateY(-7px)' : 'none' }} />
-        </button>
+        {isMobile && (
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{ display: 'flex', background: 'none', border: 'none', cursor: 'pointer', padding: '0.625rem', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0 }}
+            aria-label="Meniu"
+          >
+            <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, transition: 'var(--transition)', transform: menuOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
+            <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, margin: '5px 0', opacity: menuOpen ? 0 : 1, transition: 'var(--transition)' }} />
+            <div style={{ width: 22, height: 2, background: transparent ? '#ffffff' : 'var(--color-primary)', borderRadius: 2, transition: 'var(--transition)', transform: menuOpen ? 'rotate(-45deg) translateY(-7px)' : 'none' }} />
+          </button>
+        )}
       </div>
 
       {/* Mobile Menu */}
-      {menuOpen && (
+      {isMobile && menuOpen && (
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderTop: '1px solid var(--border-light)',
           padding: '0.5rem 0 1.25rem',
-          maxHeight: 'calc(100vh - 68px)',
+          maxHeight: 'calc(100vh - 58px)',
           overflowY: 'auto',
         }}>
           {/* Nav links */}
@@ -152,16 +167,6 @@ export default function Navbar({ forceOpaque = false }) {
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .hide-mobile { display: none !important; }
-          .show-mobile { display: flex !important; }
-          .nav-inner { height: 58px !important; padding: 0 1rem !important; }
-          .nav-logo { width: 130px !important; height: 42px !important; }
-          .hamburger-btn { padding: 0.625rem !important; }
-        }
-      `}</style>
     </nav>
   )
 }
