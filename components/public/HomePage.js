@@ -467,8 +467,13 @@ function ContactForm() {
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function HomePage({ courses = [], reviews = [] }) {
   const [isMobile, setIsMobile] = useState(false)
+  const [isTablet, setIsTablet] = useState(false)
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768)
+    const check = () => {
+      const w = window.innerWidth
+      setIsMobile(w <= 640)
+      setIsTablet(w > 640 && w <= 1024)
+    }
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
@@ -632,10 +637,10 @@ export default function HomePage({ courses = [], reviews = [] }) {
       </section>
 
       {/* ── CURSURI ──────────────────────────────────────────────────────── */}
-      <section id="cursuri" style={{ padding: '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
+      <section id="cursuri" style={{ padding: isMobile ? '3rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? '1.75rem' : '3rem' }}>
             <p className="section-label" style={{ marginBottom: '0.5rem' }}>Ce predăm</p>
             <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: 'var(--text-heading)', marginBottom: '0.75rem' }}>
               Cursurile noastre
@@ -645,7 +650,11 @@ export default function HomePage({ courses = [], reviews = [] }) {
             </p>
           </div>
 
-          <div className="courses-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+            gap: isMobile ? '1.25rem' : '1.5rem',
+          }}>
             {courses.map((c) => {
               const extras = COURSE_EXTRAS[c.slug] || {}
               const levelColor = extras.levelColor || LEVEL_COLORS[c.level] || '#94a3b8'
@@ -656,9 +665,8 @@ export default function HomePage({ courses = [], reviews = [] }) {
               const discountPct = hasDiscount ? Math.round((1 - c.discountPrice / c.price) * 100) : 0
               return (
               <a key={c.slug} href={`/curs/${c.slug}`}
-                className="course-card"
-                style={{ textDecoration: 'none', display: 'block', position: 'relative', borderRadius: '1.5rem', overflow: 'hidden', height: 480, boxShadow: '0 4px 32px rgba(15,23,42,0.18)', transition: 'transform 0.25s, box-shadow 0.25s' }}
-                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 20px 56px rgba(15,23,42,0.3)' }}
+                style={{ textDecoration: 'none', display: 'block', position: 'relative', borderRadius: '1.25rem', overflow: 'hidden', height: isMobile ? 360 : isTablet ? 440 : 480, boxShadow: '0 4px 32px rgba(15,23,42,0.18)', transition: 'transform 0.25s, box-shadow 0.25s' }}
+                onMouseOver={e => { if (!isMobile) { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 20px 56px rgba(15,23,42,0.3)' } }}
                 onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 32px rgba(15,23,42,0.18)' }}
               >
                 {/* Full-card background image */}
@@ -841,15 +849,6 @@ export default function HomePage({ courses = [], reviews = [] }) {
             padding: 1rem !important;
           }
 
-          /* Courses grid */
-          .courses-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1.25rem !important;
-          }
-          .course-card {
-            height: 420px !important;
-          }
-
           /* Steps */
           .steps-grid {
             grid-template-columns: 1fr !important;
@@ -866,13 +865,6 @@ export default function HomePage({ courses = [], reviews = [] }) {
         @media (min-width: 641px) and (max-width: 1024px) {
           .hero-content {
             padding: 2rem 2rem 5rem !important;
-          }
-          .courses-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 1.5rem !important;
-          }
-          .course-card {
-            height: 460px !important;
           }
           .stats-bar-inner {
             display: grid !important;
