@@ -118,15 +118,15 @@ export async function POST(request) {
         timeZone: 'Europe/Chisinau',
       })
 
+      const isFromSiteForm = contact.email === 'noreply@pyweb.md'
+      const emailLine = isFromSiteForm ? '🌐 Sursă: <b>Formular site</b>' : `📧 Email: ${contact.email}`
+
       // Mesajul actualizat cu noul status
-      const updatedText = `📬 <b>MESAJ CONTACT NOU</b>
+      const updatedText = `📬 <b>CERERE LECȚIE GRATUITĂ</b>
 
 👤 Nume: <b>${contact.name}</b>
-📧 Email: ${contact.email}
-📱 Telefon: ${contact.phone || 'N/A'}
-
-💬 Mesaj:
-${contact.message}
+${emailLine}
+📱 Telefon: <b>${contact.phone || 'N/A'}</b>
 
 📊 Status: ${newStatusLabel}
 ✏️ Actualizat: ${now}`
