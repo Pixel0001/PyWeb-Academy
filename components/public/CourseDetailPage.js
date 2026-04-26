@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Navbar from '@/components/public/Navbar'
@@ -38,6 +39,14 @@ const IconArrowLeft = ({ size = 18 }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CourseDetailPage({ course }) {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   if (!course) return null
 
   const stat = (icon, label, value) => (
@@ -63,7 +72,7 @@ export default function CourseDetailPage({ course }) {
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.7) 55%, rgba(15,23,42,0.35) 100%)' }} />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: '5rem 1.5rem 4rem', width: '100%' }}>
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: isMobile ? '6rem 1.25rem 2.5rem' : '5rem 1.5rem 4rem', width: '100%' }}>
             {/* Back */}
             <Link href="/#cursuri" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '0.85rem', marginBottom: '1.5rem', transition: 'color 0.2s' }}
               onMouseOver={e => e.currentTarget.style.color = '#fff'}
@@ -94,24 +103,20 @@ export default function CourseDetailPage({ course }) {
           </div>
         </section>
 
-        {/* ── STATS BAR ────────────────────────────────────────────────────── */}
-        <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '1.5rem 1.5rem' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', alignItems: 'center' }}>
-            {stat(<IconCalendar />, 'Durată', course.duration)}
-            <div style={{ width: 1, height: 36, backgroundColor: 'var(--border-light)' }} />
-            {stat(<IconUsers />, 'Vârstă', course.age)}
-            <div style={{ width: 1, height: 36, backgroundColor: 'var(--border-light)' }} />
-            {stat(<IconUsers />, 'Grup', course.groupSize)}
-            <div style={{ width: 1, height: 36, backgroundColor: 'var(--border-light)' }} />
-            {stat(<IconClock />, 'Frecvență', course.sessionsPerWeek)}
-            <div style={{ width: 1, height: 36, backgroundColor: 'var(--border-light)' }} />
-            {stat(<IconClock />, 'Ședință', course.sessionLength)}
+        <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: isMobile ? '1.25rem 1rem' : '1.5rem 1.5rem' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: isMobile ? '1rem' : '0', alignItems: 'center' }}>
+            {[{icon: <IconCalendar />, label: 'Durată', value: course.duration}, {icon: <IconUsers />, label: 'Vârstă', value: course.age}, {icon: <IconUsers />, label: 'Grup', value: course.groupSize}, {icon: <IconClock />, label: 'Frecvență', value: course.sessionsPerWeek}, {icon: <IconClock />, label: 'Ședință', value: course.sessionLength}].map((s, i) => (
+              <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', padding: isMobile ? '0' : '0 1rem', borderRight: !isMobile && i < 4 ? '1px solid var(--border-light)' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>{s.icon}{s.label}</div>
+                <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: isMobile ? '0.95rem' : '1rem', color: 'var(--text-heading)', textAlign: 'center' }}>{s.value}</span>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ── BODY ─────────────────────────────────────────────────────────── */}
-        <section style={{ padding: '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: '3rem', alignItems: 'start' }}>
+        <section style={{ padding: isMobile ? '2.5rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '2rem' : '3rem', alignItems: 'start' }}>
 
             {/* LEFT — Description + Curriculum */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
@@ -162,7 +167,7 @@ export default function CourseDetailPage({ course }) {
             </div>
 
             {/* RIGHT — Sticky card */}
-            <div style={{ position: 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ position: isMobile ? 'static' : 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
               {/* Price card */}
               <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '1.75rem', boxShadow: 'var(--shadow-float)' }}>

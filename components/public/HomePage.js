@@ -607,29 +607,32 @@ export default function HomePage({ courses = [], reviews = [] }) {
         <div style={{
           maxWidth: 1200, margin: '0 auto',
           padding: '0 1.5rem',
-          display: 'flex', gap: '0', flexWrap: 'wrap',
-        }} className="stats-bar-inner">
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr' : 'repeat(4, 1fr)',
+        }}>
           {[
             { val: '100+', label: 'Elevi activi', icon: <IconUsers size={18} color="#60a5fa" /> },
             { val: '2 ani', label: 'Program complet', icon: <IconCalendar size={18} color="#60a5fa" /> },
             { val: '10 max', label: 'Elevi per grupă', icon: <IconGraduate size={18} color="#60a5fa" /> },
             { val: '100%', label: 'Prima lecție gratuită', icon: <IconTrophy size={18} color="#60a5fa" /> },
           ].map((stat, i) => (
-            <div key={stat.label} className="stat-item" style={{
-              flex: '1 1 160px',
-              display: 'flex', alignItems: 'center', gap: '0.875rem',
-              padding: '1.25rem 1.5rem',
-              borderRight: i < 3 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+            <div key={stat.label} style={{
+              display: 'flex', alignItems: 'center', gap: isMobile ? '0.625rem' : '0.875rem',
+              padding: isMobile ? '1rem 0.875rem' : '1.25rem 1.5rem',
+              borderRight: isMobile
+                ? (i % 2 === 0 ? '1px solid rgba(255,255,255,0.08)' : 'none')
+                : (i < 3 ? '1px solid rgba(255,255,255,0.08)' : 'none'),
+              borderBottom: isMobile && i < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none',
             }}>
               <div style={{
-                width: 40, height: 40, borderRadius: '0.75rem',
+                width: isMobile ? 34 : 40, height: isMobile ? 34 : 40, borderRadius: '0.75rem',
                 backgroundColor: 'rgba(96,165,250,0.12)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>{stat.icon}</div>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', color: '#ffffff', lineHeight: 1.1 }}>{stat.val}</div>
-                <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>{stat.label}</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: isMobile ? '1.05rem' : '1.25rem', color: '#ffffff', lineHeight: 1.1 }}>{stat.val}</div>
+                <div style={{ fontSize: isMobile ? '0.7rem' : '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.1rem' }}>{stat.label}</div>
               </div>
             </div>
           ))}
