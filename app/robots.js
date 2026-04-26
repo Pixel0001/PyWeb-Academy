@@ -7,6 +7,6 @@ export default function robots() {
         disallow: ["/admin/", "/teacher/", "/api/", "/login"],
       },
     ],
-    sitemap: "https://pischool.md/sitemap.xml",
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || 'https://pyweb.online'}/sitemap.xml`,
   }
 }

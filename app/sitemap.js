@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const baseUrl = "https://pischool.md"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pyweb.online"
   
   return [
     {
