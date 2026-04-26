@@ -36,8 +36,8 @@ const nextConfig = {
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
   
-  // Strict mode for better debugging
-  reactStrictMode: true,
+  // Strict mode only in production (doubles renders in dev intentionally)
+  reactStrictMode: process.env.NODE_ENV === 'production',
 
   // Security headers
   async headers() {

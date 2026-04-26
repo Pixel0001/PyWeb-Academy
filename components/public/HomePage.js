@@ -377,27 +377,11 @@ const COURSE_EXTRAS = {
 // fallback topics if slug not in COURSE_EXTRAS
 const DEFAULT_TOPICS = ['Teorie', 'Practică', 'Proiecte', 'Certificat']
 
-// ─── Main Page ────────────────────────────────────────────────────────────
-export default function HomePage({ courses = [], reviews = [] }) {
+// ─── Contact Form (isolated component — re-renders only on input change) ────
+function ContactForm() {
   const [form, setForm] = useState({ name: '', phone: '' })
   const [status, setStatus] = useState('idle')
   const [errorMsg, setErrorMsg] = useState('')
-
-  // Scroll to hash anchor when navigating from other pages (e.g. /curs/[slug] -> /#contact)
-  useEffect(() => {
-    const hash = window.location.hash
-    if (!hash) return
-    const id = hash.replace('#', '')
-    const tryScroll = (attempts = 0) => {
-      const el = document.getElementById(id)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      } else if (attempts < 10) {
-        setTimeout(() => tryScroll(attempts + 1), 100)
-      }
-    }
-    tryScroll()
-  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -427,6 +411,76 @@ export default function HomePage({ courses = [], reviews = [] }) {
       setStatus('idle')
     }
   }
+
+  if (status === 'success') {
+    return (
+      <div style={{ backgroundColor: 'var(--color-accent-light)', border: '1px solid #bfdbfe', borderRadius: '1.25rem', padding: '2.5rem', textAlign: 'center' }}>
+        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><IconParty size={56} color="var(--color-primary-light)" /></div>
+        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>Înregistrare primită!</h3>
+        <p style={{ color: 'var(--text-body)', fontSize: '0.9rem' }}>Te contactăm în mai puțin de 24 de ore pentru a stabili data lecției gratuite.</p>
+      </div>
+    )
+  }
+
+  return (
+    <form id="contact-form" onSubmit={handleSubmit}
+      style={{ backgroundColor: 'var(--bg-page)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '2.5rem', boxShadow: 'var(--shadow-card)' }}
+      noValidate
+    >
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label htmlFor="name" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>
+          Numele copilului <span style={{ color: '#ef4444' }}>*</span>
+        </label>
+        <input id="name" type="text" placeholder="ex: Alexandru Ionescu"
+          value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required className="input-field" />
+      </div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label htmlFor="phone" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>
+          Numărul tău de telefon <span style={{ color: '#ef4444' }}>*</span>
+        </label>
+        <input id="phone" type="tel" placeholder="ex: +373 69 123 456"
+          value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          required className="input-field" />
+      </div>
+      {errorMsg && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.625rem', color: '#dc2626', fontSize: '0.875rem' }}>
+          {errorMsg}
+        </div>
+      )}
+      <button type="submit" disabled={status === 'loading'} className="btn-primary"
+        style={{ width: '100%', justifyContent: 'center', fontSize: '1rem', padding: '0.9rem', opacity: status === 'loading' ? 0.6 : 1, cursor: status === 'loading' ? 'not-allowed' : 'pointer' }}
+      >
+        {status === 'loading' ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><IconClock size={18} color="#fff" /> Se trimite...</span>
+        ) : (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><IconRocket size={18} color="#fff" /> Vreau lecția GRATUITĂ</span>
+        )}
+      </button>
+      <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+        Datele tale sunt în siguranță. Nu trimitem spam.
+      </p>
+    </form>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────
+export default function HomePage({ courses = [], reviews = [] }) {
+  // Scroll to hash anchor when navigating from other pages (e.g. /curs/[slug] -> /#contact)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash) return
+    const id = hash.replace('#', '')
+    const tryScroll = (attempts = 0) => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else if (attempts < 10) {
+        setTimeout(() => tryScroll(attempts + 1), 100)
+      }
+    }
+    tryScroll()
+  }, [])
 
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', fontFamily: 'var(--font-body)' }}>
@@ -756,52 +810,7 @@ export default function HomePage({ courses = [], reviews = [] }) {
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Completează formularul și te contactăm noi în maxim 24h.</p>
           </div>
 
-          {status === 'success' ? (
-            <div style={{ backgroundColor: 'var(--color-accent-light)', border: '1px solid #bfdbfe', borderRadius: '1.25rem', padding: '2.5rem', textAlign: 'center' }}>
-              <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><IconParty size={56} color="var(--color-primary-light)" /></div>
-              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>Înregistrare primită!</h3>
-              <p style={{ color: 'var(--text-body)', fontSize: '0.9rem' }}>Te contactăm în mai puțin de 24 de ore pentru a stabili data lecției gratuite.</p>
-            </div>
-          ) : (
-            <form id="contact-form" onSubmit={handleSubmit}
-              style={{ backgroundColor: 'var(--bg-page)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '2.5rem', boxShadow: 'var(--shadow-card)' }}
-              noValidate
-            >
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="name" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>
-                  Numele copilului <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input id="name" type="text" placeholder="ex: Alexandru Ionescu"
-                  value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required className="input-field" />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label htmlFor="phone" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-heading)', marginBottom: '0.5rem' }}>
-                  Numărul tău de telefon <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input id="phone" type="tel" placeholder="ex: +373 69 123 456"
-                  value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  required className="input-field" />
-              </div>
-              {errorMsg && (
-                <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.625rem', color: '#dc2626', fontSize: '0.875rem' }}>
-                  {errorMsg}
-                </div>
-              )}
-              <button type="submit" disabled={status === 'loading'} className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center', fontSize: '1rem', padding: '0.9rem', opacity: status === 'loading' ? 0.6 : 1, cursor: status === 'loading' ? 'not-allowed' : 'pointer' }}
-              >
-                {status === 'loading' ? (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><IconClock size={18} color="#fff" /> Se trimite...</span>
-                ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><IconRocket size={18} color="#fff" /> Vreau lecția GRATUITĂ</span>
-                )}
-              </button>
-              <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-                Datele tale sunt în siguranță. Nu trimitem spam.
-              </p>
-            </form>
-          )}
+          <ContactForm />
         </div>
       </section>
 
