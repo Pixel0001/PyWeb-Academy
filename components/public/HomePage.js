@@ -523,10 +523,11 @@ export default function HomePage({ courses = [], reviews = [] }) {
         <div className="hero-content" style={{
           position: 'relative', zIndex: 1,
           flex: 1, display: 'flex', alignItems: 'flex-end',
+          justifyContent: isMobile ? 'center' : 'flex-start',
           maxWidth: 1200, margin: '0', width: '100%',
-          padding: '3.5rem 3.5rem 6rem',
+          padding: isMobile ? '3.5rem 1.25rem 5rem' : '3.5rem 3.5rem 6rem',
         }}>
-          <div style={{ maxWidth: 620 }}>
+          <div style={{ maxWidth: isMobile ? '100%' : 620, textAlign: isMobile ? 'center' : 'left' }}>
 
             {/* Badge */}
 
@@ -554,14 +555,14 @@ export default function HomePage({ courses = [], reviews = [] }) {
               color: 'rgba(255,255,255,0.75)',
               lineHeight: 1.65,
               marginBottom: '2rem',
-              maxWidth: 460,
+              maxWidth: isMobile ? '100%' : 460,
             }}>
               Grupe mici, profesori cu experiență, proiecte reale.
               <strong style={{ color: '#fff' }}> Prima lecție gratuită.</strong>
             </p>
 
             {/* CTA Buttons */}
-            <div className="hero-cta" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <div className="hero-cta" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
               <a href="#contact" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                 backgroundColor: '#f59e0b',
