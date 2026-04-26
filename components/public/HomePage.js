@@ -466,6 +466,14 @@ function ContactForm() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function HomePage({ courses = [], reviews = [] }) {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   // Scroll to hash anchor when navigating from other pages (e.g. /curs/[slug] -> /#contact)
   useEffect(() => {
     const hash = window.location.hash
@@ -488,28 +496,15 @@ export default function HomePage({ courses = [], reviews = [] }) {
       {/* ── 1. HERO — full image cu overlay ──────────────────────────── */}
       <section style={{ position: 'relative', height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
 
-        {/* Background image — desktop */}
+        {/* Background image — swap desktop/mobile via JS */}
         <img
-          src="/copil care invata2.png"
+          src={isMobile ? '/copil care invata2 telefon.png' : '/copil care invata2.png'}
           alt="Adolescenți care programează"
-          className="hero-bg-desktop"
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
-            objectFit: 'cover', objectPosition: 'center 30%',
-            display: 'block',
-          }}
-        />
-        {/* Background image — mobile */}
-        <img
-          src="/copil care invata2 telefon.png"
-          alt="Adolescenți care programează"
-          className="hero-bg-mobile"
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover', objectPosition: 'center top',
-            display: 'none',
+            objectFit: 'cover',
+            objectPosition: isMobile ? 'center top' : 'center 30%',
           }}
         />
 
