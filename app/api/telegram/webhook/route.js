@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const runtime = 'nodejs'
+export const maxDuration = 10
+
 const BOT_TOKEN = process.env.TELEGRAM_LESSONS_BOT_TOKEN
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET
 
@@ -60,22 +63,30 @@ async function editMessage(chatId, messageId, text, keyboard) {
 // HANDLERS PENTRU LECȚII NEEFECTUATE
 // ============================================
 
-/** Construiește mesajul + tastatura pentru marcarea prezenței la o lecție */
-async function buildAttendanceView(sessionId) {
-  const session = await prisma.lessonSession.findUnique({
-    where: { id: sessionId },
-    include: {
-      group: { include: { course: { select: { title: true } }, teacher: { select: { name: true } } } },
-      attendances: true,
-    },
-  })
-  if (!session) return null
-
-  // Obține toți elevii activi din grupă
-  const groupStudents = await prisma.groupStudent.findMany({
-    where: { groupId: session.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
-    include: { student: { select: { id: true, fullName: true } } },
-  })
+/** Construiește mesajul + tastatura pentru marcarea prezenței la o lecție.
+ *  Optimizat: 2 query-uri paralele (sau 0 dacă prefetched). */
+async function buildAttendanceView(sessionId, prefetched = null) {
+  let session, groupStudents
+  if (prefetched) {
+    session = prefetched.session
+    groupStudents = prefetched.groupStudents
+  } else {
+    // Fetch în paralel sesiunea + elevii activi
+    const sessionPromise = prisma.lessonSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        group: { select: { id: true, name: true, course: { select: { title: true } }, teacher: { select: { name: true } } } },
+        attendances: { select: { studentId: true, status: true } },
+      },
+    })
+    const [s] = await Promise.all([sessionPromise])
+    if (!s) return null
+    session = s
+    groupStudents = await prisma.groupStudent.findMany({
+      where: { groupId: session.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
+      select: { studentId: true, student: { select: { fullName: true } } },
+    })
+  }
 
   const attendanceMap = new Map(session.attendances.map(a => [a.studentId, a.status]))
 
@@ -168,10 +179,6 @@ export async function POST(request) {
 
         // ── NU s-a efectuat ──
         if (action === 'n') {
-          await prisma.missedSession.update({
-            where: { id: missedSessionId },
-            data: { acknowledged: true, reason: 'Confirmat ca neefectuată din Telegram' },
-          })
           const dateStr = new Date(missed.scheduledDate).toLocaleString('ro-RO', {
             day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Chisinau',
           })
@@ -183,8 +190,16 @@ export async function POST(request) {
 📅 ${dateStr} la ${missed.scheduledTime}
 
 ⚠️ Marcată ca neefectuată în sistem.`
-          await editMessage(chatId, messageId, finalText, null)
-          await answerCallback(callbackQueryId, '✅ Marcată ca neefectuată')
+
+          // Toate în paralel → răspuns instant
+          await Promise.all([
+            prisma.missedSession.update({
+              where: { id: missedSessionId },
+              data: { acknowledged: true, reason: 'Confirmat ca neefectuată din Telegram' },
+            }),
+            editMessage(chatId, messageId, finalText, null),
+            answerCallback(callbackQueryId, '✅ Marcată ca neefectuată'),
+          ])
           return NextResponse.json({ ok: true })
         }
 
@@ -193,37 +208,61 @@ export async function POST(request) {
           // Verifică dacă deja există o sesiune pentru acea zi (idempotent)
           const dayStart = new Date(missed.scheduledDate); dayStart.setHours(0, 0, 0, 0)
           const dayEnd = new Date(missed.scheduledDate); dayEnd.setHours(23, 59, 59, 999)
-          let lessonSession = await prisma.lessonSession.findFirst({
-            where: { groupId: missed.groupId, date: { gte: dayStart, lte: dayEnd } },
-          })
+
+          // Paralel: caută sesiunea existentă + elevii activi + ack
+          const ackPromise = answerCallback(callbackQueryId, '✅ Lecție creată')
+          const [existingSession, activeStudents] = await Promise.all([
+            prisma.lessonSession.findFirst({
+              where: { groupId: missed.groupId, date: { gte: dayStart, lte: dayEnd } },
+            }),
+            prisma.groupStudent.findMany({
+              where: { groupId: missed.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
+              select: { studentId: true, student: { select: { fullName: true } } },
+            }),
+          ])
+
+          let lessonSession = existingSession
           if (!lessonSession) {
             lessonSession = await prisma.lessonSession.create({
               data: { groupId: missed.groupId, date: missed.scheduledDate },
             })
           }
 
-          // Asigură că există attendance default PRESENT pentru fiecare elev activ
-          const activeStudents = await prisma.groupStudent.findMany({
-            where: { groupId: missed.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
-            select: { studentId: true },
-          })
-          for (const s of activeStudents) {
-            await prisma.attendance.upsert({
-              where: { sessionId_studentId: { sessionId: lessonSession.id, studentId: s.studentId } },
-              update: {},
-              create: { sessionId: lessonSession.id, studentId: s.studentId, status: 'PRESENT' },
-            })
+          // BATCH: creează toate attendances default PRESENT (skipDuplicates pentru idempotency)
+          await Promise.all([
+            prisma.attendance.createMany({
+              data: activeStudents.map(s => ({
+                sessionId: lessonSession.id,
+                studentId: s.studentId,
+                status: 'PRESENT',
+              })),
+            }).catch(() => {}), // ignoră dacă există deja
+            prisma.missedSession.update({
+              where: { id: missedSessionId },
+              data: { acknowledged: true, reason: 'Lecția a fost confirmată ca efectuată din Telegram' },
+            }),
+          ])
+
+          // Construim view-ul direct cu datele din memorie
+          const sessionWithGroup = {
+            ...lessonSession,
+            group: {
+              id: missed.groupId,
+              name: missed.group.name,
+              course: missed.group.course,
+              teacher: missed.group.teacher,
+            },
+            attendances: activeStudents.map(s => ({ studentId: s.studentId, status: 'PRESENT' })),
           }
-
-          // Marchează MissedSession ca rezolvată
-          await prisma.missedSession.update({
-            where: { id: missedSessionId },
-            data: { acknowledged: true, reason: 'Lecția a fost confirmată ca efectuată din Telegram' },
+          const view = await buildAttendanceView(lessonSession.id, {
+            session: sessionWithGroup,
+            groupStudents: activeStudents,
           })
 
-          const view = await buildAttendanceView(lessonSession.id)
-          if (view) await editMessage(chatId, messageId, view.text, view.keyboard)
-          await answerCallback(callbackQueryId, '✅ Lecție creată')
+          await Promise.all([
+            ackPromise,
+            view ? editMessage(chatId, messageId, view.text, view.keyboard) : Promise.resolve(),
+          ])
           return NextResponse.json({ ok: true })
         }
       }
@@ -237,29 +276,38 @@ export async function POST(request) {
         }
         const [, sessionId, studentId] = parts
 
-        const lesson = await prisma.lessonSession.findUnique({ where: { id: sessionId } })
+        // Paralel: citește attendance existent + lecția (pentru lessonsDeducted)
+        const [existing, lesson] = await Promise.all([
+          prisma.attendance.findUnique({
+            where: { sessionId_studentId: { sessionId, studentId } },
+            select: { status: true },
+          }),
+          prisma.lessonSession.findUnique({ where: { id: sessionId }, select: { lessonsDeducted: true } }),
+        ])
+
         if (!lesson || lesson.lessonsDeducted) {
           await answerCallback(callbackQueryId, '❌ Sesiune deja salvată')
           return NextResponse.json({ ok: true })
         }
 
-        const existing = await prisma.attendance.findUnique({
-          where: { sessionId_studentId: { sessionId, studentId } },
-        })
         const newStatus = existing?.status === 'PRESENT' ? 'ABSENT' : 'PRESENT'
-        await prisma.attendance.upsert({
-          where: { sessionId_studentId: { sessionId, studentId } },
-          update: { status: newStatus },
-          create: { sessionId, studentId, status: newStatus },
-        })
+
+        // Paralel: ack-ul instant + upsert-ul
+        await Promise.all([
+          answerCallback(callbackQueryId, newStatus === 'PRESENT' ? '✅ Prezent' : '❌ Absent'),
+          prisma.attendance.upsert({
+            where: { sessionId_studentId: { sessionId, studentId } },
+            update: { status: newStatus },
+            create: { sessionId, studentId, status: newStatus },
+          }),
+        ])
 
         const view = await buildAttendanceView(sessionId)
         if (view) await editMessage(chatId, messageId, view.text, view.keyboard)
-        await answerCallback(callbackQueryId, newStatus === 'PRESENT' ? '✅ Prezent' : '❌ Absent')
         return NextResponse.json({ ok: true })
       }
 
-      // ── aa:p / aa:a — toți prezenți / toți absenți ──
+      // ── aa:p / aa:a — toți prezenți / toți absenți (BATCH OPTIMIZED) ──
       if (data?.startsWith('aa:')) {
         const parts = data.split(':')
         if (parts.length !== 3) {
@@ -269,27 +317,45 @@ export async function POST(request) {
         const [, mode, sessionId] = parts
         const newStatus = mode === 'p' ? 'PRESENT' : 'ABSENT'
 
-        const lesson = await prisma.lessonSession.findUnique({ where: { id: sessionId } })
+        const lesson = await prisma.lessonSession.findUnique({
+          where: { id: sessionId },
+          select: { lessonsDeducted: true, groupId: true },
+        })
         if (!lesson || lesson.lessonsDeducted) {
           await answerCallback(callbackQueryId, '❌ Sesiune deja salvată')
           return NextResponse.json({ ok: true })
         }
 
+        // Ack instant + munca în paralel
+        const ackPromise = answerCallback(callbackQueryId, newStatus === 'PRESENT' ? '✅ Toți prezenți' : '❌ Toți absenți')
+
         const activeStudents = await prisma.groupStudent.findMany({
           where: { groupId: lesson.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
-          select: { studentId: true },
+          select: { studentId: true, student: { select: { fullName: true } } },
         })
-        for (const s of activeStudents) {
-          await prisma.attendance.upsert({
-            where: { sessionId_studentId: { sessionId, studentId: s.studentId } },
-            update: { status: newStatus },
-            create: { sessionId, studentId: s.studentId, status: newStatus },
-          })
-        }
 
-        const view = await buildAttendanceView(sessionId)
-        if (view) await editMessage(chatId, messageId, view.text, view.keyboard)
-        await answerCallback(callbackQueryId, newStatus === 'PRESENT' ? '✅ Toți prezenți' : '❌ Toți absenți')
+        // BATCH: șterge toate apoi creează toate (2 queries vs N upserts)
+        await prisma.attendance.deleteMany({ where: { sessionId } })
+        await prisma.attendance.createMany({
+          data: activeStudents.map(s => ({ sessionId, studentId: s.studentId, status: newStatus })),
+        })
+
+        // Construim direct view-ul cu datele în memorie (0 queries adiționale)
+        const sessionData = await prisma.lessonSession.findUnique({
+          where: { id: sessionId },
+          include: {
+            group: { select: { id: true, name: true, course: { select: { title: true } }, teacher: { select: { name: true } } } },
+          },
+        })
+        const fakeAttendances = activeStudents.map(s => ({ studentId: s.studentId, status: newStatus }))
+        const view = await buildAttendanceView(sessionId, {
+          session: { ...sessionData, attendances: fakeAttendances },
+          groupStudents: activeStudents,
+        })
+        await Promise.all([
+          ackPromise,
+          view ? editMessage(chatId, messageId, view.text, view.keyboard) : Promise.resolve(),
+        ])
         return NextResponse.json({ ok: true })
       }
 
@@ -318,22 +384,30 @@ export async function POST(request) {
           return NextResponse.json({ ok: true })
         }
 
-        // Deduce lecții pentru prezenți, incrementează absențe pentru absenți
+        // Ack instant
+        const ackPromise = answerCallback(callbackQueryId, '✅ Salvată cu succes!')
+
+        // Deduce lecții pentru prezenți, incrementează absențe pentru absenți (ÎN PARALEL)
         const activeStudents = await prisma.groupStudent.findMany({
           where: { groupId: lesson.groupId, status: { notIn: ['LEFT', 'TRANSFERRED'] } },
+          select: { id: true, studentId: true },
         })
+        const studentMap = new Map(activeStudents.map(s => [s.studentId, s.id]))
+
         let presentCount = 0
         let absentCount = 0
         const transactions = []
+        const updatePromises = []
+
         for (const att of lesson.attendances) {
-          const gs = activeStudents.find(g => g.studentId === att.studentId)
-          if (!gs) continue
+          const gsId = studentMap.get(att.studentId)
+          if (!gsId) continue
           if (att.status === 'PRESENT') {
             presentCount++
-            await prisma.groupStudent.update({
-              where: { id: gs.id },
+            updatePromises.push(prisma.groupStudent.update({
+              where: { id: gsId },
               data: { lessonsRemaining: { decrement: 1 } },
-            })
+            }))
             transactions.push({
               studentId: att.studentId,
               groupId: lesson.groupId,
@@ -343,20 +417,24 @@ export async function POST(request) {
             })
           } else {
             absentCount++
-            await prisma.groupStudent.update({
-              where: { id: gs.id },
+            updatePromises.push(prisma.groupStudent.update({
+              where: { id: gsId },
               data: { absences: { increment: 1 } },
-            })
+            }))
           }
         }
 
-        if (transactions.length > 0) {
-          await prisma.lessonTransaction.createMany({ data: transactions })
-        }
-        await prisma.lessonSession.update({
-          where: { id: sessionId },
-          data: { lessonsDeducted: true },
-        })
+        // Execută TOATE update-urile + transactions + lessonSession update în paralel
+        await Promise.all([
+          ...updatePromises,
+          transactions.length > 0
+            ? prisma.lessonTransaction.createMany({ data: transactions })
+            : Promise.resolve(),
+          prisma.lessonSession.update({
+            where: { id: sessionId },
+            data: { lessonsDeducted: true },
+          }),
+        ])
 
         const dateStr = new Date(lesson.date).toLocaleString('ro-RO', {
           day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Chisinau',
@@ -374,8 +452,10 @@ export async function POST(request) {
 
 ✔ Lecția a fost înregistrată în sistem.`
 
-        await editMessage(chatId, messageId, finalText, null)
-        await answerCallback(callbackQueryId, '✅ Salvată cu succes!')
+        await Promise.all([
+          ackPromise,
+          editMessage(chatId, messageId, finalText, null),
+        ])
         return NextResponse.json({ ok: true })
       }
 
@@ -435,8 +515,10 @@ ${emailLine}
       // Dacă status final → butoane dispar; altfel → butoane rămân
       const keyboard = isFinal ? null : buildKeyboard(contactId)
 
-      await editMessage(chatId, messageId, updatedText, keyboard)
-      await answerCallback(callbackQueryId, `✅ Status: ${newStatusLabel}`)
+      await Promise.all([
+        editMessage(chatId, messageId, updatedText, keyboard),
+        answerCallback(callbackQueryId, `✅ Status: ${newStatusLabel}`),
+      ])
 
       return NextResponse.json({ ok: true })
       } // end if c:
