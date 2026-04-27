@@ -94,7 +94,7 @@ export async function POST(request, { params }) {
 📚 Grupa: ${groupStudent.group.name}
 🎓 Curs: ${groupStudent.group.course?.title || 'N/A'}
 ➕ Adăugat în grupă`
-    notifyTeacherActivity('student', session.user.name || session.user.email, details)
+    notifyTeacherActivity('student_group', session.user.name || session.user.email, details)
       .catch(err => console.error('Telegram notification error:', err))
 
     return NextResponse.json(groupStudent, { status: 201 })
