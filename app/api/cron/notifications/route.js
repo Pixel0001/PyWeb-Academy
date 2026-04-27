@@ -198,7 +198,7 @@ export async function GET(request) {
         const scheduledDate = new Date(yesterday)
         scheduledDate.setHours(hours || 0, minutes || 0, 0, 0)
         
-        await prisma.missedSession.create({
+        const missedSession = await prisma.missedSession.create({
           data: {
             groupId: group.id,
             scheduledDate,
@@ -240,14 +240,15 @@ export async function GET(request) {
             }
           })
           
-          // Trimite și pe Telegram
+          // Trimite și pe Telegram (cu butoane interactive)
           await notifyMissedGroupSession(
             group.name,
             group.teacher.name,
             group.course.title,
             yesterdayDayOfWeek,
             scheduledTime,
-            group.groupStudents.length
+            group.groupStudents.length,
+            missedSession.id
           )
           
           notificationsCreated.push(`Missed group session: ${group.name} (${group.teacher.name})`)
