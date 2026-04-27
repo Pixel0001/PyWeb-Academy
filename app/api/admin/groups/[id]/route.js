@@ -133,13 +133,75 @@ export async function DELETE(request, { params }) {
       }, { status: 403 })
     }
 
+    // Încărcăm grupa cu detaliile + groupStudents pentru snapshot plăți
+    const group = await prisma.group.findUnique({
+      where: { id },
+      include: {
+        course: { select: { title: true } },
+        groupStudents: {
+          include: { student: { select: { fullName: true } } }
+        }
+      }
+    })
+
+    if (!group) {
+      return NextResponse.json({ error: 'Grupa nu a fost găsită' }, { status: 404 })
+    }
+
+    const groupStudentIds = group.groupStudents.map(gs => gs.id)
+    const studentNamesByGsId = new Map(
+      group.groupStudents.map(gs => [gs.id, gs.student?.fullName || 'Elev necunoscut'])
+    )
+
+    // Sesiunile de lecție ale grupei (pentru ștergerea attendance-urilor)
+    const lessonSessions = await prisma.lessonSession.findMany({
+      where: { groupId: id },
+      select: { id: true }
+    })
+    const lessonSessionIds = lessonSessions.map(s => s.id)
+
+    // 1) Snapshot + detașare plăți (rămân în sistem cu istoricul lor)
+    if (groupStudentIds.length > 0) {
+      const payments = await prisma.payment.findMany({
+        where: { groupStudentId: { in: groupStudentIds } },
+        select: { id: true, groupStudentId: true }
+      })
+
+      // Update fiecare plată cu snapshot + detașare (groupStudentId → null)
+      await Promise.all(payments.map(p =>
+        prisma.payment.update({
+          where: { id: p.id },
+          data: {
+            studentNameSnapshot: studentNamesByGsId.get(p.groupStudentId) || null,
+            groupNameSnapshot: group.name,
+            courseTitleSnapshot: group.course?.title || null,
+            groupStudentId: null,
+          }
+        })
+      ))
+    }
+
+    // 2) Ștergere referințe doar pentru această grupă (elevii rămân în alte grupe)
+    //    NU folosim cascade Prisma (poate eșua pe MongoDB) — facem totul explicit
+    if (lessonSessionIds.length > 0) {
+      await prisma.attendance.deleteMany({ where: { sessionId: { in: lessonSessionIds } } })
+    }
+    await prisma.lessonTransaction.deleteMany({ where: { groupId: id } })
+    await prisma.lessonSession.deleteMany({ where: { groupId: id } })
+    await prisma.missedSession.deleteMany({ where: { groupId: id } })
+    await prisma.makeupLesson.deleteMany({ where: { groupId: id } }).catch(() => {})
+    await prisma.notification.deleteMany({ where: { groupId: id } })
+    await prisma.groupStudent.deleteMany({ where: { groupId: id } })
+
+    // 3) Ștergem grupa în sine
     await prisma.group.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('Error deleting group:', error)
     if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
-    return NextResponse.json({ error: 'Failed to delete group' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete group', details: error.message }, { status: 500 })
   }
 }

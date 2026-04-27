@@ -143,9 +143,6 @@ export default async function AdminDashboard() {
   if (canViewCourses.allowed) {
     stats.push({ name: 'Cursuri', value: coursesCount, color: 'bg-blue-500', Icon: BookOpenIcon, href: '/admin/courses' })
   }
-  if (canViewEnrollments.allowed) {
-    stats.push({ name: 'Înscrieri', value: enrollmentsCount, color: 'bg-green-500', Icon: ClipboardDocumentListIcon, href: '/admin/enrollments' })
-  }
   if (canViewStudents.allowed) {
     stats.push({ name: 'Elevi', value: studentsCount, color: 'bg-purple-500', Icon: AcademicCapIcon, href: '/admin/students' })
   }
@@ -493,45 +490,7 @@ export default async function AdminDashboard() {
       </div>
       )}
 
-      {/* Recent Enrollments - only if can view enrollments */}
-      {canViewEnrollments.allowed && (
-        <div className="bg-white rounded-xl xs:rounded-2xl shadow-sm border border-gray-100">
-          <div className="px-3 xs:px-4 md:px-6 py-3 xs:py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-base xs:text-lg font-semibold text-gray-900">Înscrieri noi</h2>
-            <Link href="/admin/enrollments" className="text-xs xs:text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              Vezi toate →
-            </Link>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {newEnrollments.length === 0 ? (
-              <div className="px-3 xs:px-4 md:px-6 py-6 xs:py-8 text-center text-gray-500 text-xs xs:text-sm">
-                Nu există înscrieri noi
-              </div>
-            ) : (
-              newEnrollments.map((enrollment) => (
-                <Link key={enrollment.id} href={`/admin/enrollments/${enrollment.id}`} className="block px-3 xs:px-4 md:px-6 py-3 xs:py-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm xs:text-base truncate">{enrollment.studentName}</p>
-                      <p className="text-xs xs:text-sm text-gray-500 truncate">
-                        {enrollment.course?.title} • {enrollment.parentPhone}
-                      </p>
-                    </div>
-                    <div className="text-right ml-2 flex-shrink-0">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] xs:text-xs font-medium bg-yellow-100 text-yellow-800">
-                        NOU
-                      </span>
-                      <p className="text-[10px] xs:text-xs text-gray-400 mt-1">
-                        {new Date(enrollment.createdAt).toLocaleDateString('ro-RO')}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      {/* Recent Enrollments section removed — /admin/enrollments page not implemented */}
     </div>
   )
 }

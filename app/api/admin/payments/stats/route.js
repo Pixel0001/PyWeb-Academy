@@ -92,9 +92,10 @@ export async function GET(request) {
     // Populate with actual data
     payments.forEach(payment => {
       const month = new Date(payment.paymentDate).getMonth()
+      const gs = payment.groupStudent
       monthlyStats[month].totalAmount += payment.amount
       monthlyStats[month].totalPayments += 1
-      monthlyStats[month].uniqueStudents.add(payment.groupStudent.studentId)
+      if (gs?.studentId) monthlyStats[month].uniqueStudents.add(gs.studentId)
       monthlyStats[month].payments.push({
         id: payment.id,
         amount: payment.amount,
@@ -102,17 +103,18 @@ export async function GET(request) {
         paymentMethod: payment.paymentMethod,
         notes: payment.notes,
         lessonsAdded: payment.lessonsAdded,
-        studentId: payment.groupStudent.studentId,
-        studentName: payment.groupStudent.student.fullName,
-        groupName: payment.groupStudent.group.name,
-        courseName: payment.groupStudent.group.course?.title,
-        branchId: payment.groupStudent.group.branchId,
-        branchName: payment.groupStudent.group.branch?.name || 'Fără filială',
-        teacherId: payment.groupStudent.group.teacherId,
-        teacherName: payment.groupStudent.group.teacher?.name || 'Neassignat',
+        studentId: gs?.studentId || null,
+        studentName: gs?.student?.fullName || payment.studentNameSnapshot || 'Elev șters',
+        groupName: gs?.group?.name || payment.groupNameSnapshot || 'Grupă ștearsă',
+        courseName: gs?.group?.course?.title || payment.courseTitleSnapshot || null,
+        branchId: gs?.group?.branchId || null,
+        branchName: gs?.group?.branch?.name || 'Fără filială',
+        teacherId: gs?.group?.teacherId || null,
+        teacherName: gs?.group?.teacher?.name || 'Neassignat',
         createdById: payment.createdById || 'unknown',
         createdByName: payment.createdBy?.name || 'Administratori',
-        createdByRole: payment.createdBy?.role || 'UNKNOWN'
+        createdByRole: payment.createdBy?.role || 'UNKNOWN',
+        isDetached: !gs,
       })
     })
 
@@ -126,7 +128,9 @@ export async function GET(request) {
     const yearTotal = {
       totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
       totalPayments: payments.length,
-      uniqueStudents: new Set(payments.map(p => p.groupStudent.studentId)).size
+      uniqueStudents: new Set(
+        payments.map(p => p.groupStudent?.studentId).filter(Boolean)
+      ).size
     }
 
     // Calculate stats per teacher (who created payments)

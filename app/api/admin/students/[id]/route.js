@@ -102,13 +102,61 @@ export async function DELETE(request, { params }) {
       }, { status: 403 })
     }
 
+    // Încărcăm elevul cu toate înregistrările în grupe + plățile asociate
+    const student = await prisma.student.findUnique({
+      where: { id },
+      include: {
+        groupStudents: {
+          include: {
+            group: { select: { name: true, course: { select: { title: true } } } }
+          }
+        }
+      }
+    })
+
+    if (!student) {
+      return NextResponse.json({ error: 'Elevul nu a fost găsit' }, { status: 404 })
+    }
+
+    const groupStudentIds = student.groupStudents.map(gs => gs.id)
+    const groupInfoByGsId = new Map(
+      student.groupStudents.map(gs => [gs.id, {
+        groupName: gs.group?.name || null,
+        courseTitle: gs.group?.course?.title || null,
+      }])
+    )
+
+    // 1) Snapshot + detașare plăți (rămân în sistem după ștergerea elevului)
+    if (groupStudentIds.length > 0) {
+      const payments = await prisma.payment.findMany({
+        where: { groupStudentId: { in: groupStudentIds } },
+        select: { id: true, groupStudentId: true }
+      })
+
+      await Promise.all(payments.map(p => {
+        const info = groupInfoByGsId.get(p.groupStudentId) || {}
+        return prisma.payment.update({
+          where: { id: p.id },
+          data: {
+            studentNameSnapshot: student.fullName,
+            groupNameSnapshot: info.groupName,
+            courseTitleSnapshot: info.courseTitle,
+            groupStudentId: null,
+          }
+        })
+      }))
+    }
+
+    // 2) Ștergem elevul (cascade Prisma se va ocupa de groupStudents, attendances etc.)
+    //    Plățile rămân detașate, cu snapshot pentru istoric
     await prisma.student.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('Error deleting student:', error)
     if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
-    return NextResponse.json({ error: 'Failed to delete student' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete student', details: error.message }, { status: 500 })
   }
 }

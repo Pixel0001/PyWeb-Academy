@@ -581,7 +581,7 @@ enum NotificationType {
 
 model Payment {
   id             String        @id @default(auto()) @map("_id") @db.ObjectId
-  groupStudentId String        @db.ObjectId
+  groupStudentId String?       @db.ObjectId  // Opțional: rămâne NULL dacă elevul/grupa au fost șterse
   amount         Float         // Suma achitată (RON)
   paymentDate    DateTime      @default(now())
   paymentMethod  String?       // "cash", "card", "transfer"
@@ -591,9 +591,14 @@ model Payment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  // Snapshot pentru păstrare istoric când entitățile asociate sunt șterse
+  studentNameSnapshot  String?  // Numele elevului la momentul plății
+  groupNameSnapshot    String?  // Numele grupei la momentul plății
+  courseTitleSnapshot  String?  // Titlul cursului la momentul plății
+
   // Relations
-  groupStudent GroupStudent @relation(fields: [groupStudentId], references: [id], onDelete: Cascade)
-  createdBy    User?        @relation("CreatedPayments", fields: [createdById], references: [id], onDelete: SetNull)
+  groupStudent GroupStudent? @relation(fields: [groupStudentId], references: [id], onDelete: SetNull)
+  createdBy    User?         @relation("CreatedPayments", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([createdById])
   @@map("payments")

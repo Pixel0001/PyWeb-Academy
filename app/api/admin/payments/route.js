@@ -72,7 +72,9 @@ export async function GET(request) {
     // Calculate statistics
     const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0)
     const totalPayments = payments.length
-    const uniqueStudents = new Set(payments.map(p => p.groupStudent.studentId)).size
+    const uniqueStudents = new Set(
+      payments.map(p => p.groupStudent?.studentId).filter(Boolean)
+    ).size
 
     return NextResponse.json({
       payments,
