@@ -8,6 +8,10 @@ export const metadata = {
   description: 'Copilul tău învață Python și creează jocuri și site-uri reale. Grupe mici, profesori cu experiență, program pe 3 ani. Prima lecție GRATUITĂ!',
 }
 
+// Revalidează pagina la fiecare 60 secunde - astfel modificările din admin (poze, prețuri, cursuri noi)
+// apar pe homepage fără rebuild
+export const revalidate = 60
+
 export default async function Home() {
   const [dbCourses, dbReviews] = await Promise.all([
     prisma.course.findMany({
