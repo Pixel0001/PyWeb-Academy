@@ -36,6 +36,11 @@ const IconArrowLeft = ({ size = 18 }) => (
     <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
+const IconArrowRight = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CourseDetailPage({ course }) {
@@ -130,16 +135,16 @@ export default function CourseDetailPage({ course }) {
         </section>
 
         {/* ── BODY ─────────────────────────────────────────────────────────── */}
-        <section style={{ padding: isMobile ? '2.5rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '2rem' : '3rem', alignItems: 'start' }}>
+        <section style={{ padding: isMobile ? '2rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '1.5rem' : '3rem', alignItems: 'start' }}>
 
             {/* LEFT — Description + Curriculum */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2rem' : '3rem' }}>
 
               {/* About */}
               <div>
                 <p className="section-label" style={{ marginBottom: '0.5rem' }}>Despre curs</p>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem' }}>
                   Ce vei învăța?
                 </h2>
                 <p style={{ fontSize: '1rem', lineHeight: 1.75, color: 'var(--text-body)' }}>{course.longDesc}</p>
@@ -148,7 +153,7 @@ export default function CourseDetailPage({ course }) {
               {/* Curriculum */}
               <div>
                 <p className="section-label" style={{ marginBottom: '0.5rem' }}>Planul de studiu</p>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1.5rem' }}>
                   Curriculum
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -248,7 +253,7 @@ export default function CourseDetailPage({ course }) {
                   onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                   onMouseOut={e => e.currentTarget.style.transform = 'none'}
                 >
-                  {c.title} →
+                  {c.title} <IconArrowRight size={14} />
                 </Link>
               ))}
             </div>
