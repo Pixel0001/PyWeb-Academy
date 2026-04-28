@@ -3,7 +3,7 @@
   "short_name": "Admin",
   "description": "Panou de administrare PyWeb Academy",
   "start_url": "/admin",
-  "scope": "/admin",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f3f4f6",

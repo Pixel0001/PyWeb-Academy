@@ -3,7 +3,7 @@
   "short_name": "Profesor",
   "description": "Panou profesor PyWeb Academy",
   "start_url": "/teacher",
-  "scope": "/teacher",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f9fafb",
