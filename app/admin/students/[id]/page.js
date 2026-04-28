@@ -61,7 +61,7 @@ export default async function StudentDetailPage({ params }) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { enrolledAt: 'desc' },
       },
       createdBy: { select: { name: true, role: true } },
     },
@@ -72,7 +72,8 @@ export default async function StudentDetailPage({ params }) {
   const groupIds = student.groupStudents.map(gs => gs.groupId)
 
   // 2) Toate prezențele PRESENT ale elevului (descrescător după dată)
-  const presences = groupIds.length === 0 ? [] : await prisma.attendance.findMany({
+  // NOTĂ: Prisma + MongoDB nu suportă orderBy pe câmp relațional, sortăm în JS.
+  const presencesRaw = groupIds.length === 0 ? [] : await prisma.attendance.findMany({
     where: {
       studentId: id,
       status: 'PRESENT',
@@ -85,8 +86,10 @@ export default async function StudentDetailPage({ params }) {
         },
       },
     },
-    orderBy: { session: { date: 'desc' } },
   })
+  const presences = presencesRaw.sort(
+    (a, b) => new Date(b.session.date) - new Date(a.session.date)
+  )
 
   // 3) Lecții de la ultima plată (per grupă)
   const lessonsSinceLastPaymentByGsId = new Map()
@@ -225,7 +228,7 @@ export default async function StudentDetailPage({ params }) {
                         {gs.group?.teacher?.name && <> • Profesor: {gs.group.teacher.name}</>}
                       </p>
                       <p className="text-[11px] xs:text-xs text-gray-400 mt-0.5">
-                        Înscris în grupă: {formatDate(gs.createdAt)}
+                        Înscris în grupă: {formatDate(gs.enrolledAt)}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
