@@ -276,10 +276,11 @@ export default function AdminSidebar({ user }) {
         </div>
       </div>
 
-      {/* Mobile Menu Button - Fixed bottom right */}
+      {/* Mobile Menu Button - Fixed bottom right (lifted above iOS home bar / Exit button) */}
       <button
         onClick={() => setMobileMenuOpen(true)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+        className="lg:hidden fixed right-4 z-50 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
         aria-label="Deschide meniul"
       >
         <Bars3Icon className="h-6 w-6" />
