@@ -5,6 +5,20 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminHeader from '@/components/admin/AdminHeader'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
 
+export const metadata = {
+  title: 'PyWeb Admin',
+  description: 'Panou de administrare PyWeb Academy',
+  manifest: '/manifest-admin.json',
+  appleWebApp: {
+    capable: true,
+    title: 'PyWeb Admin',
+    statusBarStyle: 'black-translucent',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+}
+
 export default async function AdminLayout({ children }) {
   const session = await getServerSession(authOptions)
 
