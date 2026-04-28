@@ -681,8 +681,8 @@ export default function HomePage({ courses = [], reviews = [] }) {
                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   loading="lazy"
                 />
-                {/* Dark gradient overlay */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,14,30,0.18) 0%, rgba(10,14,30,0.5) 40%, rgba(10,14,30,0.96) 100%)' }} />
+                {/* Dark gradient overlay (lighter — keep image visible) */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,14,30,0.05) 0%, rgba(10,14,30,0.25) 45%, rgba(10,14,30,0.78) 100%)' }} />
 
                 {/* TOP ROW: level + discount badge */}
                 <div style={{ position: 'absolute', top: '1rem', left: '1rem', right: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
