@@ -45,8 +45,12 @@ const IconArrowRight = ({ size = 18 }) => (
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CourseDetailPage({ course }) {
   const [isMobile, setIsMobile] = useState(false)
+  const [isXs, setIsXs] = useState(false)
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768)
+    const check = () => {
+      setIsMobile(window.innerWidth <= 768)
+      setIsXs(window.innerWidth <= 380)
+    }
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
@@ -123,20 +127,20 @@ export default function CourseDetailPage({ course }) {
           </div>
         </section>
 
-        <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: isMobile ? '1.25rem 1rem' : '1.5rem 1.5rem' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: isMobile ? '1rem' : '0', alignItems: 'center' }}>
+        <section style={{ backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: isMobile ? '1rem 0.875rem' : '1.5rem 1.5rem' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isXs ? '1fr 1fr' : isMobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: isMobile ? '0.75rem' : '0', alignItems: 'center' }}>
             {[{icon: <IconCalendar />, label: 'Durată', value: course.duration}, {icon: <IconUsers />, label: 'Vârstă', value: course.age}, {icon: <IconUsers />, label: 'Grup', value: course.groupSize}, {icon: <IconClock />, label: 'Frecvență', value: course.sessionsPerWeek}, {icon: <IconClock />, label: 'Ședință', value: course.sessionLength}].map((s, i) => (
-              <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', padding: isMobile ? '0' : '0 1rem', borderRight: !isMobile && i < 4 ? '1px solid var(--border-light)' : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>{s.icon}{s.label}</div>
-                <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: isMobile ? '0.95rem' : '1rem', color: 'var(--text-heading)', textAlign: 'center' }}>{s.value}</span>
+              <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', padding: isMobile ? '0' : '0 1rem', borderRight: !isMobile && i < 4 ? '1px solid var(--border-light)' : 'none', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-muted)', fontSize: isXs ? '0.68rem' : '0.72rem' }}>{s.icon}{s.label}</div>
+                <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: isXs ? '0.82rem' : isMobile ? '0.9rem' : '1rem', color: 'var(--text-heading)', textAlign: 'center', wordBreak: 'break-word' }}>{s.value}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* ── BODY ─────────────────────────────────────────────────────────── */}
-        <section style={{ padding: isMobile ? '2rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '1.5rem' : '3rem', alignItems: 'start' }}>
+        <section style={{ padding: isXs ? '1.5rem 0.875rem' : isMobile ? '2rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '1.25rem' : '3rem', alignItems: 'start' }}>
 
             {/* LEFT — Description + Curriculum */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2rem' : '3rem' }}>
@@ -147,7 +151,7 @@ export default function CourseDetailPage({ course }) {
                 <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '1rem' }}>
                   Ce vei învăța?
                 </h2>
-                <p style={{ fontSize: '1rem', lineHeight: 1.75, color: 'var(--text-body)' }}>{course.longDesc}</p>
+                <p style={{ fontSize: isMobile ? '0.92rem' : '1rem', lineHeight: 1.7, color: 'var(--text-body)' }}>{course.longDesc}</p>
               </div>
 
               {/* Curriculum */}
@@ -159,18 +163,18 @@ export default function CourseDetailPage({ course }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {course.curriculum.map((module, i) => (
                     <div key={i} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1rem', overflow: 'hidden' }}>
-                      <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-section-alt)' }}>
-                        <span style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: course.levelColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
-                        <div>
-                          <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{module.week}</div>
-                          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--text-heading)', fontSize: '0.975rem' }}>{module.title}</div>
+                      <div style={{ padding: isMobile ? '0.75rem 0.875rem' : '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: isMobile ? '0.625rem' : '1rem', borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-section-alt)' }}>
+                        <span style={{ width: 26, height: 26, borderRadius: '50%', backgroundColor: course.levelColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{module.week}</div>
+                          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--text-heading)', fontSize: isMobile ? '0.9rem' : '0.975rem', wordBreak: 'break-word' }}>{module.title}</div>
                         </div>
                       </div>
-                      <ul style={{ padding: '1rem 1.25rem', margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <ul style={{ padding: isMobile ? '0.75rem 0.875rem' : '1rem 1.25rem', margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                         {module.items.map((item, j) => (
-                          <li key={j} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-body)' }}>
-                            <IconCheck color={course.levelColor} size={15} />
-                            {item}
+                          <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: isMobile ? '0.82rem' : '0.875rem', color: 'var(--text-body)', lineHeight: 1.5 }}>
+                            <span style={{ marginTop: 3, flexShrink: 0 }}><IconCheck color={course.levelColor} size={14} /></span>
+                            <span>{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -180,9 +184,9 @@ export default function CourseDetailPage({ course }) {
               </div>
 
               {/* For who */}
-              <div style={{ backgroundColor: course.levelBg, border: `1px solid ${course.levelColor}30`, borderRadius: '1rem', padding: '1.5rem' }}>
-                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: course.levelColor, marginBottom: '0.5rem' }}>Pentru cine e cursul?</p>
-                <p style={{ fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--text-body)' }}>{course.forWho}</p>
+              <div style={{ backgroundColor: course.levelBg, border: `1px solid ${course.levelColor}30`, borderRadius: '1rem', padding: isMobile ? '1rem' : '1.5rem' }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: course.levelColor, marginBottom: '0.5rem' }}>Pentru cine e cursul?</p>
+                <p style={{ fontSize: isMobile ? '0.88rem' : '0.95rem', lineHeight: 1.65, color: 'var(--text-body)' }}>{course.forWho}</p>
               </div>
             </div>
 
@@ -190,31 +194,31 @@ export default function CourseDetailPage({ course }) {
             <div style={{ position: isMobile ? 'static' : 'sticky', top: 90, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
               {/* Price card */}
-              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '1.75rem', boxShadow: 'var(--shadow-float)' }}>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Prețul cursului</div>
-                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 800, color: 'var(--text-heading)' }}>{course.price}</div>
+              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: isMobile ? '1.25rem' : '1.75rem', boxShadow: 'var(--shadow-float)' }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Prețul cursului</div>
+                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: isMobile ? '1.6rem' : '2rem', fontWeight: 800, color: 'var(--text-heading)', wordBreak: 'break-word' }}>{course.price}</div>
                 </div>
 
                 {/* Benefits */}
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   {course.benefits.map((b, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-body)' }}>
-                      <span style={{ marginTop: 1, flexShrink: 0 }}><IconCheck color={course.levelColor} size={16} /></span>
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: isMobile ? '0.83rem' : '0.875rem', color: 'var(--text-body)', lineHeight: 1.5 }}>
+                      <span style={{ marginTop: 2, flexShrink: 0 }}><IconCheck color={course.levelColor} size={15} /></span>
                       {b}
                     </li>
                   ))}
                 </ul>
 
                 <a id="inscriere" href="/inscriere"
-                  style={{ display: 'block', textAlign: 'center', backgroundColor: 'var(--color-accent)', color: '#0f172a', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', padding: '0.9rem 1.5rem', borderRadius: '0.75rem', textDecoration: 'none', transition: 'all 0.2s', marginBottom: '0.75rem' }}
+                  style={{ display: 'block', textAlign: 'center', backgroundColor: 'var(--color-accent)', color: '#0f172a', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', padding: '0.85rem 1rem', borderRadius: '0.75rem', textDecoration: 'none', transition: 'all 0.2s', marginBottom: '0.625rem' }}
                   onMouseOver={e => { e.currentTarget.style.backgroundColor = 'var(--color-accent-hover)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
                   onMouseOut={e => { e.currentTarget.style.backgroundColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'none' }}
                 >
                   Înscrie-te acum
                 </a>
                 <a href="tel:+37368113314"
-                  style={{ display: 'block', textAlign: 'center', backgroundColor: 'transparent', color: 'var(--color-primary)', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.9rem', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', textDecoration: 'none', border: '1.5px solid var(--border-light)', transition: 'all 0.2s' }}
+                  style={{ display: 'block', textAlign: 'center', backgroundColor: 'transparent', color: 'var(--color-primary)', fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.88rem', padding: '0.7rem 1rem', borderRadius: '0.75rem', textDecoration: 'none', border: '1.5px solid var(--border-light)', transition: 'all 0.2s' }}
                   onMouseOver={e => e.currentTarget.style.borderColor = 'var(--color-primary-light)'}
                   onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-light)'}
                 >
@@ -223,11 +227,11 @@ export default function CourseDetailPage({ course }) {
               </div>
 
               {/* Topics tags */}
-              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '1.25rem' }}>
-                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Teme principale</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: isMobile ? '1rem' : '1.25rem' }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Teme principale</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                   {course.topics.map((t) => (
-                    <span key={t} style={{ fontSize: '0.8rem', fontWeight: 500, color: course.levelColor, backgroundColor: course.levelBg, border: `1px solid ${course.levelColor}30`, borderRadius: '0.5rem', padding: '0.3rem 0.75rem' }}>{t}</span>
+                    <span key={t} style={{ fontSize: '0.75rem', fontWeight: 500, color: course.levelColor, backgroundColor: course.levelBg, border: `1px solid ${course.levelColor}30`, borderRadius: '0.5rem', padding: '0.25rem 0.625rem' }}>{t}</span>
                   ))}
                 </div>
               </div>
