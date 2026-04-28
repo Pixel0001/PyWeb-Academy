@@ -65,25 +65,14 @@ export default function CourseDetailPage({ course }) {
       <main>
 
         {/* ── HERO ─────────────────────────────────────────────────────────── */}
-        <section style={{ position: 'relative', minHeight: isMobile ? 480 : 520, display: 'flex', alignItems: 'center', overflow: 'hidden', backgroundColor: '#0f172a' }}>
-          {/* BG Image — soft, only on mobile/full-bleed */}
-          {isMobile && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-              <Image src={course.image} alt={course.title} fill style={{ objectFit: 'cover', objectPosition: 'center top' }} priority />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.85) 70%, rgba(15,23,42,0.96) 100%)' }} />
-            </div>
-          )}
-          {!isMobile && (
-            <>
-              {/* Subtle blurred bg on desktop */}
-              <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.18 }}>
-                <Image src={course.image} alt="" fill style={{ objectFit: 'cover', objectPosition: 'center', filter: 'blur(40px) saturate(1.2)' }} aria-hidden />
-              </div>
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.78) 60%, rgba(15,23,42,0.55) 100%)' }} />
-            </>
-          )}
+        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', overflow: 'hidden', backgroundColor: '#0f172a' }}>
+          {/* Subtle blurred background using same image */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.18 }}>
+            <Image src={course.image} alt="" fill style={{ objectFit: 'cover', objectPosition: 'center', filter: 'blur(40px) saturate(1.2)' }} aria-hidden sizes="100vw" />
+          </div>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.78) 60%, rgba(15,23,42,0.55) 100%)' }} />
 
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: isMobile ? '6rem 1.25rem 2.5rem' : '5rem 1.5rem 4rem', width: '100%', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 380px', gap: isMobile ? 0 : '3rem', alignItems: 'center' }}>
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', padding: isMobile ? '5.5rem 1.25rem 2.5rem' : '5rem 1.5rem 4rem', width: '100%', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 340px', gap: isMobile ? '1.5rem' : '3rem', alignItems: 'center' }}>
             <div>
             {/* Back */}
             <Link href="/#cursuri" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '0.85rem', marginBottom: '1.5rem', transition: 'color 0.2s' }}
@@ -114,13 +103,18 @@ export default function CourseDetailPage({ course }) {
             </a>
             </div>
 
-            {/* RIGHT — Image card (desktop only, same aspect as /#cursuri cards) */}
-            {!isMobile && (
-              <div style={{ position: 'relative', width: '100%', height: 420, borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 20px 56px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <Image src={course.image} alt={course.title} fill style={{ objectFit: 'cover', objectPosition: 'center' }} priority sizes="(max-width: 1100px) 50vw, 380px" />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,14,30,0.0) 60%, rgba(10,14,30,0.35) 100%)' }} />
-              </div>
-            )}
+            {/* RIGHT — Image card (same aspect as /#cursuri cards on both mobile and desktop) */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: 340, height: isMobile ? 360 : 480, margin: isMobile ? '0 auto' : '0 0 0 auto', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 20px 56px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Image
+                src={course.image}
+                alt={course.title}
+                fill
+                style={{ objectFit: 'cover', objectPosition: 'center top' }}
+                priority
+                sizes="340px"
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,14,30,0.0) 60%, rgba(10,14,30,0.35) 100%)' }} />
+            </div>
           </div>
         </section>
 
