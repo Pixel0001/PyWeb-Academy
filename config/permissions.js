@@ -151,6 +151,11 @@ export const PERMISSIONS = {
     description: 'Poate șterge profesori',
     category: 'Profesori'
   },
+  'teachers.impersonate': {
+    label: 'Loghează-te ca profesor',
+    description: 'Poate intra în contul unui profesor pentru a-l vedea/asista (doar profesori, nu alți admini)',
+    category: 'Profesori'
+  },
 
   // Cursuri
   'courses.view': {

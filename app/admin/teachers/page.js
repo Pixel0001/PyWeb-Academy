@@ -22,10 +22,19 @@ async function TeachersPageContent() {
   const currentUser = await getCurrentUser()
   const userIsSuperAdmin = currentUser?.role === 'SUPERADMIN'
   
-  const [canCreate, canDelete] = await Promise.all([
+  const [canCreate, canDelete, canImpersonate] = await Promise.all([
     checkPermission('teachers.create'),
-    checkPermission('teachers.delete')
+    checkPermission('teachers.delete'),
+    checkPermission('teachers.impersonate'),
   ])
+  
+  // SUPERADMIN poate impersona ADMIN și TEACHER; ADMIN cu permisiune doar TEACHER
+  const canImpersonateTarget = (teacherRole) => {
+    if (!teacherRole) return false
+    if (userIsSuperAdmin) return ['ADMIN', 'TEACHER'].includes(teacherRole)
+    if (canImpersonate.allowed) return teacherRole === 'TEACHER'
+    return false
+  }
   
   // Administratorii văd doar profesorii, superadmin vede pe toți
   const roleFilter = userIsSuperAdmin 
@@ -193,7 +202,7 @@ async function TeachersPageContent() {
                         <ChartBarIcon className="w-4 h-4" />
                         Statistici
                       </Link>
-                      {userIsSuperAdmin && teacher.id !== currentUser?.id && teacher.active && (
+                      {teacher.id !== currentUser?.id && teacher.active && canImpersonateTarget(teacher.role) && (
                         <ImpersonateButton
                           userId={teacher.id}
                           userName={teacher.name || teacher.email}
@@ -287,7 +296,7 @@ async function TeachersPageContent() {
                   <ChartBarIcon className="w-3 h-3 xs:w-4 xs:h-4" />
                   <span>Statistici</span>
                 </Link>
-                {userIsSuperAdmin && teacher.id !== currentUser?.id && teacher.active && (
+                {teacher.id !== currentUser?.id && teacher.active && canImpersonateTarget(teacher.role) && (
                   <ImpersonateButton
                     userId={teacher.id}
                     userName={teacher.name || teacher.email}
