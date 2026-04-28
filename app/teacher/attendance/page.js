@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic'
 export default async function TeacherAttendancePage() {
   const session = await getServerSession(authOptions)
 
-  // Get last 200 sessions for teacher's groups
+  // Initial page: 20 most recent sessions
+  const PAGE_SIZE = 20
   const sessions = await prisma.lessonSession.findMany({
     where: {
       group: { teacherId: session.user.id }
@@ -30,7 +31,7 @@ export default async function TeacherAttendancePage() {
       }
     },
     orderBy: { date: 'desc' },
-    take: 200,
+    take: PAGE_SIZE,
   })
 
   // Serialize Date -> ISO string for client component
@@ -45,7 +46,7 @@ export default async function TeacherAttendancePage() {
         <div>
           <h1 className="text-xl xs:text-2xl md:text-3xl font-bold text-gray-900">Istoric Prezențe</h1>
           <p className="text-gray-600 mt-1 text-xs xs:text-sm md:text-base">
-            Filtrează după grupă, status sau dată — ultimele 200 de sesiuni
+            Filtrează după grupă, status sau dată
           </p>
         </div>
         <Link
@@ -56,7 +57,11 @@ export default async function TeacherAttendancePage() {
         </Link>
       </div>
 
-      <AttendanceHistoryClient sessions={serialized} />
+      <AttendanceHistoryClient
+        initialSessions={serialized}
+        pageSize={PAGE_SIZE}
+        hasMoreInitial={serialized.length === PAGE_SIZE}
+      />
     </div>
   )
 }

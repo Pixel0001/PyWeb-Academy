@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 import {
   CalendarDaysIcon,
   CheckCircleIcon,
@@ -9,6 +10,7 @@ import {
   FunnelIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 
 const STATUS_OPTIONS = [
@@ -18,13 +20,33 @@ const STATUS_OPTIONS = [
   { value: 'missed', label: '✗ Neefectuate' },
 ]
 
-export default function AttendanceHistoryClient({ sessions }) {
+export default function AttendanceHistoryClient({ initialSessions = [], pageSize = 20, hasMoreInitial = false }) {
+  const [sessions, setSessions] = useState(initialSessions)
+  const [hasMore, setHasMore] = useState(hasMoreInitial)
+  const [loadingMore, setLoadingMore] = useState(false)
+
   const [groupId, setGroupId] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/teacher/attendance/history?skip=${sessions.length}&take=${pageSize}`)
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      setSessions(prev => [...prev, ...(data.sessions || [])])
+      setHasMore(!!data.hasMore)
+    } catch (e) {
+      toast.error('Nu s-au putut încărca mai multe sesiuni')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   // Pre-process sessions with derived fields
   const enriched = useMemo(() => {
@@ -247,6 +269,28 @@ export default function AttendanceHistoryClient({ sessions }) {
               </div>
             </div>
           ))}
+
+          {/* Load more */}
+          <div className="pt-2 flex flex-col items-center gap-2">
+            {hasMore ? (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-teal-200 text-teal-700 rounded-lg text-sm font-medium hover:bg-teal-50 transition-colors disabled:opacity-60 shadow-sm"
+              >
+                {loadingMore ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    Se încarcă...
+                  </>
+                ) : (
+                  <>Încarcă mai multe ({pageSize})</>
+                )}
+              </button>
+            ) : sessions.length > 0 ? (
+              <p className="text-xs text-gray-400">— Toate sesiunile au fost încărcate ({sessions.length}) —</p>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
