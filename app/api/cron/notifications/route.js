@@ -355,6 +355,7 @@ export async function GET(request) {
       },
       include: {
         student: true,
+        payments: { orderBy: { paymentDate: 'desc' }, take: 1 },
         group: {
           include: {
             course: { select: { title: true } }
@@ -412,11 +413,19 @@ export async function GET(request) {
         })
         
         // Trimite pe Telegram (Thread 2 - Ore Rămase)
+        const lastPayment = gs.payments?.[0]
         await notifyLowLessons(
           gs.student.fullName,
           gs.group.name,
           gs.group.course.title,
-          lessons
+          lessons,
+          {
+            parentName: gs.student.parentName,
+            parentPhone: gs.student.parentPhone,
+            parentEmail: gs.student.parentEmail,
+            lastPaymentAmount: lastPayment?.amount ?? null,
+            lastPaymentDate: lastPayment?.paymentDate ?? null,
+          }
         )
         
         notificationsCreated.push(`${type}: ${gs.student.fullName} (${lessons} lecții)`)
