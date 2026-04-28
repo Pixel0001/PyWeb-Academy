@@ -2,6 +2,7 @@
 
 import { useState, Fragment, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import TwoFactorModal from './TwoFactorModal'
 import { 
@@ -493,7 +494,12 @@ export default function GroupStudentsManager({ group, allStudents, allGroups = [
                     gs.lessonsRemaining <= 2 ? 'bg-amber-50' : ''
                   }`}>
                     <td className="px-6 py-4">
-                      <p className={`font-medium ${isInactive ? 'text-gray-500' : 'text-gray-900'}`}>{gs.student.fullName}</p>
+                      <Link
+                        href={`/admin/students/${gs.studentId}`}
+                        className={`font-medium hover:text-indigo-600 transition-colors ${isInactive ? 'text-gray-500' : 'text-gray-900'}`}
+                      >
+                        {gs.student.fullName}
+                      </Link>
                       <p className="text-sm text-gray-500">{gs.student.parentPhone}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -773,9 +779,12 @@ export default function GroupStudentsManager({ group, allStudents, allGroups = [
                   {/* Header: Name + Status */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm xs:text-base truncate ${isInactive ? 'text-gray-500' : 'text-gray-900'}`}>
+                      <Link
+                        href={`/admin/students/${gs.studentId}`}
+                        className={`font-medium text-sm xs:text-base truncate hover:text-indigo-600 transition-colors block ${isInactive ? 'text-gray-500' : 'text-gray-900'}`}
+                      >
                         {gs.student.fullName}
-                      </p>
+                      </Link>
                       <p className="text-xs text-gray-500">{gs.student.parentPhone}</p>
                     </div>
                     {canChangeStatus ? (
