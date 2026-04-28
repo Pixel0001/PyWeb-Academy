@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import StartSessionButton from '@/components/teacher/StartSessionButton'
 import EditGroupDetailsButton from '@/components/teacher/EditGroupDetailsButton'
+import CopyStudentsButton from '@/components/CopyStudentsButton'
 import { 
   AcademicCapIcon, 
   CalendarDaysIcon, 
@@ -67,7 +68,11 @@ export default async function TeacherGroupDetailPage({ params }) {
           status: { notIn: ['LEFT', 'TRANSFERRED'] }  // Exclude elevii plecați și transferați
         },
         include: {
-          student: true
+          student: true,
+          payments: {
+            orderBy: { paymentDate: 'desc' },
+            take: 1,
+          },
         }
       },
       lessonSessions: {
@@ -263,7 +268,24 @@ export default async function TeacherGroupDetailPage({ params }) {
 
       {/* Students List */}
       <div className="bg-white rounded-lg xs:rounded-xl shadow-sm p-3 xs:p-4 md:p-6">
-        <h2 className="text-base xs:text-lg md:text-xl font-bold text-gray-900 mb-3 xs:mb-4">Elevii din grupă</h2>
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-3 xs:mb-4">
+          <h2 className="text-base xs:text-lg md:text-xl font-bold text-gray-900">Elevii din grupă</h2>
+          <CopyStudentsButton
+            groupName={group.name}
+            variant="teacher"
+            students={group.groupStudents.map(gs => {
+              const lastPayment = gs.payments?.[0]
+              return {
+                fullName: gs.student?.fullName,
+                parentName: gs.student?.parentName,
+                parentEmail: gs.student?.parentEmail,
+                parentPhone: gs.student?.parentPhone,
+                lastPaymentAmount: lastPayment?.amount ?? null,
+                lastPaymentDate: lastPayment?.paymentDate ?? null,
+              }
+            })}
+          />
+        </div>
         
         {group.groupStudents.length === 0 ? (
           <p className="text-gray-500 text-center py-6 xs:py-8 text-xs xs:text-sm md:text-base">Nu sunt elevi în această grupă.</p>

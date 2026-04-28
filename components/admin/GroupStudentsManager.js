@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import TwoFactorModal from './TwoFactorModal'
+import CopyStudentsButton from '@/components/CopyStudentsButton'
 import { 
   PlusIcon, 
   MinusIcon, 
@@ -449,6 +450,27 @@ export default function GroupStudentsManager({ group, allStudents, allGroups = [
 
       {/* Students List */}
       <div className="bg-white rounded-xl xs:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* List header with copy button */}
+        <div className="px-3 xs:px-4 sm:px-6 py-2.5 xs:py-3 border-b border-gray-200 flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="text-sm xs:text-base font-semibold text-gray-900">
+            Elevi în grupă <span className="text-gray-400 font-normal">({group.groupStudents.length})</span>
+          </h3>
+          <CopyStudentsButton
+            groupName={group.name}
+            variant="admin"
+            students={group.groupStudents.map(gs => {
+              const lastPayment = gs.payments?.[0]
+              return {
+                fullName: gs.student?.fullName,
+                parentName: gs.student?.parentName,
+                parentEmail: gs.student?.parentEmail,
+                parentPhone: gs.student?.parentPhone,
+                lastPaymentAmount: lastPayment?.amount ?? null,
+                lastPaymentDate: lastPayment?.paymentDate ?? null,
+              }
+            })}
+          />
+        </div>
         {inactiveStudents > 0 && (
           <div className="px-3 xs:px-4 sm:px-6 py-2 xs:py-3 bg-gray-100 border-b border-gray-200">
             <p className="text-xs xs:text-sm text-gray-600">
