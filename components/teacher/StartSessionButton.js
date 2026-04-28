@@ -10,7 +10,88 @@ import {
   CalendarDaysIcon,
   XMarkIcon,
   StarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline'
+
+const MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
+const WEEKDAYS_RO = ['Lu','Ma','Mi','Jo','Vi','Sâ','Du']
+
+function MiniCalendar({ selected, onSelect }) {
+  // selected = 'YYYY-MM-DD'
+  const [year, month] = selected
+    ? [parseInt(selected.slice(0,4),10), parseInt(selected.slice(5,7),10)-1]
+    : [new Date().getFullYear(), new Date().getMonth()]
+  const [viewYear, setViewYear] = useState(year)
+  const [viewMonth, setViewMonth] = useState(month)
+
+  const firstDay = new Date(viewYear, viewMonth, 1)
+  // JS: 0=Sun..6=Sat → convert to Mon=0..Sun=6
+  const offset = (firstDay.getDay() + 6) % 7
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const today = new Date()
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+
+  const cells = []
+  for (let i = 0; i < offset; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const prev = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1) }
+    else setViewMonth(viewMonth - 1)
+  }
+  const next = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1) }
+    else setViewMonth(viewMonth + 1)
+  }
+
+  return (
+    <div className="border border-amber-200 rounded-lg p-3 bg-white">
+      <div className="flex items-center justify-between mb-3">
+        <button type="button" onClick={prev} className="p-1.5 rounded hover:bg-amber-50 text-gray-600">
+          <ChevronLeftIcon className="w-4 h-4" />
+        </button>
+        <div className="text-sm font-semibold text-gray-800">
+          {MONTHS_RO[viewMonth]} {viewYear}
+        </div>
+        <button type="button" onClick={next} className="p-1.5 rounded hover:bg-amber-50 text-gray-600">
+          <ChevronRightIcon className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {WEEKDAYS_RO.map(w => (
+          <div key={w} className="text-[10px] font-medium text-gray-500 text-center py-1">{w}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const key = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+          const isSelected = key === selected
+          const isToday = key === todayKey
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(key)}
+              className={[
+                'h-8 text-xs rounded-md font-medium transition-colors',
+                isSelected
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow'
+                  : isToday
+                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                    : 'text-gray-700 hover:bg-amber-50',
+              ].join(' ')}
+            >
+              {d}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 export default function StartSessionButton({ groupId, scheduleDays, scheduleTime, isSuperTeacher = false }) {
   const router = useRouter()
@@ -144,32 +225,44 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
                 Alege data și ora la care a avut loc lecția. Sesiunea va fi creată cu această dată în sistem.
               </p>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Data lecției</label>
-                  <input
-                    type="date"
-                    value={customDate}
-                    onChange={e => setCustomDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Ora lecției</label>
-                  <input
-                    type="time"
-                    value={customTime}
-                    onChange={e => setCustomTime(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                  />
+              <MiniCalendar selected={customDate} onSelect={setCustomDate} />
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5 flex items-center gap-1">
+                  <ClockIcon className="w-3.5 h-3.5" />
+                  Ora lecției
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={customTime.split(':')[0]}
+                    onChange={e => setCustomTime(`${e.target.value}:${customTime.split(':')[1] || '00'}`)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm font-mono"
+                  >
+                    {Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')).map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400 font-bold">:</span>
+                  <select
+                    value={customTime.split(':')[1] || '00'}
+                    onChange={e => setCustomTime(`${customTime.split(':')[0] || '00'}:${e.target.value}`)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm font-mono"
+                  >
+                    {['00','05','10','15','20','25','30','35','40','45','50','55'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                💡 <strong>Tip:</strong> Această funcție este pentru înregistrare retroactivă a lecțiilor.
-                Poți selecta orice dată din trecut sau viitor.
+                📅 <strong>Selectat:</strong>{' '}
+                {customDate
+                  ? new Date(`${customDate}T${customTime}:00`).toLocaleString('ro-RO', {
+                      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit'
+                    })
+                  : '—'}
               </div>
 
               <div className="flex gap-2 pt-2">
