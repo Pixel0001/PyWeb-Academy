@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }) {
       <AdminSidebar user={session.user} />
       <div className="lg:pl-72">
         <AdminHeader user={session.user} />
-        <main className="py-4 xs:py-5 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8">
+        <main className="py-4 xs:py-5 sm:py-6 px-3 xs:px-4 sm:px-6 lg:px-8 scrollbar-thin">
           {children}
         </main>
       </div>

@@ -195,7 +195,7 @@ export default function AdminSidebar({ user }) {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto scrollbar-sidebar bg-white border-r border-gray-200 px-6 pb-4">
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center">
             <Link href="/admin" className="flex items-center gap-3">
@@ -322,7 +322,7 @@ export default function AdminSidebar({ user }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-140px)]">
+        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto scrollbar-sidebar max-h-[calc(100vh-140px)]">
           {filteredNavigation.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/admin' && item.href !== '/admin/security' && pathname.startsWith(item.href))

@@ -192,6 +192,47 @@ h1, h2, h3, h4, h5, h6 {
 /* ─────────────────────────────────────────────────────────────────────────────
    Responsive — Mobile Global
 ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Scrollbar — minimal & fine (admin)
+───────────────────────────────────────────────────────────────────────────── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Sidebar variant — even more subtle */
+.scrollbar-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+.scrollbar-sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+.scrollbar-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-sidebar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+.scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
 @media (max-width: 640px) {
   /* Reduce section vertical padding on mobile */
   section {
