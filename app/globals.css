@@ -233,6 +233,46 @@ h1, h2, h3, h4, h5, h6 {
 .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Course detail grid — desktop 2-col, mobile single-col
+───────────────────────────────────────────────────────────────────────────── */
+.course-grid {
+  grid-template-columns: 1fr 1fr;
+}
+.course-left {
+  position: sticky;
+  top: 5.5rem;
+}
+@media (max-width: 900px) {
+  .course-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .course-left {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
+/* Blog detail — typography */
+.blog-content {
+  font-size: 1.025rem;
+  line-height: 1.85;
+  color: var(--text-body);
+}
+.blog-content p { margin: 0 0 1.1rem; }
+.blog-content h2 { font-family: var(--font-heading); font-weight: 800; font-size: 1.6rem; color: var(--text-heading); margin: 2rem 0 0.75rem; }
+.blog-content h3 { font-family: var(--font-heading); font-weight: 700; font-size: 1.25rem; color: var(--text-heading); margin: 1.5rem 0 0.5rem; }
+.blog-content ul, .blog-content ol { margin: 0 0 1.1rem 1.25rem; padding: 0; }
+.blog-content li { margin-bottom: 0.45rem; }
+.blog-content a { color: var(--color-primary); text-decoration: underline; }
+.blog-content blockquote { border-left: 3px solid var(--color-accent); padding: 0.5rem 0 0.5rem 1rem; margin: 1rem 0; font-style: italic; color: var(--text-muted); }
+@media (max-width: 640px) {
+  .blog-content { font-size: 0.95rem; line-height: 1.75; }
+  .blog-content h2 { font-size: 1.35rem; }
+  .blog-content h3 { font-size: 1.1rem; }
+}
+
 @media (max-width: 640px) {
   /* Reduce section vertical padding on mobile */
   section {

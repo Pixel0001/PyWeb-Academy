@@ -38,7 +38,8 @@ export async function POST(request) {
     const body = await request.json()
 
     const { title, slug, descriptionShort, descriptionLong, category, level, 
-            ageMin, ageMax, duration, lessonsCount, price, discountPrice, seatsTotal, active, imageUrl, images, mainImageUrl } = body
+            ageMin, ageMax, duration, lessonsCount, price, discountPrice, seatsTotal, active, imageUrl, images, mainImageUrl,
+            textReviews, faq } = body
 
     // Check if slug exists
     const existingCourse = await prisma.course.findUnique({ where: { slug } })
@@ -64,7 +65,9 @@ export async function POST(request) {
         active,
         imageUrl: mainImageUrl || imageUrl, // Pentru compatibilitate
         images: images || [],
-        mainImageUrl: mainImageUrl || imageUrl
+        mainImageUrl: mainImageUrl || imageUrl,
+        textReviews: Array.isArray(textReviews) ? textReviews : [],
+        faq: Array.isArray(faq) ? faq : []
       }
     })
 

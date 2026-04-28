@@ -288,6 +288,28 @@ export const PERMISSIONS = {
     label: 'Vezi sesiunile ratate',
     description: 'Poate vedea absențele',
     category: 'Sesiuni'
+  },
+
+  // Blog
+  'blogs.view': {
+    label: 'Vezi blogurile',
+    description: 'Poate vedea lista de bloguri din admin',
+    category: 'Blog'
+  },
+  'blogs.create': {
+    label: 'Creează bloguri',
+    description: 'Poate adăuga articole de blog',
+    category: 'Blog'
+  },
+  'blogs.edit': {
+    label: 'Editează bloguri',
+    description: 'Poate modifica articole de blog',
+    category: 'Blog'
+  },
+  'blogs.delete': {
+    label: 'Șterge bloguri',
+    description: 'Poate șterge articole de blog',
+    category: 'Blog'
   }
 }
 
@@ -345,7 +367,8 @@ export const PERMISSION_CATEGORIES = [
   'Notificări',
   'Recenzii',
   'Orar',
-  'Securitate'
+  'Securitate',
+  'Blog'
 ]
 
 export default PERMISSIONS

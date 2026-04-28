@@ -4,10 +4,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 const navLinks = [
-  { label: 'Cursuri', href: '#cursuri' },
-  { label: 'Cum funcționează', href: '#cum-functioneaza' },
-  { label: 'Testimoniale', href: '#testimoniale' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Cursuri', href: '/#cursuri' },
+  { label: 'Cum funcționează', href: '/#cum-functioneaza' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Testimoniale', href: '/#testimoniale' },
+  { label: 'Contact', href: '/#contact' },
 ]
 
 const legalLinks = [

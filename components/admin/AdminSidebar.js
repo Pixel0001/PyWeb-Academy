@@ -38,6 +38,7 @@ const navigation = [
   { name: 'Notificări', href: '/admin/notifications', icon: 'bell', permission: 'notifications.view' },
   { name: 'Orar', href: '/admin/orar', icon: 'clock', permission: 'schedule.view' },
   { name: 'Cursuri', href: '/admin/courses', icon: 'book', permission: 'courses.view' },
+  { name: 'Blog', href: '/admin/blogs', icon: 'document', permission: 'blogs.view' },
   { name: 'Mesaje Contact', href: '/admin/contact', icon: 'chat', permission: 'contact.view' },
   { name: 'Elevi', href: '/admin/students', icon: 'academic', permission: 'students.view' },
   { name: 'Personal', href: '/admin/teachers', icon: 'user', permission: 'teachers.view' },

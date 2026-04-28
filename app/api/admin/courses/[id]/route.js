@@ -43,7 +43,8 @@ export async function PUT(request, { params }) {
     const body = await request.json()
 
     const { title, slug, descriptionShort, descriptionLong, category, level,
-            ageMin, ageMax, duration, lessonsCount, price, discountPrice, seatsTotal, active, imageUrl, images, mainImageUrl } = body
+            ageMin, ageMax, duration, lessonsCount, price, discountPrice, seatsTotal, active, imageUrl, images, mainImageUrl,
+            textReviews, faq } = body
 
     // Check if slug exists for another course
     const existingCourse = await prisma.course.findFirst({
@@ -72,7 +73,9 @@ export async function PUT(request, { params }) {
         active,
         imageUrl: mainImageUrl || imageUrl, // Pentru compatibilitate
         images: images || [],
-        mainImageUrl: mainImageUrl || imageUrl
+        mainImageUrl: mainImageUrl || imageUrl,
+        textReviews: Array.isArray(textReviews) ? textReviews : [],
+        faq: Array.isArray(faq) ? faq : []
       }
     })
 

@@ -6,6 +6,7 @@ export default async function sitemap() {
   // Pagini statice
   const staticPages = [
     { url: baseUrl, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${baseUrl}/blog`, changeFrequency: 'weekly', priority: 0.85 },
     { url: `${baseUrl}/login`, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${baseUrl}/gdpr`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${baseUrl}/termeni`, changeFrequency: 'yearly', priority: 0.3 },
@@ -15,7 +16,7 @@ export default async function sitemap() {
   let coursePages = []
   try {
     const courses = await prisma.course.findMany({
-      where: { isActive: true },
+      where: { active: true },
       select: { slug: true, updatedAt: true },
     })
     coursePages = courses.map((c) => ({
@@ -28,5 +29,22 @@ export default async function sitemap() {
     // dacă DB nu e disponibil la build, ignorăm
   }
 
-  return [...staticPages, ...coursePages]
+  // Bloguri dinamice
+  let blogPages = []
+  try {
+    const blogs = await prisma.blog.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+    })
+    blogPages = blogs.map((b) => ({
+      url: `${baseUrl}/blog/${b.slug}`,
+      lastModified: (b.updatedAt || new Date()).toISOString(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    }))
+  } catch {
+    // ignore
+  }
+
+  return [...staticPages, ...coursePages, ...blogPages]
 }

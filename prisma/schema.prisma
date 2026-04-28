@@ -236,6 +236,8 @@ model Course {
   imageUrl         String?   // Imagine principală (deprecated, se folosește mainImageUrl)
   mainImageUrl     String?   // Imaginea principală selectată
   images           String[]  // Array de URL-uri pentru toate imaginile
+  textReviews      Json?     // [{ author, role, text, rating, date }]
+  faq              Json?     // [{ question, answer }]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -245,6 +247,33 @@ model Course {
   reviews     Review[]
 
   @@map("courses")
+}
+
+// ==================== BLOG ====================
+
+model Blog {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  slug              String   @unique
+  excerpt           String?  // Scurtă descriere pentru listing/SEO
+  coverImage        String?  // Imagine principală
+  content           Json?    // Array de blocuri: [{type:'text'|'image'|'youtube'|'faq'|'heading'|'quote', ...}]
+  category          String?
+  tags              String[]
+  recommendedCourseIds  String[] @db.ObjectId
+  recommendedBlogSlugs  String[] // sluguri pentru bloguri recomandate manual
+  published         Boolean  @default(true)
+  publishedAt       DateTime @default(now())
+  seoTitle          String?
+  seoDescription    String?
+  readMinutes       Int?     // estimat
+  authorName        String?
+  views             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([published, publishedAt])
+  @@map("blogs")
 }
 
 // ==================== ENROLLMENTS (LEADS) ====================

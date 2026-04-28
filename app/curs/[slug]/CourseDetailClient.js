@@ -59,6 +59,7 @@ export default function CourseDetailClient({ course, allCourses = [] }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [openFaq, setOpenFaq] = useState(null)
 
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }, [])
 
@@ -110,11 +111,11 @@ export default function CourseDetailClient({ course, allCourses = [] }) {
       </div>
 
       {/* ── GRID PRINCIPAL ── */}
-      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '1.5rem 1.5rem 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '1.5rem 1rem 0' }}>
+        <div className="course-grid" style={{ display: 'grid', gap: '2rem', alignItems: 'start' }}>
 
           {/* ══ STÂNGA: CARD CU CARUSEL ══ */}
-          <div style={{ position: 'sticky', top: '5.5rem' }}>
+          <div className="course-left">
             <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1.75rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
 
               <div style={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden', backgroundColor: 'var(--bg-section-alt)' }}>
@@ -231,7 +232,9 @@ export default function CourseDetailClient({ course, allCourses = [] }) {
             {course.descriptionLong && (
               <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '1.5rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-card)', padding: '1.5rem' }}>
                 <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ width: 30, height: 30, borderRadius: '0.5rem', backgroundColor: 'var(--color-accent-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)', fontSize: '0.9rem' }}>ℹ</span>
+                  <span style={{ width: 30, height: 30, borderRadius: '0.5rem', backgroundColor: 'var(--color-accent-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </span>
                   Despre acest curs
                 </h2>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.85, whiteSpace: 'pre-wrap' }}>{course.descriptionLong}</p>
@@ -255,6 +258,63 @@ export default function CourseDetailClient({ course, allCourses = [] }) {
           </div>
         </div>
       </div>
+
+      {/* ── REVIEWS (text) ── */}
+      {Array.isArray(course.textReviews) && course.textReviews.length > 0 && (
+        <div style={{ maxWidth: 1140, margin: '3rem auto 0', padding: '0 1rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-primary)', marginBottom: '0.4rem' }}>Ce spun părinții</p>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(1.4rem, 2.5vw, 1.875rem)', color: 'var(--text-heading)' }}>Recenzii</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+            {course.textReviews.map((rev, i) => (
+              <div key={i} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', padding: '1.25rem 1.25rem 1rem', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', gap: '0.15rem', marginBottom: '0.6rem', color: '#f59e0b' }}>
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <svg key={idx} width="16" height="16" viewBox="0 0 24 24" fill={idx < (rev.rating || 5) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  ))}
+                </div>
+                <p style={{ fontSize: '0.92rem', lineHeight: 1.65, color: 'var(--text-body)', marginBottom: '0.85rem', flex: 1 }}>"{rev.text}"</p>
+                <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '0.7rem' }}>
+                  <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-heading)' }}>{rev.author || 'Anonim'}</div>
+                  {rev.role && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{rev.role}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── FAQ ── */}
+      {Array.isArray(course.faq) && course.faq.length > 0 && (
+        <div style={{ maxWidth: 900, margin: '3rem auto 0', padding: '0 1rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-primary)', marginBottom: '0.4rem' }}>Întrebări frecvente</p>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 900, fontSize: 'clamp(1.4rem, 2.5vw, 1.875rem)', color: 'var(--text-heading)' }}>Ai întrebări?</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            {course.faq.map((q, i) => {
+              const open = openFaq === i
+              return (
+                <div key={i} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1rem', overflow: 'hidden', boxShadow: open ? 'var(--shadow-card)' : 'none', transition: 'box-shadow 0.2s' }}>
+                  <button onClick={() => setOpenFaq(open ? null : i)}
+                    style={{ width: '100%', padding: '1rem 1.125rem', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', textAlign: 'left' }}>
+                    <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-heading)' }}>{q.question}</span>
+                    <span style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', backgroundColor: open ? 'var(--color-primary)' : 'var(--bg-section-alt)', color: open ? '#fff' : 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d={open ? 'M5 12h14' : 'M12 5v14M5 12h14'}/></svg>
+                    </span>
+                  </button>
+                  {open && (
+                    <div style={{ padding: '0 1.125rem 1.125rem', fontSize: '0.9rem', lineHeight: 1.7, color: 'var(--text-body)', whiteSpace: 'pre-wrap' }}>
+                      {q.answer}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── ALTE CURSURI RECOMANDATE ── */}
       {allCourses.length > 0 && (

@@ -35,7 +35,9 @@ export default function CourseForm({ course }) {
     seatsTotal: course?.seatsTotal || 10,
     active: course?.active ?? true,
     images: initialImages,
-    mainImageUrl: initialMainImage
+    mainImageUrl: initialMainImage,
+    textReviews: Array.isArray(course?.textReviews) ? course.textReviews : [],
+    faq: Array.isArray(course?.faq) ? course.faq : []
   })
 
   const handleChange = (e) => {
@@ -115,6 +117,46 @@ export default function CourseForm({ course }) {
   const setMainImage = (imageUrl) => {
     setFormData(prev => ({ ...prev, mainImageUrl: imageUrl }))
     toast.success('Imagine principală actualizată')
+  }
+
+  // ── Reviews (text) ──
+  const addReview = () => {
+    setFormData(prev => ({
+      ...prev,
+      textReviews: [...prev.textReviews, { author: '', role: '', text: '', rating: 5 }]
+    }))
+  }
+  const updateReview = (idx, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      textReviews: prev.textReviews.map((r, i) => i === idx ? { ...r, [field]: value } : r)
+    }))
+  }
+  const removeReview = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      textReviews: prev.textReviews.filter((_, i) => i !== idx)
+    }))
+  }
+
+  // ── FAQ ──
+  const addFaq = () => {
+    setFormData(prev => ({
+      ...prev,
+      faq: [...prev.faq, { question: '', answer: '' }]
+    }))
+  }
+  const updateFaq = (idx, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      faq: prev.faq.map((q, i) => i === idx ? { ...q, [field]: value } : q)
+    }))
+  }
+  const removeFaq = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      faq: prev.faq.filter((_, i) => i !== idx)
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -437,6 +479,77 @@ export default function CourseForm({ course }) {
             />
             <span className="text-xs xs:text-sm font-medium text-gray-700">Curs activ (vizibil pe site)</span>
           </label>
+        </div>
+
+        {/* Recenzii text */}
+        <div className="md:col-span-2 border-t pt-4 xs:pt-6">
+          <div className="flex items-center justify-between mb-2 xs:mb-3 gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm xs:text-base font-semibold text-gray-900">Recenzii (text)</h3>
+              <p className="text-[11px] xs:text-xs text-gray-500">Părerile părinților/elevilor afișate pe pagina cursului</p>
+            </div>
+            <button
+              type="button"
+              onClick={addReview}
+              className="px-2.5 xs:px-3 py-1.5 text-xs xs:text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap flex-shrink-0"
+            >
+              + Adaugă
+            </button>
+          </div>
+          <div className="space-y-3">
+            {formData.textReviews.length === 0 && (
+              <p className="text-xs text-gray-400 italic">Nu există recenzii. Apasă „Adaugă".</p>
+            )}
+            {formData.textReviews.map((rev, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-3 xs:p-4 bg-gray-50">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Recenzia #{idx + 1}</span>
+                  <button type="button" onClick={() => removeReview(idx)} className="text-red-600 hover:text-red-700 text-xs font-medium">Șterge</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 xs:gap-3 mb-2">
+                  <input type="text" placeholder="Nume autor (ex: Maria P.)" value={rev.author || ''} onChange={(e) => updateReview(idx, 'author', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400" />
+                  <input type="text" placeholder="Rol (ex: Părinte, 2 copii)" value={rev.role || ''} onChange={(e) => updateReview(idx, 'role', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400" />
+                </div>
+                <textarea placeholder="Textul recenziei..." value={rev.text || ''} onChange={(e) => updateReview(idx, 'text', e.target.value)} rows={3}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400 mb-2" />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Rating:</label>
+                  <select value={rev.rating || 5} onChange={(e) => updateReview(idx, 'rating', parseInt(e.target.value))}
+                    className="px-2 py-1 text-sm border border-gray-300 rounded-lg text-gray-900">
+                    {[5,4,3,2,1].map(n => (<option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5-n)} ({n})</option>))}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="md:col-span-2 border-t pt-4 xs:pt-6">
+          <div className="flex items-center justify-between mb-2 xs:mb-3 gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm xs:text-base font-semibold text-gray-900">Întrebări frecvente (FAQ)</h3>
+              <p className="text-[11px] xs:text-xs text-gray-500">Vor fi afișate ca acordeon pe pagina cursului</p>
+            </div>
+            <button type="button" onClick={addFaq} className="px-2.5 xs:px-3 py-1.5 text-xs xs:text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap flex-shrink-0">+ Adaugă</button>
+          </div>
+          <div className="space-y-3">
+            {formData.faq.length === 0 && (<p className="text-xs text-gray-400 italic">Nu există întrebări. Apasă „Adaugă".</p>)}
+            {formData.faq.map((q, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-3 xs:p-4 bg-gray-50">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Întrebarea #{idx + 1}</span>
+                  <button type="button" onClick={() => removeFaq(idx)} className="text-red-600 hover:text-red-700 text-xs font-medium">Șterge</button>
+                </div>
+                <input type="text" placeholder="Întrebare" value={q.question || ''} onChange={(e) => updateFaq(idx, 'question', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400 mb-2 font-medium" />
+                <textarea placeholder="Răspuns" value={q.answer || ''} onChange={(e) => updateFaq(idx, 'answer', e.target.value)} rows={3}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
