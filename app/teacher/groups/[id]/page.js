@@ -175,7 +175,6 @@ export default async function TeacherGroupDetailPage({ params }) {
             isSuperTeacher={!!session.user?.superTeacher}
             hideRegularStart={!!todaySession}
           />
-        </div>
           <EditGroupDetailsButton 
             group={{
               id: group.id,
