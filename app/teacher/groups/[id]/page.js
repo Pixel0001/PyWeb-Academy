@@ -160,7 +160,7 @@ export default async function TeacherGroupDetailPage({ params }) {
           <p className="text-gray-600 mt-0.5 xs:mt-1 text-xs xs:text-sm md:text-base">{group.course.title}</p>
         </div>
         <div className="flex flex-wrap gap-2 xs:gap-3">
-          {todaySession ? (
+          {todaySession && (
             <Link
               href={`/teacher/groups/${group.id}/session/${todaySession.id}`}
               className="flex items-center gap-1.5 xs:gap-2 bg-teal-600 hover:bg-teal-700 text-white px-3 xs:px-4 md:px-6 py-2 xs:py-2.5 md:py-3 rounded-lg font-medium transition-colors text-xs xs:text-sm md:text-base"
@@ -169,9 +169,13 @@ export default async function TeacherGroupDetailPage({ params }) {
               <span className="hidden xs:inline">Continuă Sesiunea de Azi</span>
               <span className="xs:hidden">Continuă Sesiunea</span>
             </Link>
-          ) : (
-            <StartSessionButton groupId={group.id} isSuperTeacher={!!session.user?.superTeacher} />
           )}
+          <StartSessionButton
+            groupId={group.id}
+            isSuperTeacher={!!session.user?.superTeacher}
+            hideRegularStart={!!todaySession}
+          />
+        </div>
           <EditGroupDetailsButton 
             group={{
               id: group.id,

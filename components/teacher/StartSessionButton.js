@@ -93,7 +93,7 @@ function MiniCalendar({ selected, onSelect }) {
   )
 }
 
-export default function StartSessionButton({ groupId, scheduleDays, scheduleTime, isSuperTeacher = false }) {
+export default function StartSessionButton({ groupId, scheduleDays, scheduleTime, isSuperTeacher = false, hideRegularStart = false }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [scheduleError, setScheduleError] = useState(null)
@@ -156,14 +156,16 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={handleStartNow}
-          disabled={loading}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
-        >
-          <PlusIcon className="w-5 h-5" />
-          {loading ? 'Se creează...' : 'Începe Sesiune Nouă'}
-        </button>
+        {!hideRegularStart && (
+          <button
+            onClick={handleStartNow}
+            disabled={loading}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            <PlusIcon className="w-5 h-5" />
+            {loading ? 'Se creează...' : 'Începe Sesiune Nouă'}
+          </button>
+        )}
 
         {isSuperTeacher && (
           <button
@@ -173,8 +175,8 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
             className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
           >
             <CalendarDaysIcon className="w-5 h-5" />
-            <span className="hidden xs:inline">Sesiune personalizată</span>
-            <span className="xs:hidden">Personalizat</span>
+            <span className="hidden xs:inline">{hideRegularStart ? 'Sesiune nouă (dată/oră)' : 'Sesiune personalizată'}</span>
+            <span className="xs:hidden">+ Sesiune</span>
             <StarIcon className="w-4 h-4 text-yellow-200" />
           </button>
         )}
