@@ -33,34 +33,26 @@ export default function ImpersonationBanner() {
     }
   }
 
+  const roleLabel = session.user.role === 'TEACHER' ? 'Profesor' : 'Admin'
+
   return (
-    <div className="sticky top-0 z-50 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 py-2 xs:py-2.5 flex items-center justify-between gap-2 xs:gap-4">
-        <div className="flex items-center gap-2 xs:gap-3 min-w-0 flex-1">
-          <EyeIcon className="w-4 h-4 xs:w-5 xs:h-5 flex-shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs xs:text-sm font-medium leading-tight">
-              <span className="hidden sm:inline">Vizualizezi ca </span>
-              <span className="font-bold truncate">{session.user.name}</span>
-              <span className="text-amber-100 ml-1 text-[10px] xs:text-xs">
-                ({session.user.role === 'TEACHER' ? 'Profesor' : 'Admin'})
-              </span>
-            </p>
-            <p className="text-[10px] xs:text-xs text-amber-50 leading-tight hidden xs:block">
-              Original: {session.user.originalName}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={handleStop}
-          disabled={loading}
-          className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 bg-white text-orange-700 rounded-lg text-[11px] xs:text-xs sm:text-sm font-semibold hover:bg-amber-50 transition-colors disabled:opacity-60 flex-shrink-0"
-        >
-          <ArrowLeftOnRectangleIcon className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
-          <span className="hidden xs:inline">Înapoi la admin</span>
-          <span className="xs:hidden">Ieși</span>
-        </button>
+    <div className="fixed bottom-4 right-4 z-[60] flex items-center gap-2 max-w-[calc(100vw-2rem)]">
+      <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-amber-300 rounded-full shadow-lg text-xs">
+        <EyeIcon className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <span className="text-gray-700 truncate max-w-[180px]">
+          Vizualizezi ca <span className="font-semibold text-gray-900">{session.user.name}</span>
+          <span className="text-gray-500"> ({roleLabel})</span>
+        </span>
       </div>
+      <button
+        onClick={handleStop}
+        disabled={loading}
+        title={`Ieși — revino la ${session.user.originalName || 'admin'}`}
+        className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full text-xs font-semibold shadow-lg transition-colors disabled:opacity-60"
+      >
+        <ArrowLeftOnRectangleIcon className="w-4 h-4" />
+        <span>Ieși</span>
+      </button>
     </div>
   )
 }
