@@ -12,13 +12,13 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     title: 'PyWeb Admin',
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
   },
   other: {
     'mobile-web-app-capable': 'yes',
     'application-name': 'PyWeb Admin',
     'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'PyWeb Admin',
   },
 }
@@ -44,7 +44,10 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div
+      className="min-h-screen bg-gray-100"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <ImpersonationBanner />
       <AdminSidebar user={session.user} />
       <div className="lg:pl-72">
