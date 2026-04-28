@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminHeader from '@/components/admin/AdminHeader'
+import ImpersonationBanner from '@/components/ImpersonationBanner'
 
 export default async function AdminLayout({ children }) {
   const session = await getServerSession(authOptions)
@@ -12,11 +13,13 @@ export default async function AdminLayout({ children }) {
   }
 
   if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role)) {
+    // Dacă SUPERADMIN-ul impersonează un TEACHER și ajunge la /admin, redirecționăm la /teacher
     redirect('/teacher')
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <ImpersonationBanner />
       <AdminSidebar user={session.user} />
       <div className="lg:pl-72">
         <AdminHeader user={session.user} />

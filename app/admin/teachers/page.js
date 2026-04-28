@@ -5,6 +5,7 @@ import Image from 'next/image'
 import prisma from '@/lib/prisma'
 import { ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import DeleteTeacherButton from '@/components/admin/DeleteTeacherButton'
+import ImpersonateButton from '@/components/admin/ImpersonateButton'
 import PermissionGuard from '@/components/admin/PermissionGuard'
 import { checkPermission } from '@/lib/permissions'
 import { getCurrentUser } from '@/lib/session'
@@ -192,6 +193,13 @@ async function TeachersPageContent() {
                         <ChartBarIcon className="w-4 h-4" />
                         Statistici
                       </Link>
+                      {userIsSuperAdmin && teacher.id !== currentUser?.id && teacher.active && (
+                        <ImpersonateButton
+                          userId={teacher.id}
+                          userName={teacher.name || teacher.email}
+                          userRole={teacher.role}
+                        />
+                      )}
                       {canDelete.allowed && (userIsSuperAdmin || teacher.role === 'TEACHER') && (
                         <DeleteTeacherButton id={teacher.id} name={teacher.name || teacher.email} />
                       )}
@@ -271,7 +279,7 @@ async function TeachersPageContent() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-1.5 xs:gap-2">
+              <div className="flex gap-1.5 xs:gap-2 flex-wrap">
                 <Link
                   href={`/admin/teachers/${teacher.id}`}
                   className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 bg-indigo-600 text-white rounded-lg text-[10px] xs:text-xs sm:text-sm font-medium hover:bg-indigo-700 transition-colors"
@@ -279,6 +287,14 @@ async function TeachersPageContent() {
                   <ChartBarIcon className="w-3 h-3 xs:w-4 xs:h-4" />
                   <span>Statistici</span>
                 </Link>
+                {userIsSuperAdmin && teacher.id !== currentUser?.id && teacher.active && (
+                  <ImpersonateButton
+                    userId={teacher.id}
+                    userName={teacher.name || teacher.email}
+                    userRole={teacher.role}
+                    className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 bg-amber-500 text-white rounded-lg text-[10px] xs:text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors"
+                  />
+                )}
                 {canDelete.allowed && (userIsSuperAdmin || teacher.role === 'TEACHER') && (
                   <DeleteTeacherButton 
                     id={teacher.id} 

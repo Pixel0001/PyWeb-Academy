@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import TeacherSidebar from '@/components/teacher/TeacherSidebar'
 import TeacherHeader from '@/components/teacher/TeacherHeader'
+import ImpersonationBanner from '@/components/ImpersonationBanner'
 
 export default async function TeacherLayout({ children }) {
   const session = await getServerSession(authOptions)
@@ -18,6 +19,7 @@ export default async function TeacherLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ImpersonationBanner />
       <TeacherSidebar />
       <div className="lg:pl-64">
         <TeacherHeader user={session.user} />
