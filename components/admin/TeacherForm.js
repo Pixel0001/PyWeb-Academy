@@ -23,6 +23,7 @@ export default function TeacherForm({ teacher }) {
     role: teacher?.role || 'TEACHER',
     active: teacher?.active ?? true,
     twoFactorAllowed: teacher?.twoFactorAllowed ?? false,
+    superTeacher: teacher?.superTeacher ?? false,
     permissions: teacher?.permissions || []
   })
 
@@ -266,6 +267,26 @@ export default function TeacherForm({ teacher }) {
               </div>
             </label>
           </div>
+
+          {formData.role === 'TEACHER' && (
+            <div className="flex items-center md:col-span-2">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="superTeacher"
+                  checked={formData.superTeacher}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">⭐ Super Profesor</span>
+                  <p className="text-xs text-gray-500">
+                    Poate porni lecții la <strong>orice dată și oră</strong> (în trecut sau viitor), fără restricții de program. Util pentru înregistrare retroactivă.
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Permissions Section - Only for ADMIN and only SUPERADMIN can edit */}

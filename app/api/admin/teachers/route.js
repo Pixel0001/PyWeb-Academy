@@ -48,7 +48,7 @@ export async function POST(request) {
       }, { status: 403 })
     }
 
-    const { name, email, phone, telegramChatId, password, active, twoFactorAllowed, role, permissions } = body
+    const { name, email, phone, telegramChatId, password, active, twoFactorAllowed, superTeacher, role, permissions } = body
 
     // Doar SUPERADMIN poate crea ADMIN
     const allowedRoles = ['TEACHER']
@@ -79,7 +79,8 @@ export async function POST(request) {
         role: finalRole,
         permissions: finalPermissions,
         active: active ?? true,
-        twoFactorAllowed: twoFactorAllowed ?? false
+        twoFactorAllowed: twoFactorAllowed ?? false,
+        superTeacher: !!superTeacher && finalRole === 'TEACHER'
       }
     })
 

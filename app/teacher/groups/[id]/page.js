@@ -170,7 +170,7 @@ export default async function TeacherGroupDetailPage({ params }) {
               <span className="xs:hidden">Continuă Sesiunea</span>
             </Link>
           ) : (
-            <StartSessionButton groupId={group.id} />
+            <StartSessionButton groupId={group.id} isSuperTeacher={!!session.user?.superTeacher} />
           )}
           <EditGroupDetailsButton 
             group={{

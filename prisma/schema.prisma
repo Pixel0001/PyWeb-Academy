@@ -23,6 +23,7 @@ model User {
   permissions       String[]  @default([]) // Granular permissions for ADMIN
   emailVerified     DateTime?
   active            Boolean   @default(true)
+  superTeacher      Boolean   @default(false) // Profesor "super" - poate porni lecții la orice dată/oră, fără restricții de program
   
   // 2FA fields
   twoFactorEnabled  Boolean   @default(false)

@@ -12,7 +12,15 @@ export async function POST(request) {
   }
 
   try {
-    const { groupId } = await request.json()
+    const { groupId, customDate } = await request.json()
+
+    // Check if user is a super teacher
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, role: true, superTeacher: true }
+    })
+    const isSuperTeacher = !!currentUser?.superTeacher
+    const isAdmin = ['SUPERADMIN', 'ADMIN'].includes(session.user.role)
 
     // Verify teacher owns this group (unless admin)
     const group = await prisma.group.findUnique({
@@ -29,39 +37,46 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
     }
 
-    if (group.teacherId !== session.user.id && !['SUPERADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (group.teacherId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if a session already exists for this group today
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    const existingSession = await prisma.lessonSession.findFirst({
-      where: {
-        groupId,
-        date: {
-          gte: today,
-          lt: tomorrow
-        }
+    // Determine session date
+    let sessionDate = new Date()
+    if (customDate && (isSuperTeacher || isAdmin)) {
+      const parsed = new Date(customDate)
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Dată invalidă' }, { status: 400 })
       }
-    })
-
-    if (existingSession) {
-      return NextResponse.json({ 
-        error: 'Există deja o sesiune pentru această grupă astăzi' 
-      }, { status: 400 })
+      sessionDate = parsed
     }
 
-    // Verifică dacă profesorul poate porni lecția conform programului
-    // Adminii pot porni oricând
-    if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role)) {
+    // Skip "already exists today" check for super teacher / admin (they can create multiple)
+    if (!isSuperTeacher && !isAdmin) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const existingSession = await prisma.lessonSession.findFirst({
+        where: {
+          groupId,
+          date: { gte: today, lt: tomorrow }
+        }
+      })
+
+      if (existingSession) {
+        return NextResponse.json({
+          error: 'Există deja o sesiune pentru această grupă astăzi'
+        }, { status: 400 })
+      }
+    }
+
+    // Schedule check - bypass for admin and super teacher
+    if (!isAdmin && !isSuperTeacher) {
       const scheduleCheck = canStartSession(group.scheduleDays, group.scheduleTime)
-      
       if (!scheduleCheck.canStart) {
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: scheduleCheck.reason,
           canStart: false,
           nextSessionFormatted: scheduleCheck.nextSessionFormatted
@@ -73,7 +88,7 @@ export async function POST(request) {
     const lessonSession = await prisma.lessonSession.create({
       data: {
         groupId,
-        date: new Date(),
+        date: sessionDate,
         lessonsDeducted: false
       }
     })
