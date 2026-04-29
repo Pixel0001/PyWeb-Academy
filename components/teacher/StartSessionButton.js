@@ -13,6 +13,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
+import { canStartSession } from '@/lib/schedule-utils'
 
 const MONTHS_RO = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie']
 const WEEKDAYS_RO = ['Lu','Ma','Mi','Jo','Vi','Sâ','Du']
@@ -98,6 +99,11 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
   const [loading, setLoading] = useState(false)
   const [scheduleError, setScheduleError] = useState(null)
 
+  // Verifică dacă programul permite pornirea lecției ACUM (chiar și pentru super profesor,
+  // butonul regular trebuie să respecte ziua programată; super profesorul folosește butonul personalizat).
+  const scheduleStatus = canStartSession(scheduleDays, scheduleTime)
+  const regularDisabled = !scheduleStatus.canStart
+
   // Modal state for super-teacher custom date/time
   const [showCustomModal, setShowCustomModal] = useState(false)
   const now = new Date()
@@ -159,8 +165,9 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
         {!hideRegularStart && (
           <button
             onClick={handleStartNow}
-            disabled={loading}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+            disabled={loading || regularDisabled}
+            title={regularDisabled ? (scheduleStatus.reason || 'Nu poți porni lecția astăzi') : undefined}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PlusIcon className="w-5 h-5" />
             {loading ? 'Se creează...' : 'Începe Sesiune Nouă'}
@@ -187,6 +194,26 @@ export default function StartSessionButton({ groupId, scheduleDays, scheduleTime
           <StarIcon className="w-3.5 h-3.5" />
           Ești <strong>Super Profesor</strong> — poți porni lecții la orice dată/oră.
         </p>
+      )}
+
+      {regularDisabled && !hideRegularStart && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+          <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800">
+            <p className="font-medium">{scheduleStatus.reason || 'Nu poți porni lecția astăzi.'}</p>
+            {scheduleStatus.nextSessionFormatted && (
+              <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+                <ClockIcon className="w-3.5 h-3.5" />
+                Următoarea sesiune: {scheduleStatus.nextSessionFormatted}
+              </p>
+            )}
+            {isSuperTeacher && (
+              <p className="text-xs text-amber-700 mt-1">
+                Folosește butonul <strong>Sesiune personalizată</strong> dacă chiar trebuie să pornești o sesiune acum.
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       {scheduleError && (
