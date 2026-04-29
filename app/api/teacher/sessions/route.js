@@ -72,11 +72,12 @@ export async function POST(request) {
       }
     }
 
-    // Schedule check - bypass only for admin, sau pentru super teacher dacă a furnizat customDate
-    // (super teacher folosește butonul "Sesiune personalizată" cu dată/oră aleasă; pentru "Începe Sesiune Nouă"
-    // trebuie să respecte programul grupei).
+    // Schedule check - butonul "Începe Sesiune Nouă" trebuie să respecte ziua programată
+    // pentru TOȚI (inclusiv super teacher, admin direct sau admin impersonând).
+    // Bypass-ul se face DOAR când se trimite explicit `customDate` (butonul "Sesiune personalizată"),
+    // disponibil numai pentru super teacher / admin.
     const usingCustomDate = !!customDate
-    if (!isAdmin && !(isSuperTeacher && usingCustomDate)) {
+    if (!usingCustomDate || !(isSuperTeacher || isAdmin)) {
       const scheduleCheck = canStartSession(group.scheduleDays, group.scheduleTime)
       if (!scheduleCheck.canStart) {
         return NextResponse.json({
