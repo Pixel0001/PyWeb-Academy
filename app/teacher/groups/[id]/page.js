@@ -172,6 +172,8 @@ export default async function TeacherGroupDetailPage({ params }) {
           )}
           <StartSessionButton
             groupId={group.id}
+            scheduleDays={group.scheduleDays}
+            scheduleTime={group.scheduleTime}
             isSuperTeacher={!!session.user?.superTeacher}
             hideRegularStart={!!todaySession}
           />
