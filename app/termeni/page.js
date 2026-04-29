@@ -1,6 +1,7 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   DocumentTextIcon, 
   ClipboardDocumentCheckIcon,
@@ -29,7 +30,7 @@ export default function TermsPage() {
       icon: DocumentTextIcon,
       content: (
         <p className="text-gray-600 leading-relaxed">
-          Prezentul document stabilește termenii și condițiile de participare la programele oferite de Centrul PI School. Prin înscrierea copilului, părintele/reprezentantul legal confirmă că a citit, a înțeles și acceptă acești termeni.
+          Prezentul document stabilește termenii și condițiile de participare la programele oferite de PyWeb Academy. Prin înscrierea copilului, părintele/reprezentantul legal confirmă că a citit, a înțeles și acceptă acești termeni.
         </p>
       )
     },
@@ -43,15 +44,15 @@ export default function TermsPage() {
             <p className="text-gray-600 mb-3 font-medium">2.1. Înscrierea se face în baza:</p>
             <ul className="space-y-2 text-gray-600 ml-4">
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
                 Completării formularului de înscriere
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
                 Semnării contractului de prestări servicii educaționale
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
                 Achitării taxei aferente programului ales
               </li>
             </ul>
@@ -89,19 +90,19 @@ export default function TermsPage() {
           <p className="text-gray-600 mb-3">Centrul se obligă să:</p>
           <ul className="space-y-2 text-gray-600">
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30919f] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-2 flex-shrink-0"></span>
               Asigure un mediu sigur și adecvat copiilor
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30919f] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-2 flex-shrink-0"></span>
               Desfășoare activități educaționale conform programului
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30919f] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-2 flex-shrink-0"></span>
               Informeze părinții despre evoluția copilului
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30919f] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-2 flex-shrink-0"></span>
               Respecte confidențialitatea datelor personale
             </li>
           </ul>
@@ -117,19 +118,19 @@ export default function TermsPage() {
           <p className="text-gray-600 mb-3">Părinții au obligația să:</p>
           <ul className="space-y-2 text-gray-600">
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
               Furnizeze informații corecte și complete
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
               Respecte programul și regulile centrului
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
               Achite taxele la termenele stabilite
             </li>
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f8b316] mt-2 flex-shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] mt-2 flex-shrink-0"></span>
               Anunțe orice problemă medicală sau situație specială a copilului
             </li>
           </ul>
@@ -256,11 +257,19 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#0c1a1d] to-[#15292e] text-white py-10 sm:py-16">
+      <div className="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white py-10 sm:py-16">
         <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+          <Image
+            src="/PyWeb Academy logo.png"
+            alt="PyWeb Academy"
+            width={150}
+            height={48}
+            priority
+            style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '1.25rem' }}
+          />
           <Link 
             href="/"
-            className="inline-flex items-center gap-1.5 sm:gap-2 text-[#30919f] hover:text-[#4db8c7] mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
+            className="inline-flex items-center gap-1.5 sm:gap-2 text-[#3b82f6] hover:text-[#93c5fd] mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -268,12 +277,12 @@ export default function TermsPage() {
             Înapoi la pagina principală
           </Link>
           <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#f8b316] to-[#e5a310] rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#f59e0b] to-[#d97706] rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
               <DocumentTextIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-3xl md:text-4xl font-bold">Termeni și Condiții</h1>
-              <p className="text-gray-400 mt-0.5 sm:mt-1 text-xs sm:text-base">Condițiile de participare la programele PI School</p>
+              <p className="text-gray-400 mt-0.5 sm:mt-1 text-xs sm:text-base">Condițiile de participare la programele PyWeb Academy</p>
             </div>
           </div>
         </div>
@@ -290,8 +299,8 @@ export default function TermsPage() {
                 className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#f8b316]/10 to-[#f8b316]/5 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-[#f8b316]" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#f59e0b]/10 to-[#f59e0b]/5 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5 text-[#f59e0b]" />
                   </div>
                   <h2 className="text-base sm:text-xl font-bold text-gray-900">
                     {section.id}. {section.title}
@@ -305,9 +314,9 @@ export default function TermsPage() {
           })}
 
           {/* Contact Section */}
-          <div className="bg-gradient-to-br from-[#f8b316]/10 to-[#e5a310]/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-[#f8b316]/20">
+          <div className="bg-gradient-to-br from-[#f59e0b]/10 to-[#d97706]/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-[#f59e0b]/20">
             <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#f8b316] to-[#e5a310] rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#f59e0b] to-[#d97706] rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
                 <EnvelopeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <h2 className="text-base sm:text-xl font-bold text-gray-900">
@@ -319,22 +328,22 @@ export default function TermsPage() {
                 Pentru orice întrebări sau clarificări:
               </p>
               <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <h3 className="font-bold text-gray-900 text-base sm:text-lg">Pi School</h3>
+                <h3 className="font-bold text-gray-900 text-base sm:text-lg">PyWeb Academy</h3>
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center gap-2 sm:gap-3 text-gray-600 text-sm sm:text-base">
-                    <MapPinIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f8b316] flex-shrink-0" />
+                    <MapPinIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f59e0b] flex-shrink-0" />
                     <span>Chișinău, Moldova</span>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 text-gray-600 text-sm sm:text-base">
-                    <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f8b316] flex-shrink-0" />
-                    <a href="tel:+37369113314" className="hover:text-[#f8b316] transition-colors">
-                      069 113 314
+                    <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f59e0b] flex-shrink-0" />
+                    <a href="tel:+37368113314" className="hover:text-[#f59e0b] transition-colors">
+                      068 113 314
                     </a>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 text-gray-600 text-sm sm:text-base">
-                    <EnvelopeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f8b316] flex-shrink-0" />
-                    <a href="mailto:pi-school314@gmail.com" className="hover:text-[#f8b316] transition-colors break-all">
-                      pi-school314@gmail.com
+                    <EnvelopeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#f59e0b] flex-shrink-0" />
+                    <a href="mailto:pyweb.it.academy@gmail.com" className="hover:text-[#f59e0b] transition-colors break-all">
+                      pyweb.it.academy@gmail.com
                     </a>
                   </div>
                 </div>
@@ -347,14 +356,14 @@ export default function TermsPage() {
         <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center">
           <Link 
             href="/gdpr"
-            className="text-[#30919f] hover:text-[#136976] font-medium transition-colors text-sm sm:text-base"
+            className="text-[#3b82f6] hover:text-[#1d4ed8] font-medium transition-colors text-sm sm:text-base"
           >
             Politica de Confidențialitate (GDPR)
           </Link>
           <span className="text-gray-300 hidden sm:inline">|</span>
           <Link 
             href="/"
-            className="text-[#30919f] hover:text-[#136976] font-medium transition-colors text-sm sm:text-base"
+            className="text-[#3b82f6] hover:text-[#1d4ed8] font-medium transition-colors text-sm sm:text-base"
           >
             Pagina principală
           </Link>
