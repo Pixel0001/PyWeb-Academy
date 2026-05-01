@@ -50,9 +50,9 @@ export default function ProblemFilters({ topics = [], initial = {} }) {
         <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
           <option value="">Toate</option>
-          <option value="EASY">🟢 Ușor</option>
-          <option value="MEDIUM">🟡 Mediu</option>
-          <option value="HARD">🔴 Greu</option>
+          <option value="EASY">Ușor</option>
+          <option value="MEDIUM">Mediu</option>
+          <option value="HARD">Greu</option>
         </select>
       </div>
       <div className="min-w-[140px]">
