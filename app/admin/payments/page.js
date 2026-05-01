@@ -85,6 +85,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [expandedMonth, setExpandedMonth] = useState(null)
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all') // 'all', 'cash', 'card', 'transfer'
+  const [sourceFilter, setSourceFilter] = useState('all') // 'all', 'cursuri', 'app'
   const [selectedMonths, setSelectedMonths] = useState([]) // empty = all months, otherwise array of month indices 0-11
   const [selectedBranches, setSelectedBranches] = useState([]) // empty = all branches, otherwise array of branch ids
   const [selectedTeachers, setSelectedTeachers] = useState([]) // empty = all teachers, otherwise array of teacher ids
@@ -671,6 +672,8 @@ export default function PaymentsPage() {
   
   // Filter data based on payment method, branch, teacher, and selected months
   const filterPayment = (p) => {
+    // Filter by source
+    if (sourceFilter !== 'all' && p.source !== sourceFilter) return false
     // Filter by payment method
     if (paymentMethodFilter !== 'all') {
       if (paymentMethodFilter === 'card-transfer') {
@@ -901,6 +904,25 @@ export default function PaymentsPage() {
         >
           <span className="text-base xs:text-lg">🏦</span> <span className="hidden xs:inline">Transfer</span><span className="xs:hidden">Transf.</span>
         </button>
+      </div>
+
+      {/* Source Filter - App vs Cursuri */}
+      <div className="flex items-center justify-center gap-2 flex-wrap px-1 xs:px-0">
+        <span className="text-gray-500 font-medium text-xs xs:text-sm w-full xs:w-auto text-center xs:text-left xs:mr-2 mb-1 xs:mb-0">Sursă:</span>
+        {[
+          { value: 'all', label: 'Toate', emoji: '📋', active: 'from-gray-700 to-gray-800' },
+          { value: 'cursuri', label: 'Cursuri', emoji: '📚', active: 'from-emerald-500 to-teal-600 shadow-emerald-500/30' },
+          { value: 'app', label: 'Aplicație /learn', emoji: '📱', active: 'from-blue-700 to-blue-600 shadow-blue-500/30' },
+        ].map(opt => (
+          <button key={opt.value} onClick={() => setSourceFilter(opt.value)}
+            className={`px-3 xs:px-4 md:px-5 py-1.5 xs:py-2 md:py-2.5 rounded-lg xs:rounded-xl text-xs xs:text-sm font-medium transition-all inline-flex items-center gap-1 xs:gap-2 ${
+              sourceFilter === opt.value
+                ? `bg-gradient-to-r ${opt.active} text-white shadow-lg`
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}>
+            <span className="text-base xs:text-lg">{opt.emoji}</span> {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* Branch Filter - Multi-select */}
@@ -1325,18 +1347,31 @@ export default function PaymentsPage() {
                             </div>
                             
                             <div className="flex flex-col xs:flex-row items-end xs:items-center gap-1 xs:gap-2 md:gap-4 flex-shrink-0">
-                              <span className={`inline-flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 md:px-3 py-1 xs:py-1.5 rounded-md xs:rounded-lg text-[10px] xs:text-xs md:text-sm font-medium ${
-                                payment.paymentMethod === 'cash' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : payment.paymentMethod === 'card' 
-                                  ? 'bg-blue-100 text-blue-700' 
-                                  : 'bg-purple-100 text-purple-700'
-                              }`}>
-                                <span className="text-xs xs:text-sm">{payment.paymentMethod === 'cash' ? '💵' : payment.paymentMethod === 'card' ? '💳' : '🏦'}</span>
-                                <span className="hidden xs:inline">{payment.paymentMethod === 'cash' ? 'Numerar' : payment.paymentMethod === 'card' ? 'Card' : 'Transfer'}</span>
-                              </span>
+                              {payment.source === 'app' ? (
+                                <span className="inline-flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 md:px-3 py-1 xs:py-1.5 rounded-md xs:rounded-lg text-[10px] xs:text-xs md:text-sm font-medium bg-blue-100 text-blue-700">
+                                  <span className="text-xs xs:text-sm">📱</span>
+                                  <span className="hidden xs:inline">Aplicație</span>
+                                </span>
+                              ) : (
+                                <span className={`inline-flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 md:px-3 py-1 xs:py-1.5 rounded-md xs:rounded-lg text-[10px] xs:text-xs md:text-sm font-medium ${
+                                  payment.paymentMethod === 'cash' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : payment.paymentMethod === 'card' 
+                                    ? 'bg-blue-100 text-blue-700' 
+                                    : 'bg-purple-100 text-purple-700'
+                                }`}>
+                                  <span className="text-xs xs:text-sm">{payment.paymentMethod === 'cash' ? '💵' : payment.paymentMethod === 'card' ? '💳' : '🏦'}</span>
+                                  <span className="hidden xs:inline">{payment.paymentMethod === 'cash' ? 'Numerar' : payment.paymentMethod === 'card' ? 'Card' : 'Transfer'}</span>
+                                </span>
+                              )}
                               
-                              {payment.lessonsAdded && (
+                              {payment.source === 'app' && payment.validDays && (
+                                <span className="inline-flex items-center px-1.5 xs:px-2 py-0.5 xs:py-1 bg-indigo-100 text-indigo-700 rounded-md xs:rounded-lg text-[10px] xs:text-xs md:text-sm font-medium whitespace-nowrap">
+                                  {payment.validDays} zile
+                                </span>
+                              )}
+                              
+                              {payment.source !== 'app' && payment.lessonsAdded && (
                                 <span className="inline-flex items-center px-1.5 xs:px-2 py-0.5 xs:py-1 bg-indigo-100 text-indigo-700 rounded-md xs:rounded-lg text-[10px] xs:text-xs md:text-sm font-medium whitespace-nowrap">
                                   +{payment.lessonsAdded} lecții
                                 </span>

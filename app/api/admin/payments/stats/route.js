@@ -18,36 +18,28 @@ export async function GET(request) {
     const startDate = new Date(year, 0, 1)
     const endDate = new Date(year, 11, 31, 23, 59, 59)
 
-    const payments = await prisma.payment.findMany({
-      where: {
-        paymentDate: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      include: {
-        groupStudent: {
-          include: {
-            student: true,
-            group: {
-              include: {
-                course: true,
-                branch: true,
-                teacher: true
-              }
+    const [payments, learningPayments] = await Promise.all([
+      prisma.payment.findMany({
+        where: { paymentDate: { gte: startDate, lte: endDate } },
+        include: {
+          groupStudent: {
+            include: {
+              student: true,
+              group: { include: { course: true, branch: true, teacher: true } }
             }
-          }
+          },
+          createdBy: { select: { id: true, name: true, role: true } }
         },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            role: true
-          }
-        }
-      },
-      orderBy: { paymentDate: 'desc' }
-    })
+        orderBy: { paymentDate: 'desc' }
+      }),
+      prisma.learningPayment.findMany({
+        where: { paymentDate: { gte: startDate, lte: endDate } },
+        include: {
+          student: { select: { id: true, fullName: true } }
+        },
+        orderBy: { paymentDate: 'desc' }
+      })
+    ])
 
     // Get all branches for filter
     const branches = await prisma.branch.findMany({
@@ -89,7 +81,7 @@ export async function GET(request) {
       }
     }
 
-    // Populate with actual data
+    // Populate with actual data — course payments
     payments.forEach(payment => {
       const month = new Date(payment.paymentDate).getMonth()
       const gs = payment.groupStudent
@@ -98,6 +90,7 @@ export async function GET(request) {
       if (gs?.studentId) monthlyStats[month].uniqueStudents.add(gs.studentId)
       monthlyStats[month].payments.push({
         id: payment.id,
+        source: 'cursuri',
         amount: payment.amount,
         paymentDate: payment.paymentDate,
         paymentMethod: payment.paymentMethod,
@@ -118,6 +111,37 @@ export async function GET(request) {
       })
     })
 
+    // Populate with learning app payments
+    learningPayments.forEach(lp => {
+      const month = new Date(lp.paymentDate).getMonth()
+      monthlyStats[month].totalAmount += lp.amount
+      monthlyStats[month].totalPayments += 1
+      monthlyStats[month].uniqueStudents.add(lp.studentId)
+      monthlyStats[month].payments.push({
+        id: lp.id,
+        source: 'app',
+        amount: lp.amount,
+        paymentDate: lp.paymentDate,
+        paymentMethod: 'app',
+        notes: lp.notes,
+        lessonsAdded: null,
+        validDays: lp.validDays,
+        expiresAt: lp.expiresAt,
+        studentId: lp.studentId,
+        studentName: lp.student?.fullName || 'Elev șters',
+        groupName: `Aplicație /learn • ${lp.validDays} zile`,
+        courseName: 'Aplicație /learn',
+        branchId: null,
+        branchName: 'Aplicație',
+        teacherId: null,
+        teacherName: '-',
+        createdById: lp.createdById || 'unknown',
+        createdByName: 'Aplicație',
+        createdByRole: 'APP',
+        isDetached: false,
+      })
+    })
+
     // Convert Sets to counts
     const result = Object.values(monthlyStats).map(stat => ({
       ...stat,
@@ -126,11 +150,12 @@ export async function GET(request) {
 
     // Calculate year totals
     const yearTotal = {
-      totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
-      totalPayments: payments.length,
-      uniqueStudents: new Set(
-        payments.map(p => p.groupStudent?.studentId).filter(Boolean)
-      ).size
+      totalAmount: [...payments, ...learningPayments].reduce((sum, p) => sum + p.amount, 0),
+      totalPayments: payments.length + learningPayments.length,
+      uniqueStudents: new Set([
+        ...payments.map(p => p.groupStudent?.studentId),
+        ...learningPayments.map(p => p.studentId)
+      ].filter(Boolean)).size
     }
 
     // Calculate stats per teacher (who created payments)
