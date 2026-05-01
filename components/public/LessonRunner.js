@@ -465,10 +465,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     <div className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{cur.description}</div>
 
                     {curSub ? (
-                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : curSub.status === 'NEEDS_REVISION' ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
+                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : curSub.status === 'GRADED' && curSub.autoCorrect === false ? 'bg-rose-50 border-rose-200' : curSub.status === 'NEEDS_REVISION' ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
                         <div className="flex items-center gap-2 font-bold flex-wrap">
                           {curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? (
                             <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Notat — bravo!</span></>
+                          ) : curSub.status === 'GRADED' && curSub.autoCorrect === false ? (
+                            <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Răspuns greșit — 0 puncte</span></>
                           ) : curSub.status === 'NEEDS_REVISION' ? (
                             <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Necesita refacere</span></>
                           ) : (
@@ -487,10 +489,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         <div className="mt-2 text-xs text-slate-500">
                           Raspunsul tau: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
                         </div>
-                        {curSub.status === 'NEEDS_REVISION' && (
+                        {(curSub.status === 'NEEDS_REVISION' || (curSub.status === 'GRADED' && curSub.autoCorrect === false)) && (
                           <button onClick={() => { const next = [...submissions]; next[idx] = null; setSubmissions(next) }}
                             className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700">
-                            <ArrowPathIcon className="w-4 h-4" /> Refa problema
+                            <ArrowPathIcon className="w-4 h-4" /> Încearcă din nou
                           </button>
                         )}
                       </div>

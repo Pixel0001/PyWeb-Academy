@@ -7,7 +7,7 @@ import {
   ChevronLeftIcon, FireIcon, AdjustmentsHorizontalIcon, ArrowPathIcon,
   PaperAirplaneIcon, CheckCircleIcon, ClockIcon, LightBulbIcon,
   PuzzlePieceIcon, SparklesIcon, BoltIcon, ChevronUpIcon, ChevronDownIcon,
-  XMarkIcon,
+  XMarkIcon, ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 
@@ -403,8 +403,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                         <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
                           <StarIcon className="w-3 h-3 text-amber-400" /> {p.points} pct
                           {isOk && <span className="text-emerald-600 font-semibold">· Rezolvat ✓</span>}
-                          {isPending && p.type === 'CODING' && <span className="text-amber-600 font-semibold">· La profesor</span>}
-                        </div>
+                          {isPending && p.type === 'CODING' && <span className="text-amber-600 font-semibold">· La profesor</span>}                                  {!isOk && !isPending && sub?.autoCorrect === false && <span className="text-rose-600 font-semibold">· Greșit — 0 pct</span>}                        </div>
                       </div>
                       {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDownIcon className="w-4 h-4 text-slate-400 shrink-0" />}
                     </div>
@@ -414,11 +413,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                         <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{p.description}</p>
 
                         {sub ? (
-                          <div className={`rounded-2xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                          <div className={`rounded-2xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : sub.autoCorrect === false ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
                             <div className="flex items-center gap-2 font-bold text-sm">
                               {isOk
                                 ? <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Răspuns corect — bravo!</span></>
-                                : <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">{p.type === 'CODING' ? 'Trimis profesorului' : 'Răspuns greșit'}</span></>
+                                : sub.autoCorrect === false
+                                  ? <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Răspuns greșit — 0 puncte</span></>
+                                  : <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Trimis profesorului</span></>
                               }
                               {typeof sub.grade === 'number' && (
                                 <span className="ml-auto text-slate-700">Nota: <strong>{sub.grade}/100</strong></span>

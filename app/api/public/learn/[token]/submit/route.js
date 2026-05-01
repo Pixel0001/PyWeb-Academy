@@ -46,13 +46,9 @@ export async function POST(req, { params }) {
   if (problem.type !== 'CODING') {
     const v = verifyAnswer(problem, answer || code || '')
     autoCorrect = v.isCorrect
-    if (autoCorrect) {
-      // Răspuns corect — graded automat
-      status = 'GRADED'
-      grade = 100
-      gradedAt = new Date()
-    }
-    // Dacă e greșit (autoCorrect=false) rămâne PENDING — profesorul va corecta
+    status = 'GRADED'
+    grade = autoCorrect ? 100 : 0
+    gradedAt = new Date()
   }
 
   const sub = await prisma.problemSubmission.create({
