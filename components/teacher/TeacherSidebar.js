@@ -16,7 +16,10 @@ import {
   XMarkIcon,
   BellIcon,
   ShieldCheckIcon,
-  ClockIcon
+  ClockIcon,
+  InboxIcon,
+  PuzzlePieceIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline'
 
 // Spinner component for loading state
@@ -81,6 +84,16 @@ const navigation = [
     name: 'Recuperări', 
     href: '/teacher/makeup', 
     icon: ArrowPathIcon
+  },
+  { 
+    name: 'Submisii', 
+    href: '/teacher/submissions', 
+    icon: InboxIcon
+  },
+  { 
+    name: 'Banca Probleme', 
+    href: '/teacher/problems', 
+    icon: PuzzlePieceIcon
   },
   { 
     name: 'Securitate', 

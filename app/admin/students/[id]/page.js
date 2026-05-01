@@ -17,7 +17,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   BanknotesIcon,
+  BoltIcon,
 } from '@heroicons/react/24/outline'
+import SuperStudentToggle from '@/components/admin/SuperStudentToggle'
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -183,6 +185,16 @@ export default async function StudentDetailPage({ params }) {
             {student.notes && (
               <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900 whitespace-pre-wrap">
                 <strong>Notițe:</strong> {student.notes}
+              </div>
+            )}
+            {canEdit.allowed && (
+              <div className="mt-4 flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <BoltIcon className="w-5 h-5 text-indigo-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-indigo-900">Super elev</div>
+                  <div className="text-xs text-indigo-600">Accesează orice lecție fără restricții de progres</div>
+                </div>
+                <SuperStudentToggle studentId={id} initialValue={student.superStudent ?? false} />
               </div>
             )}
           </div>

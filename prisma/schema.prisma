@@ -48,6 +48,8 @@ model User {
   auditLogs         AuditLog[]        @relation("UserAuditLogs")
   createdStudents   Student[]         @relation("CreatedStudents")
   createdPayments   Payment[]         @relation("CreatedPayments")
+  createdProblems   Problem[]         @relation("CreatedProblems")
+  createdSets       GeneratedSet[]    @relation("CreatedSets")
 
   @@map("users")
 }
@@ -245,6 +247,7 @@ model Course {
   enrollments Enrollment[]
   groups      Group[]
   reviews     Review[]
+  problems    Problem[]
 
   @@map("courses")
 }
@@ -345,6 +348,8 @@ model Student {
   parentPhone  String?
   parentEmail  String?
   notes        String?
+  accessToken  String?  // token persistent pentru portalul elevului /learn/[token] (unique enforced in app code)
+  superStudent Boolean  @default(false) // Super elev — accesează orice lecție din orice modul, indiferent de progres
   createdById  String?  @db.ObjectId // ID-ul userului care a creat elevul (profesor sau admin)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -356,8 +361,15 @@ model Student {
   lessonTransactions   LessonTransaction[]
   makeupLessonStudents MakeupLessonStudent[]
   notifications        Notification[]
+  problemAttempts      ProblemAttempt[]
+  generatedSets        GeneratedSet[]
+  moduleAccesses       ModuleAccess[]
+  moduleAdvances       ModuleAdvance[]
+  lessonProgresses     LessonProgress[]
+  problemSubmissions   ProblemSubmission[]
 
   @@index([createdById])
+  @@index([accessToken])
   @@map("students")
 }
 
@@ -745,4 +757,274 @@ model MissedSession {
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@map("missed_sessions")
+}
+
+// ==================== PROBLEM BANK ====================
+
+model Problem {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String           // Cerința problemei (markdown)
+  difficulty     ProblemDifficulty @default(EASY)
+  topic          String           // ex: "loops", "arrays", "functions"
+  subtopic       String?
+  type           ProblemType      @default(MULTIPLE_CHOICE)
+
+  // Pentru MULTIPLE_CHOICE: array de variante; correctAnswer = textul corect
+  // Pentru CODING: starterCode opțional; expectedOutput sau testCases
+  // Pentru SHORT_ANSWER / IO: correctAnswer e răspunsul exact (case-insensitive trim)
+  options        String[]         @default([])  // doar pentru grilă
+  correctAnswer  String?          // răspunsul corect (text/literă/output)
+  starterCode    String?          // pentru coding
+  testCases      Json?            // [{ input, expectedOutput }] pentru coding (opțional)
+
+  explanation    String           // EXPLICAȚIA — pas cu pas, AI-like
+  hint           String?          // Hint progresiv
+
+  tags           String[]         @default([])
+  estimatedTime  Int              @default(5)   // minute
+  points         Int              @default(10)
+  language       String?          // "python", "javascript" etc. pentru coding
+
+  courseId       String?          @db.ObjectId  // opțional: legat de un curs
+  lessonId       String?          @db.ObjectId  // opțional: aparține unei lecții dintr-un modul
+  lessonOrder    Int?                            // ordinea în lecție
+  active         Boolean          @default(true)
+
+  createdById    String?          @db.ObjectId
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  course         Course?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lesson         Lesson?          @relation("LessonProblems", fields: [lessonId], references: [id], onDelete: SetNull)
+  createdBy      User?            @relation("CreatedProblems", fields: [createdById], references: [id], onDelete: SetNull)
+  attempts       ProblemAttempt[]
+  setProblems    SetProblem[]
+  submissions    ProblemSubmission[]
+
+  @@index([difficulty, topic, active])
+  @@index([topic])
+  @@index([lessonId, lessonOrder])
+  @@map("problems")
+}
+
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProblemType {
+  MULTIPLE_CHOICE   // grilă
+  SHORT_ANSWER      // răspuns scurt text
+  CODING            // cod
+  INPUT_OUTPUT      // I/O — verifică output exact
+}
+
+model GeneratedSet {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  studentId      String?       @db.ObjectId   // opțional - poate fi un set fără elev anume
+  config         Json?         // { difficulty, topic, count, mix } - cum a fost generat
+  
+  // Politica afișării explicațiilor
+  explanationPolicy ExplanationPolicy @default(AFTER_ANSWER)
+
+  // Token unic pentru link public (elevul accesează fără cont)
+  accessToken    String        @unique
+
+  timeLimit      Int?          // minute (opțional)
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  createdById    String?       @db.ObjectId
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  student        Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  createdBy      User?         @relation("CreatedSets", fields: [createdById], references: [id], onDelete: SetNull)
+  setProblems    SetProblem[]
+  attempts       ProblemAttempt[]
+
+  @@index([studentId])
+  @@map("generated_sets")
+}
+
+enum ExplanationPolicy {
+  ALWAYS         // ✅ Vezi oricând
+  AFTER_ANSWER   // ❌ Doar după ce răspunzi
+  AFTER_SET      // ❌ Doar după ce termini setul
+}
+
+model SetProblem {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  setId       String       @db.ObjectId
+  problemId   String       @db.ObjectId
+  order       Int          @default(0)
+
+  set         GeneratedSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  problem     Problem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([setId, problemId])
+  @@map("set_problems")
+}
+
+model ProblemAttempt {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String?  @db.ObjectId
+  problemId   String   @db.ObjectId
+  setId       String?  @db.ObjectId
+
+  answer      String   // ce a trimis elevul
+  isCorrect   Boolean  @default(false)
+  attempts    Int      @default(1)   // câte încercări la această problemă
+  timeSpent   Int      @default(0)   // secunde
+  pointsAwarded Int    @default(0)
+  
+  createdAt   DateTime @default(now())
+
+  student     Student?       @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  problem     Problem        @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  set         GeneratedSet?  @relation(fields: [setId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, problemId])
+  @@index([setId])
+  @@index([problemId])
+  @@map("problem_attempts")
+}
+
+// ==================== LEARNING MODULES ====================
+
+model LearningModule {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  slug           String    @unique
+  title          String
+  description    String?
+  language       String?
+  coverImage     String?
+  order          Int       @default(0)
+  active         Boolean   @default(true)
+  createdById    String?   @db.ObjectId
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lessons        Lesson[]
+  accesses       ModuleAccess[]
+  advances       ModuleAdvance[]
+
+  @@index([order, active])
+  @@map("learning_modules")
+}
+
+model Lesson {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  moduleId       String    @db.ObjectId
+  title          String
+  slug           String
+  order          Int       @default(0)
+  isFree         Boolean   @default(false) // admin alege: true = trial gratuit, false = necesită acces
+  theory         String    // markdown / rich text
+  videoUrl       String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  module         LearningModule      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  problems       Problem[]           @relation("LessonProblems")
+  progresses     LessonProgress[]
+  submissions    ProblemSubmission[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+  @@map("lessons")
+}
+
+model ModuleAccess {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String   @db.ObjectId
+  moduleId    String   @db.ObjectId
+  source      String?  // "trial" | "paid" | "granted"
+  grantedById String?  @db.ObjectId
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module      LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, moduleId])
+  @@map("module_accesses")
+}
+
+model ModuleAdvance {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String   @db.ObjectId
+  moduleId    String   @db.ObjectId  // după acest modul i se permite avansarea la următorul
+  grantedById String?  @db.ObjectId
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module      LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, moduleId])
+  @@map("module_advances")
+}
+
+model LessonProgress {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId           String    @db.ObjectId
+  lessonId            String    @db.ObjectId
+  theoryCompleted     Boolean   @default(false)
+  currentProblemIndex Int       @default(0)
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  student             Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson              Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@map("lesson_progresses")
+}
+
+model ProblemSubmission {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String           @db.ObjectId
+  problemId   String           @db.ObjectId
+  lessonId    String?          @db.ObjectId
+
+  answer      String?
+  code        String?
+  status      SubmissionStatus @default(PENDING)
+  autoCorrect Boolean?         // true = verificare automată a trecut, false = nu, null = n/a
+  grade       Int?             // 0-100
+  feedback    String?
+
+  gradedById  String?          @db.ObjectId
+  gradedAt    DateTime?
+
+  source      String?          // "lesson" | "random"
+  difficulty  String?          // pentru random
+  timeSpent   Int              @default(0)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  problem     Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  lesson      Lesson?          @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, status])
+  @@index([status, createdAt])
+  @@index([lessonId])
+  @@map("problem_submissions")
+}
+
+enum SubmissionStatus {
+  PENDING        // așteaptă feedback profesor
+  GRADED         // notată (trecută)
+  NEEDS_REVISION // profesorul cere refacere
 }

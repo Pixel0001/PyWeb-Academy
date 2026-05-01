@@ -15,6 +15,8 @@ const publicRoutes = [
   '/curs',
   '/gdpr',
   '/termeni',
+  '/solve',
+  '/learn',
 ]
 
 // Auth routes that should redirect if already logged in

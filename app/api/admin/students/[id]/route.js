@@ -73,6 +73,39 @@ export async function PUT(request, { params }) {
   }
 }
 
+export async function PATCH(request, { params }) {
+  try {
+    await requireAdmin()
+
+    const canEdit = await checkPermission('students.edit')
+    if (!canEdit.allowed) {
+      return NextResponse.json({ error: 'Nu ai permisiunea de a edita elevii' }, { status: 403 })
+    }
+
+    const { id } = await params
+    const body = await request.json()
+
+    const allowedFields = ['superStudent']
+    const data = {}
+    for (const key of allowedFields) {
+      if (key in body) data[key] = body[key]
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'Niciun câmp valid de actualizat' }, { status: 400 })
+    }
+
+    const student = await prisma.student.update({ where: { id }, data })
+    return NextResponse.json(student)
+  } catch (error) {
+    console.error('Error patching student:', error)
+    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    return NextResponse.json({ error: 'Failed to update student' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     await requireAdmin()
