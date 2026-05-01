@@ -177,11 +177,20 @@ export default async function StudentLearnDashboard({ params }) {
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition ${
               canAccessRandom
                 ? 'bg-amber-400 hover:bg-amber-300 text-blue-900'
-                : 'bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-white'
+                : 'bg-blue-800/60 hover:bg-blue-800/80 border border-amber-400/30 text-white'
             }`}>
-            {canAccessRandom
-              ? <><FireIcon className="w-4 h-4" /> Probleme aleatorii <ChevronRightIcon className="w-4 h-4 ml-auto" /></>
-              : <><LockClosedIcon className="w-4 h-4 text-rose-300" /> Achită abonament <ChevronRightIcon className="w-4 h-4 ml-auto text-rose-300" /></>
+            <FireIcon className={`w-4 h-4 shrink-0 ${canAccessRandom ? '' : 'text-amber-400'}`} />
+            <div className="flex-1 min-w-0 leading-tight">
+              <div>Antrenament</div>
+              {!canAccessRandom && (
+                <div className="text-[10px] font-semibold text-amber-300/80 animate-pulse">
+                  Achită abonament
+                </div>
+              )}
+            </div>
+            {!canAccessRandom
+              ? <LockClosedIcon className="w-3.5 h-3.5 text-amber-400/70 shrink-0 animate-pulse" />
+              : <ChevronRightIcon className="w-4 h-4 shrink-0" />
             }
           </Link>
 
