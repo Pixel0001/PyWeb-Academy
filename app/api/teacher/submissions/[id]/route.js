@@ -54,11 +54,10 @@ export async function PATCH(req, { params }) {
   const data = {
     gradedById: session.user.id,
     gradedAt: new Date(),
+    status: status && ['PENDING', 'GRADED', 'NEEDS_REVISION'].includes(status) ? status : 'GRADED',
   }
-  if (typeof grade === 'number') data.grade = Math.max(0, Math.min(100, grade))
+  if (grade !== null && grade !== undefined) data.grade = Math.max(0, Math.min(100, Number(grade)))
   if (typeof feedback === 'string') data.feedback = feedback
-  if (status && ['PENDING', 'GRADED', 'NEEDS_REVISION'].includes(status)) data.status = status
-  else if (typeof grade === 'number') data.status = 'GRADED'
 
   const updated = await prisma.problemSubmission.update({ where: { id }, data })
   return NextResponse.json({ submission: updated })
