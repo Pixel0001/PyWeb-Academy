@@ -9,6 +9,7 @@ import {
   CodeBracketIcon, FireIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
+import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 
 const MODULE_THEMES = [
   { from: 'from-amber-400', to: 'to-orange-500', soft: 'from-amber-50 to-orange-50', ring: 'ring-amber-200' },
@@ -47,6 +48,9 @@ export default async function StudentLearnDashboard({ params }) {
     : null
   const paymentExpired = paymentDaysLeft !== null && paymentDaysLeft < 0
   const paymentExpiringSoon = paymentDaysLeft !== null && paymentDaysLeft >= 0 && paymentDaysLeft <= 3
+  const subscriptionActive = paymentDaysLeft !== null && paymentDaysLeft >= 0
+  const noPayment = !latestPayment
+  const showPaymentLock = !student.superStudent && (paymentExpired || noPayment)
 
   const [modules, accesses, advances, progresses, pendingSubs] = await Promise.all([
     prisma.learningModule.findMany({
@@ -229,6 +233,31 @@ export default async function StudentLearnDashboard({ params }) {
             </div>
           )}
 
+          {/* Payment lock banner */}
+          {showPaymentLock && (
+            <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl p-5 text-white shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                  <LockClosedIcon className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-extrabold text-lg leading-tight">
+                    {paymentExpired
+                      ? `Abonamentul a expirat de ${Math.abs(paymentDaysLeft)} ${Math.abs(paymentDaysLeft) === 1 ? 'zi' : 'zile'}`
+                      : 'Niciun abonament activ'
+                    }
+                  </h3>
+                  <p className="text-white/90 text-sm mt-1">
+                    {PAYMENT_LOCK_MESSAGE}
+                  </p>
+                  <p className="text-white/70 text-xs mt-2">
+                    Poți continua doar lecțiile <strong>gratuite</strong> (badge „Gratis”). Antrenamentul aleator este dezactivat.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Module cards */}
           {modules.map((m, idx) => {
             const prev = modules[idx - 1]
@@ -290,7 +319,7 @@ export default async function StudentLearnDashboard({ params }) {
                       const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
                       const accessible = student.superStudent
                         ? true
-                        : unlocked && (hasFullAccess || l.isFree) && prevDone
+                        : unlocked && (subscriptionActive || hasFullAccess || l.isFree) && prevDone
                       const prog = progressMap.get(l.id)
                       const done = !!prog?.completedAt
                       const started = !!prog?.theoryCompleted && !done

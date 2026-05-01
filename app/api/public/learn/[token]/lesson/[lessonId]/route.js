@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 
 // Detaliul lecției pentru elev — teoria + problemele (fără răspunsuri/explicații înainte de submit)
 
@@ -31,15 +32,18 @@ export async function GET(req, { params }) {
   })
   if (!lesson) return NextResponse.json({ error: 'Lecție inexistentă' }, { status: 404 })
 
-  // Verifică acces: free sau ModuleAccess
-  let access = lesson.isFree
-  if (!access) {
-    const ma = await prisma.moduleAccess.findUnique({
-      where: { studentId_moduleId: { studentId: student.id, moduleId: lesson.module.id } },
-    })
-    access = !!ma
+  // Verifică acces folosind helper-ul centralizat
+  const access = await getStudentLearningAccess(student.id)
+  if (!access.isActive) {
+    return NextResponse.json({ error: 'Cont dezactivat', locked: true, reason: 'INACTIVE' }, { status: 403 })
   }
-  if (!access) return NextResponse.json({ error: 'Nu ai acces la această lecție', locked: true }, { status: 403 })
+  if (!access.canAccessLesson({ isFree: lesson.isFree, moduleId: lesson.module.id })) {
+    return NextResponse.json({
+      error: PAYMENT_LOCK_MESSAGE,
+      locked: true,
+      reason: 'PAYMENT_REQUIRED',
+    }, { status: 403 })
+  }
 
   // Submisii existente pentru aceste probleme
   const problemIds = lesson.problems.map(p => p.id)

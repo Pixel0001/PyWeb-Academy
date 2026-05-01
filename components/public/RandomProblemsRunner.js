@@ -7,19 +7,61 @@ import {
   ChevronLeftIcon, FireIcon, AdjustmentsHorizontalIcon, ArrowPathIcon,
   PaperAirplaneIcon, CheckCircleIcon, ClockIcon, LightBulbIcon,
   PuzzlePieceIcon, SparklesIcon, BoltIcon, ChevronUpIcon, ChevronDownIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 
 const DIFF_CONFIG = {
-  EASY:   { label: 'Usor',    cls: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-400' },
-  MEDIUM: { label: 'Mediu',   cls: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-  HARD:   { label: 'Greu',    cls: 'bg-rose-100 text-rose-700',       dot: 'bg-rose-400' },
-  RANDOM: { label: 'Aleator', cls: 'bg-slate-100 text-slate-600',     dot: 'bg-slate-400' },
+  EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
+  MEDIUM: { label: 'Mediu',   bar: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-700',    active: 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' },
+  HARD:   { label: 'Greu',    bar: 'bg-rose-400',    badge: 'bg-rose-100 text-rose-700',      active: 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' },
+  RANDOM: { label: 'Aleator', bar: 'bg-violet-400',  badge: 'bg-violet-100 text-violet-700',  active: 'bg-violet-500 text-white shadow-lg shadow-violet-500/30' },
 }
 
-export default function RandomProblemsRunner({ token, student, topics }) {
+const LANG_ICONS = {
+  python: { emoji: '🐍', color: 'from-yellow-400 to-amber-500' },
+  javascript: { emoji: '⚡', color: 'from-yellow-300 to-yellow-500' },
+  html: { emoji: '🌐', color: 'from-orange-400 to-red-500' },
+  css: { emoji: '🎨', color: 'from-blue-400 to-indigo-500' },
+}
+
+function CountPicker({ value, onChange }) {
+  const min = 1, max = 15
+  const pct = ((value - min) / (max - min)) * 100
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] text-white/40 font-bold">1</span>
+        <span className="text-lg font-extrabold text-white tabular-nums">{value}</span>
+        <span className="text-[10px] text-white/40 font-bold">15</span>
+      </div>
+      <div className="relative h-6 flex items-center">
+        {/* Track background */}
+        <div className="absolute inset-x-0 h-2 rounded-full bg-white/15" />
+        {/* Filled track */}
+        <div
+          className="absolute left-0 h-2 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 pointer-events-none"
+          style={{ width: `${pct}%` }}
+        />
+        {/* Native input invisible but functional */}
+        <input
+          type="range" min={min} max={max} value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="absolute inset-x-0 w-full opacity-0 h-6 cursor-pointer z-10"
+        />
+        {/* Custom thumb */}
+        <div
+          className="absolute w-5 h-5 rounded-full bg-white shadow-lg shadow-orange-500/40 border-2 border-orange-400 pointer-events-none transition-all"
+          style={{ left: `calc(${pct}% - ${pct * 0.4}px - 2px)` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default function RandomProblemsRunner({ token, student, modules = [] }) {
   const [difficulty, setDifficulty] = useState('RANDOM')
-  const [topic, setTopic]           = useState('')
+  const [moduleId, setModuleId]     = useState('')
   const [count, setCount]           = useState(5)
   const [problems, setProblems]     = useState([])
   const [suggestion, setSuggestion] = useState(null)
@@ -34,7 +76,7 @@ export default function RandomProblemsRunner({ token, student, topics }) {
     setMobileSidebarOpen(false)
     try {
       const p = new URLSearchParams({ difficulty, count: String(count) })
-      if (topic) p.set('topic', topic)
+      if (moduleId) p.set('moduleId', moduleId)
       const r = await fetch(`/api/public/learn/${token}/random?${p}`)
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
@@ -48,7 +90,7 @@ export default function RandomProblemsRunner({ token, student, topics }) {
 
   const submit = async (p) => {
     const ans = answers[p.id]?.trim()
-    if (!ans) return toast.error('Introdu un raspuns')
+    if (!ans) return toast.error('Introdu un răspuns')
     try {
       const r = await fetch(`/api/public/learn/${token}/submit`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -66,36 +108,40 @@ export default function RandomProblemsRunner({ token, student, topics }) {
       } else if (d.autoCorrect === true) {
         toast.success('Corect! Bravo!')
       } else {
-        toast.error('Gresit — incearca alta problema')
+        toast.error('Greșit — încearcă altă problemă')
       }
     } catch (e) { toast.error(e.message) }
   }
 
   const doneCount = problems.filter(p => submissions[p.id]).length
+  const selectedModule = modules.find(m => m.id === moduleId)
+  const langCfg = selectedModule ? LANG_ICONS[selectedModule.language?.toLowerCase()] : null
 
-  // ── FILTER PANEL ─────────────────────────────────────────────────
   const FilterPanel = () => (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-white/10">
+      {/* Header */}
+      <div className="p-5 border-b border-white/10 flex items-center gap-3">
         <Link href={`/learn/${token}`}
-          className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm font-medium transition">
-          <ChevronLeftIcon className="w-4 h-4" /> Inapoi la module
+          className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl transition shrink-0">
+          <ChevronLeftIcon className="w-4 h-4" />
         </Link>
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white/15 rounded-full text-[10px] font-bold uppercase tracking-wider mb-0.5">
+            <FireIcon className="w-3 h-3 text-yellow-300" /> Antrenament
+          </div>
+          <h1 className="text-base font-extrabold text-white leading-none">Probleme aleatorii</h1>
+        </div>
+        <button className="ml-auto lg:hidden w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl transition"
+          onClick={() => setMobileSidebarOpen(false)}>
+          <XMarkIcon className="w-4 h-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        {/* Header */}
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/15 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">
-            <FireIcon className="w-3 h-3 text-yellow-300" /> Antrenament
-          </div>
-          <h1 className="text-xl font-extrabold text-white leading-tight">Probleme<br/>aleatorii</h1>
-          <p className="text-white/50 text-xs mt-1">{student.fullName}</p>
-        </div>
 
         {/* AI suggestion */}
         {suggestion && suggestion.next !== suggestion.currentDifficulty && (
-          <div className="bg-white/10 rounded-xl p-3 ring-1 ring-white/20">
+          <div className="bg-white/10 border border-white/20 rounded-2xl p-3">
             <div className="flex items-start gap-2">
               <SparklesIcon className="w-4 h-4 text-yellow-300 shrink-0 mt-0.5" />
               <div>
@@ -106,97 +152,125 @@ export default function RandomProblemsRunner({ token, student, topics }) {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="space-y-3">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1.5">Dificultate</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {['RANDOM', 'EASY', 'MEDIUM', 'HARD'].map(d => {
-                const cfg = DIFF_CONFIG[d]
-                const active = difficulty === d
-                return (
-                  <button key={d} onClick={() => setDifficulty(d)}
-                    className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                      active ? 'bg-white text-slate-800 shadow' : 'bg-white/10 text-white/60 hover:bg-white/20'
-                    }`}>
-                    <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                    {cfg.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1.5">Topic</label>
-            <select value={topic} onChange={e => setTopic(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white/10 border border-white/20 text-white text-xs rounded-xl outline-none focus:border-white/40">
-              <option value="" className="text-slate-900">— Toate topicele —</option>
-              {topics.map(t => <option key={t} value={t} className="text-slate-900">{t}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1.5">
-              Numar probleme: <span className="text-white font-extrabold">{count}</span>
-            </label>
-            <input type="range" min={1} max={10} value={count} onChange={e => setCount(parseInt(e.target.value))}
-              className="w-full accent-yellow-400" />
-            <div className="flex justify-between text-[10px] text-white/30 mt-0.5">
-              <span>1</span><span>10</span>
-            </div>
+        {/* Module picker */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
+            Modul
+          </label>
+          {/* All modules pill */}
+          <button onClick={() => setModuleId('')}
+            className={`w-full mb-2 py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              !moduleId ? 'bg-white text-slate-800 shadow-md' : 'bg-white/10 text-white/60 hover:bg-white/20'
+            }`}>
+            <span className="text-base">🎯</span>
+            <span>Toate modulele</span>
+          </button>
+          <div className="grid grid-cols-2 gap-1.5">
+            {modules.map(m => {
+              const lang = m.language?.toLowerCase()
+              const cfg = LANG_ICONS[lang] || { emoji: '📚', color: 'from-slate-400 to-slate-500' }
+              const active = moduleId === m.id
+              return (
+                <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                    active
+                      ? `bg-gradient-to-br ${cfg.color} text-white shadow-lg`
+                      : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                  }`}>
+                  <span className="text-sm">{cfg.emoji}</span>
+                  <span className="truncate">{m.title.replace(' Fundamentals', '').replace(' Basics', '')}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* Generate button */}
+        {/* Difficulty */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
+            Dificultate
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {['RANDOM', 'EASY', 'MEDIUM', 'HARD'].map(d => {
+              const cfg = DIFF_CONFIG[d]
+              const active = difficulty === d
+              return (
+                <button key={d} onClick={() => setDifficulty(d)}
+                  className={`py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                    active ? cfg.active : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}>
+                  <span className={`w-2 h-2 rounded-full ${cfg.bar}`} />
+                  {cfg.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Count — modern buttons, no broken range */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
+            Număr probleme
+          </label>
+          <CountPicker value={count} onChange={setCount} />
+        </div>
+
+        {/* Generate */}
         <button onClick={fetchProblems} disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-amber-900 rounded-xl font-extrabold text-sm transition disabled:opacity-60 shadow-lg">
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-300 hover:to-orange-300 text-amber-900 rounded-2xl font-extrabold text-sm transition disabled:opacity-60 shadow-xl shadow-orange-500/30 active:scale-95">
           {loading
-            ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Se incarca...</>
-            : <><BoltIcon className="w-4 h-4" /> Genereaza probleme</>
+            ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Se încarcă...</>
+            : <><BoltIcon className="w-4 h-4" /> Generează {count} probleme</>
           }
         </button>
 
         {/* Progress */}
         {problems.length > 0 && (
-          <div>
-            <div className="flex justify-between text-[10px] text-white/40 mb-1.5 font-bold uppercase tracking-wider">
+          <div className="bg-white/10 rounded-2xl p-3">
+            <div className="flex justify-between text-[10px] text-white/50 mb-2 font-bold uppercase tracking-wider">
               <span>Progres sesiune</span>
-              <span>{doneCount}/{problems.length}</span>
+              <span className="text-white font-extrabold">{doneCount}/{problems.length}</span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-500"
-                style={{ width: `${problems.length > 0 ? Math.round(doneCount / problems.length * 100) : 0}%` }} />
+            <div className="h-2 bg-white/15 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-700"
+                style={{ width: `${Math.round(doneCount / problems.length * 100)}%` }} />
+            </div>
+            <div className="flex justify-between text-[10px] text-white/30 mt-1">
+              <span>0%</span>
+              <span>{Math.round(doneCount / problems.length * 100)}%</span>
+              <span>100%</span>
             </div>
           </div>
         )}
 
         {/* Problem nav */}
         {problems.length > 0 && (
-          <div className="space-y-1">
+          <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-2">Probleme</p>
-            {problems.map((p, i) => {
-              const sub = submissions[p.id]
-              const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60
-              const isPending = sub && !isOk
-              const cfg = DIFF_CONFIG[p.difficulty]
-              return (
-                <a key={p.id} href={`#problem-${p.id}`}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/10 transition group">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                    isOk ? 'bg-emerald-500 text-white'
-                    : isPending ? 'bg-amber-500 text-white'
-                    : 'bg-white/15 text-white/70'
-                  }`}>
-                    {isOk ? <CheckSolid className="w-3.5 h-3.5" /> : i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-white/70 truncate">{p.title}</div>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block ${cfg.cls}`}>{cfg.label}</span>
-                  </div>
-                </a>
-              )
-            })}
+            <div className="space-y-1">
+              {problems.map((p, i) => {
+                const sub = submissions[p.id]
+                const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60
+                const isPending = sub && !isOk
+                const cfg = DIFF_CONFIG[p.difficulty] || DIFF_CONFIG.EASY
+                return (
+                  <a key={p.id} href={`#problem-${p.id}`}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 transition">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      isOk ? 'bg-emerald-500 text-white'
+                      : isPending ? 'bg-amber-500 text-white'
+                      : 'bg-white/15 text-white/70'
+                    }`}>
+                      {isOk ? <CheckSolid className="w-3.5 h-3.5" /> : i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-white/70 truncate">{p.title}</div>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block ${cfg.badge}`}>{cfg.label}</span>
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -207,14 +281,14 @@ export default function RandomProblemsRunner({ token, student, topics }) {
     <div className="flex h-screen bg-slate-100 overflow-hidden">
 
       {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-amber-600 via-orange-600 to-rose-700 text-white overflow-hidden">
+      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-indigo-800 via-purple-800 to-indigo-900 text-white overflow-hidden">
         <FilterPanel />
       </aside>
 
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-72 bg-gradient-to-b from-amber-600 via-orange-600 to-rose-700 text-white flex flex-col overflow-y-auto">
+          <div className="w-72 bg-gradient-to-b from-indigo-800 via-purple-800 to-indigo-900 text-white flex flex-col overflow-y-auto">
             <FilterPanel />
           </div>
           <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
@@ -225,94 +299,114 @@ export default function RandomProblemsRunner({ token, student, topics }) {
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <div className="shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm">
-          <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-1.5 bg-white/15 rounded-lg">
-            <AdjustmentsHorizontalIcon className="w-5 h-5 text-white" />
+        <div className="shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 bg-gradient-to-r from-indigo-700 to-purple-700 text-white shadow-sm">
+          <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-1.5 bg-white/15 hover:bg-white/25 rounded-xl transition">
+            <AdjustmentsHorizontalIcon className="w-5 h-5" />
           </button>
-          <FireIcon className="w-5 h-5 text-yellow-300 hidden lg:block" />
+          <div className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center hidden lg:flex shrink-0">
+            {langCfg
+              ? <span className="text-base">{langCfg.emoji}</span>
+              : <FireIcon className="w-4 h-4 text-yellow-300" />
+            }
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-sm">Probleme aleatorii</div>
+            <div className="font-bold text-sm">
+              {selectedModule
+                ? selectedModule.title
+                : 'Probleme aleatorii'
+              }
+            </div>
             {problems.length > 0 && (
-              <div className="text-white/60 text-xs">{doneCount}/{problems.length} rezolvate</div>
+              <div className="text-white/50 text-xs">{doneCount}/{problems.length} rezolvate · {DIFF_CONFIG[difficulty]?.label}</div>
             )}
           </div>
           {problems.length > 0 && (
             <button onClick={fetchProblems} disabled={loading}
-              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold transition">
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold transition active:scale-95">
               <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Regenereaza
+              <span className="hidden sm:inline">Regenerează</span>
             </button>
           )}
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-slate-200 shrink-0">
-          <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-500"
+        <div className="h-1 bg-white/10 shrink-0">
+          <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-700"
             style={{ width: `${problems.length > 0 ? Math.round(doneCount / problems.length * 100) : 0}%` }} />
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {problems.length === 0 ? (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-5 shadow-xl">
-                <FireIcon className="w-10 h-10 text-white" />
+            <div className="flex flex-col items-center justify-center min-h-full p-8 text-center">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/30">
+                <FireIcon className="w-12 h-12 text-white" />
               </div>
               <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Gata de antrenament?</h2>
-              <p className="text-slate-500 text-base max-w-sm mb-6">
-                Alege dificultatea si topicul din panoul lateral, apoi genereaza problemele tale.
+              <p className="text-slate-500 text-base max-w-sm mb-8">
+                Alege modulul și dificultatea, sau lasă-le aleatoriu și apasă Generate.
               </p>
+
+              {/* Quick module chips on empty state */}
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
+                <button onClick={() => setModuleId('')}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition ${!moduleId ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
+                  🎯 Toate
+                </button>
+                {modules.map(m => {
+                  const cfg = LANG_ICONS[m.language?.toLowerCase()] || { emoji: '📚' }
+                  const active = moduleId === m.id
+                  return (
+                    <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${active ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
+                      {cfg.emoji} {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
+                    </button>
+                  )
+                })}
+              </div>
+
               <button onClick={fetchProblems} disabled={loading}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-extrabold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition disabled:opacity-60">
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-indigo-500/30 hover:-translate-y-0.5 hover:shadow-2xl transition disabled:opacity-60 active:scale-95">
                 <BoltIcon className="w-6 h-6" />
-                {loading ? 'Se incarca...' : 'Genereaza probleme'}
+                {loading ? 'Se încarcă...' : `Generează ${count} probleme`}
               </button>
-              {/* Mobile filter shortcut */}
-              <button onClick={() => setMobileSidebarOpen(true)}
-                className="lg:hidden mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-700">
-                <AdjustmentsHorizontalIcon className="w-4 h-4" /> Filtreaza
+              <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition">
+                <AdjustmentsHorizontalIcon className="w-4 h-4" /> Mai multe filtre
               </button>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 space-y-4">
+            <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
               {problems.map((p, i) => {
                 const sub = submissions[p.id]
                 const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60
                 const isPending = sub && !isOk
-                const cfg = DIFF_CONFIG[p.difficulty]
+                const cfg = DIFF_CONFIG[p.difficulty] || DIFF_CONFIG.EASY
                 const isExpanded = expanded[p.id] !== false
 
                 return (
                   <div key={p.id} id={`problem-${p.id}`}
                     className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${isOk ? 'ring-emerald-200' : isPending ? 'ring-amber-200' : 'ring-slate-200'}`}>
 
-                    {/* Card header */}
-                    <div className={`h-1 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : isPending ? 'from-amber-400 to-orange-400' : 'from-amber-400 to-orange-500'}`} />
+                    <div className={`h-1.5 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : 'from-indigo-500 to-purple-500'}`} />
                     <div className="px-5 py-4 flex items-center gap-3 cursor-pointer select-none"
                       onClick={() => setExpanded(e => ({ ...e, [p.id]: !isExpanded }))}>
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
                         isOk ? 'bg-emerald-500 text-white' : isPending ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700'
                       }`}>
-                        {isOk ? <CheckSolid className="w-4 h-4" /> : i + 1}
+                        {isOk ? <CheckSolid className="w-5 h-5" /> : i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-extrabold text-slate-900 text-base">{p.title}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
-                          {p.topic && <span className="text-[10px] text-slate-400 font-medium">{p.topic}</span>}
+                          <span className="font-extrabold text-slate-900">{p.title}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                            <StarIcon className="w-3 h-3 text-amber-400" /> {p.points} pct
-                          </span>
-                          {isOk && <span className="text-xs text-emerald-600 font-semibold">Rezolvat</span>}
-                          {isPending && <span className="text-xs text-amber-600 font-semibold">In asteptare</span>}
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                          <StarIcon className="w-3 h-3 text-amber-400" /> {p.points} pct
+                          {isOk && <span className="text-emerald-600 font-semibold">· Rezolvat ✓</span>}
+                          {isPending && p.type === 'CODING' && <span className="text-amber-600 font-semibold">· La profesor</span>}
                         </div>
                       </div>
-                      <div className="shrink-0 text-slate-400">
-                        {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
-                      </div>
+                      {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDownIcon className="w-4 h-4 text-slate-400 shrink-0" />}
                     </div>
 
                     {isExpanded && (
@@ -320,11 +414,11 @@ export default function RandomProblemsRunner({ token, student, topics }) {
                         <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{p.description}</p>
 
                         {sub ? (
-                          <div className={`rounded-xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                          <div className={`rounded-2xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                             <div className="flex items-center gap-2 font-bold text-sm">
                               {isOk
-                                ? <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Raspuns corect — bravo!</span></>
-                                : <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Trimis — in asteptare</span></>
+                                ? <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Răspuns corect — bravo!</span></>
+                                : <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">{p.type === 'CODING' ? 'Trimis profesorului' : 'Răspuns greșit'}</span></>
                               }
                               {typeof sub.grade === 'number' && (
                                 <span className="ml-auto text-slate-700">Nota: <strong>{sub.grade}/100</strong></span>
@@ -340,10 +434,10 @@ export default function RandomProblemsRunner({ token, student, topics }) {
                               <div className="space-y-2">
                                 {p.options?.map((opt, oi) => (
                                   <label key={oi}
-                                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${answers[p.id] === opt ? 'border-amber-500 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-amber-200 hover:bg-slate-50'}`}>
+                                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${answers[p.id] === opt ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'}`}>
                                     <input type="radio" name={`opt-${p.id}`} checked={answers[p.id] === opt}
                                       onChange={() => setAnswers(a => ({ ...a, [p.id]: opt }))}
-                                      className="w-4 h-4 accent-amber-500" />
+                                      className="w-4 h-4 accent-indigo-500" />
                                     <span className="text-sm text-slate-800">{opt}</span>
                                   </label>
                                 ))}
@@ -352,17 +446,26 @@ export default function RandomProblemsRunner({ token, student, topics }) {
                             {p.type === 'CODING' && (
                               <textarea value={answers[p.id] ?? p.starterCode ?? ''}
                                 onChange={e => setAnswers(a => ({ ...a, [p.id]: e.target.value }))} rows={8}
-                                className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 outline-none focus:border-amber-500" />
+                                className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 outline-none focus:border-indigo-500 resize-y" />
                             )}
                             {(p.type === 'SHORT_ANSWER' || p.type === 'INPUT_OUTPUT') && (
                               <input value={answers[p.id] || ''}
                                 onChange={e => setAnswers(a => ({ ...a, [p.id]: e.target.value }))}
-                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none transition"
-                                placeholder="Raspunsul tau..." />
+                                onKeyDown={e => e.key === 'Enter' && submit(p)}
+                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                                placeholder="Răspunsul tău..." />
+                            )}
+                            {p.hint && (
+                              <details className="group">
+                                <summary className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-semibold cursor-pointer hover:text-amber-700 select-none">
+                                  <LightBulbIcon className="w-4 h-4" /> Indiciu
+                                </summary>
+                                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">{p.hint}</div>
+                              </details>
                             )}
                             <button onClick={() => submit(p)}
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition">
-                              <PaperAirplaneIcon className="w-4 h-4" /> Trimite raspunsul
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition">
+                              <PaperAirplaneIcon className="w-4 h-4" /> Trimite răspunsul
                             </button>
                           </>
                         )}
@@ -372,15 +475,14 @@ export default function RandomProblemsRunner({ token, student, topics }) {
                 )
               })}
 
-              {/* Finished all */}
               {doneCount === problems.length && problems.length > 0 && (
                 <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-200 p-6 text-center">
-                  <CheckSolid className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                  <h3 className="text-xl font-extrabold text-emerald-900 mb-1">Sesiune completa!</h3>
+                  <CheckSolid className="w-14 h-14 text-emerald-500 mx-auto mb-3" />
+                  <h3 className="text-xl font-extrabold text-emerald-900 mb-1">Sesiune completă!</h3>
                   <p className="text-emerald-700 text-sm mb-4">Ai rezolvat toate {problems.length} problemele. Mai vrei?</p>
                   <button onClick={fetchProblems}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition">
-                    <ArrowPathIcon className="w-5 h-5" /> Genereaza altele
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition">
+                    <ArrowPathIcon className="w-5 h-5" /> Generează altele
                   </button>
                 </div>
               )}

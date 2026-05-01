@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import LessonRunner from '@/components/public/LessonRunner'
 import { LockClosedIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
+import { getStudentLearningAccess } from '@/lib/learning-access'
 
 export default async function LessonPage({ params }) {
   const { token, lessonId } = await params
@@ -31,26 +32,26 @@ export default async function LessonPage({ params }) {
   })
   if (!lesson) notFound()
 
-  // Acces?
-  let access = student.superStudent || lesson.isFree
-  if (!access) {
-    const ma = await prisma.moduleAccess.findUnique({
-      where: { studentId_moduleId: { studentId: student.id, moduleId: lesson.module.id } },
-    })
-    access = !!ma
-  }
+  // Acces (cu plată inclusă)
+  const learningAccess = await getStudentLearningAccess(student.id)
+  const access = learningAccess.canAccessLesson({ isFree: lesson.isFree, moduleId: lesson.module.id })
 
   if (!access) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
-        <div className="max-w-sm w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <LockClosedIcon className="w-7 h-7 text-slate-500" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-rose-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-rose-100 p-8 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+            <LockClosedIcon className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-lg font-bold text-slate-900 mb-2">Lectia e platita</h1>
-          <p className="text-slate-500 text-sm mb-5">Ai nevoie de acces la modulul <strong className="text-slate-800">{lesson.module.title}</strong>. Contacteaza profesorul.</p>
-          <Link href={`/learn/${token}`} className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">
-            <ChevronLeftIcon className="w-4 h-4" /> Inapoi
+          <h1 className="text-xl font-extrabold text-slate-900 mb-2">Abonament necesar</h1>
+          <p className="text-slate-600 text-sm mb-2">
+            Lecția <strong>{lesson.title}</strong> face parte din modulul <strong>{lesson.module.title}</strong> și necesită un abonament activ.
+          </p>
+          <p className="text-slate-500 text-sm mb-5">
+            Vorbește cu profesorul pentru a achita abonamentul și a continua aceste module. <span className="text-emerald-600 font-semibold">Progresul tău este salvat</span> și te așteaptă.
+          </p>
+          <Link href={`/learn/${token}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition">
+            <ChevronLeftIcon className="w-4 h-4" /> Înapoi la modulele tale
           </Link>
         </div>
       </div>

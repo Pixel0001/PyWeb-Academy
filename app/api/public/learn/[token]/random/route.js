@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { smartRandomSelect, suggestNextDifficulty } from '@/lib/problem-utils'
+import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 
 // Generează probleme random pentru elev când nu are acces la modulul următor
 // GET ?difficulty=EASY|MEDIUM|HARD|RANDOM&count=3&topic=...
@@ -12,10 +13,23 @@ export async function GET(req, { params }) {
   })
   if (!student) return NextResponse.json({ error: 'Token invalid' }, { status: 404 })
 
+  // Probleme random necesită abonament activ (sau super-elev)
+  const access = await getStudentLearningAccess(student.id)
+  if (!access.isActive) {
+    return NextResponse.json({ error: 'Cont dezactivat', locked: true, reason: 'INACTIVE' }, { status: 403 })
+  }
+  if (!access.canAccessRandom) {
+    return NextResponse.json({
+      error: PAYMENT_LOCK_MESSAGE,
+      locked: true,
+      reason: 'PAYMENT_REQUIRED',
+    }, { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   let difficulty = searchParams.get('difficulty') || 'RANDOM'
-  const count = Math.min(10, Math.max(1, parseInt(searchParams.get('count') || '3', 10)))
-  const topic = searchParams.get('topic') || undefined
+  const count = Math.min(10, Math.max(1, parseInt(searchParams.get('count') || '5', 10)))
+  const moduleId = searchParams.get('moduleId') || undefined
 
   // Sugestie auto-progresie
   const recent = await prisma.problemSubmission.findMany({
@@ -33,7 +47,7 @@ export async function GET(req, { params }) {
 
   const where = { active: true }
   if (difficulty !== 'ANY') where.difficulty = difficulty
-  if (topic) where.topic = topic
+  if (moduleId) where.lesson = { moduleId }
 
   // Evită problemele deja submise recent (ultimele 30 zile)
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
@@ -44,7 +58,7 @@ export async function GET(req, { params }) {
   const recentSet = new Set(recentSubs.map(r => r.problemId))
 
   const candidates = await prisma.problem.findMany({
-    where, take: 100,
+    where, take: 150,
     select: {
       id: true, title: true, description: true, type: true, difficulty: true, topic: true,
       options: true, starterCode: true, hint: true, points: true, language: true,
