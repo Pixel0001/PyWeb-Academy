@@ -79,6 +79,9 @@ export default async function StudentLearnDashboard({ params }) {
   const advanceSet = new Set(advances.map(a => a.moduleId))
   const progressMap = new Map(progresses.map(p => [p.lessonId, p]))
 
+  const hasAnyManualAccess = accessSet.size > 0
+  const canAccessRandom = student.superStudent || subscriptionActive || hasAnyManualAccess
+
   const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0)
   const completedLessons = progresses.filter(p => p.completedAt).length
   const globalPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
@@ -87,7 +90,7 @@ export default async function StudentLearnDashboard({ params }) {
     <div className="flex h-screen bg-slate-100 overflow-hidden">
 
       {/* ── LEFT SIDEBAR ── */}
-      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-indigo-700 via-purple-700 to-indigo-800 text-white overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-y-auto">
         <div className="p-5 space-y-4 flex-1">
 
           {/* Profile */}
@@ -171,10 +174,15 @@ export default async function StudentLearnDashboard({ params }) {
 
           {/* Random CTA */}
           <Link href={`/learn/${token}/random`}
-            className="flex items-center gap-2 px-4 py-3 bg-yellow-400 hover:bg-yellow-300 text-amber-900 rounded-xl font-bold text-sm transition">
-            <FireIcon className="w-4 h-4" />
-            Probleme aleatorii
-            <ChevronRightIcon className="w-4 h-4 ml-auto" />
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition ${
+              canAccessRandom
+                ? 'bg-amber-400 hover:bg-amber-300 text-blue-900'
+                : 'bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-white'
+            }`}>
+            {canAccessRandom
+              ? <><FireIcon className="w-4 h-4" /> Probleme aleatorii <ChevronRightIcon className="w-4 h-4 ml-auto" /></>
+              : <><LockClosedIcon className="w-4 h-4 text-rose-300" /> Achită abonament <ChevronRightIcon className="w-4 h-4 ml-auto text-rose-300" /></>
+            }
           </Link>
 
           {/* Module nav links */}
@@ -210,7 +218,7 @@ export default async function StudentLearnDashboard({ params }) {
         <div className="p-4 sm:p-5 lg:p-6 space-y-4">
 
           {/* Mobile top bar */}
-          <div className="lg:hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-4 text-white">
+          <div className="lg:hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 rounded-2xl p-4 text-white">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-lg font-bold">
@@ -219,7 +227,7 @@ export default async function StudentLearnDashboard({ params }) {
                 <p className="text-white/60 text-xs">{completedLessons}/{totalLessons} lectii &middot; {globalPct}%</p>
               </div>
               <Link href={`/learn/${token}/random`}
-                className="flex items-center gap-1.5 px-3 py-2 bg-yellow-400 text-amber-900 rounded-xl font-bold text-xs shrink-0">
+                className="flex items-center gap-1.5 px-3 py-2 bg-amber-400 text-amber-900 rounded-xl font-bold text-xs shrink-0">
                 <FireIcon className="w-4 h-4" /> Antrenament
               </Link>
             </div>

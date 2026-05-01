@@ -26,7 +26,7 @@ export default async function RandomPage({ params }) {
   const access = await getStudentLearningAccess(student.id)
   if (!access.canAccessRandom) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-xs font-bold text-white/60 uppercase tracking-wider mb-6">
             <FireIcon className="w-3.5 h-3.5 text-yellow-300" /> Probleme aleatorii

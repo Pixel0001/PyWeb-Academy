@@ -217,7 +217,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
 
         {/* Generate */}
         <button onClick={fetchProblems} disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-300 hover:to-orange-300 text-amber-900 rounded-2xl font-extrabold text-sm transition disabled:opacity-60 shadow-xl shadow-orange-500/30 active:scale-95">
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-blue-900 rounded-2xl font-extrabold text-sm transition disabled:opacity-60 shadow-xl shadow-amber-500/30 active:scale-95">
           {loading
             ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Se încarcă...</>
             : <><BoltIcon className="w-4 h-4" /> Generează {count} probleme</>
@@ -281,14 +281,14 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
     <div className="flex h-screen bg-slate-100 overflow-hidden">
 
       {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-indigo-800 via-purple-800 to-indigo-900 text-white overflow-hidden">
+      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
         <FilterPanel />
       </aside>
 
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-72 bg-gradient-to-b from-indigo-800 via-purple-800 to-indigo-900 text-white flex flex-col overflow-y-auto">
+          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto">
             <FilterPanel />
           </div>
           <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
@@ -299,7 +299,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <div className="shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 bg-gradient-to-r from-indigo-700 to-purple-700 text-white shadow-sm">
+        <div className="shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-sm">
           <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-1.5 bg-white/15 hover:bg-white/25 rounded-xl transition">
             <AdjustmentsHorizontalIcon className="w-5 h-5" />
           </button>
@@ -322,7 +322,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
           </div>
           {problems.length > 0 && (
             <button onClick={fetchProblems} disabled={loading}
-              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold transition active:scale-95">
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold transition active:scale-95 border border-white/10">
               <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Regenerează</span>
             </button>
@@ -350,7 +350,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
               {/* Quick module chips on empty state */}
               <div className="flex flex-wrap gap-2 justify-center mb-6">
                 <button onClick={() => setModuleId('')}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition ${!moduleId ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition ${!moduleId ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
                   🎯 Toate
                 </button>
                 {modules.map(m => {
@@ -358,7 +358,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                   const active = moduleId === m.id
                   return (
                     <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${active ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${active ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
                       {cfg.emoji} {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
                     </button>
                   )
@@ -366,7 +366,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
               </div>
 
               <button onClick={fetchProblems} disabled={loading}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-indigo-500/30 hover:-translate-y-0.5 hover:shadow-2xl transition disabled:opacity-60 active:scale-95">
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-blue-900/30 hover:-translate-y-0.5 hover:shadow-2xl transition disabled:opacity-60 active:scale-95">
                 <BoltIcon className="w-6 h-6" />
                 {loading ? 'Se încarcă...' : `Generează ${count} probleme`}
               </button>
@@ -387,7 +387,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                   <div key={p.id} id={`problem-${p.id}`}
                     className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${isOk ? 'ring-emerald-200' : isPending ? 'ring-amber-200' : 'ring-slate-200'}`}>
 
-                    <div className={`h-1.5 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : 'from-indigo-500 to-purple-500'}`} />
+                    <div className={`h-1.5 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : 'from-blue-700 to-blue-500'}`} />
                     <div className="px-5 py-4 flex items-center gap-3 cursor-pointer select-none"
                       onClick={() => setExpanded(e => ({ ...e, [p.id]: !isExpanded }))}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
@@ -434,7 +434,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               <div className="space-y-2">
                                 {p.options?.map((opt, oi) => (
                                   <label key={oi}
-                                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${answers[p.id] === opt ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'}`}>
+                                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${answers[p.id] === opt ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-slate-200 hover:border-blue-200 hover:bg-slate-50'}`}>
                                     <input type="radio" name={`opt-${p.id}`} checked={answers[p.id] === opt}
                                       onChange={() => setAnswers(a => ({ ...a, [p.id]: opt }))}
                                       className="w-4 h-4 accent-indigo-500" />
@@ -446,13 +446,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                             {p.type === 'CODING' && (
                               <textarea value={answers[p.id] ?? p.starterCode ?? ''}
                                 onChange={e => setAnswers(a => ({ ...a, [p.id]: e.target.value }))} rows={8}
-                                className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 outline-none focus:border-indigo-500 resize-y" />
+                                className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 outline-none focus:border-blue-500 resize-y" />
                             )}
                             {(p.type === 'SHORT_ANSWER' || p.type === 'INPUT_OUTPUT') && (
                               <input value={answers[p.id] || ''}
                                 onChange={e => setAnswers(a => ({ ...a, [p.id]: e.target.value }))}
                                 onKeyDown={e => e.key === 'Enter' && submit(p)}
-                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition"
                                 placeholder="Răspunsul tău..." />
                             )}
                             {p.hint && (
@@ -464,7 +464,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               </details>
                             )}
                             <button onClick={() => submit(p)}
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition">
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition">
                               <PaperAirplaneIcon className="w-4 h-4" /> Trimite răspunsul
                             </button>
                           </>
@@ -481,7 +481,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                   <h3 className="text-xl font-extrabold text-emerald-900 mb-1">Sesiune completă!</h3>
                   <p className="text-emerald-700 text-sm mb-4">Ai rezolvat toate {problems.length} problemele. Mai vrei?</p>
                   <button onClick={fetchProblems}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition">
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition">
                     <ArrowPathIcon className="w-5 h-5" /> Generează altele
                   </button>
                 </div>
