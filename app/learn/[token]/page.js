@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 import {
   PuzzlePieceIcon, ClockIcon, LockClosedIcon, BookOpenIcon,
   RocketLaunchIcon, ChevronRightIcon, SparklesIcon,
-  CodeBracketIcon, FireIcon,
+  CodeBracketIcon, FireIcon, StarIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
@@ -53,7 +53,7 @@ export default async function StudentLearnDashboard({ params }) {
   const noPayment = !latestPayment
   const showPaymentLock = !student.superStudent && (paymentExpired || noPayment)
 
-  const [modules, accesses, advances, progresses, pendingSubs] = await Promise.all([
+  const [modules, accesses, advances, progresses, pendingSubs, xpSubs] = await Promise.all([
     prisma.learningModule.findMany({
       where: { active: true },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
@@ -73,6 +73,10 @@ export default async function StudentLearnDashboard({ params }) {
       select: { lessonId: true, completedAt: true, theoryCompleted: true },
     }),
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'PENDING' } }),
+    prisma.problemSubmission.findMany({
+      where: { studentId: student.id, status: 'GRADED', grade: { gte: 60 } },
+      select: { grade: true, problem: { select: { points: true } } },
+    }),
   ])
 
   const accessSet = new Set(accesses.map(a => a.moduleId))
@@ -85,6 +89,22 @@ export default async function StudentLearnDashboard({ params }) {
   const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0)
   const completedLessons = progresses.filter(p => p.completedAt).length
   const globalPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+
+  // XP & Level
+  const totalXP = xpSubs.reduce((s, sub) => s + Math.round((sub.problem?.points ?? 10) * (sub.grade / 100)), 0)
+  const LEVELS = [
+    { min: 0,    max: 99,   num: 1, name: 'Novice',     color: 'text-slate-300',  bar: 'bg-slate-400' },
+    { min: 100,  max: 299,  num: 2, name: 'Explorator', color: 'text-blue-300',   bar: 'bg-blue-400' },
+    { min: 300,  max: 699,  num: 3, name: 'Practicant', color: 'text-emerald-300',bar: 'bg-emerald-400' },
+    { min: 700,  max: 1499, num: 4, name: 'Expert',     color: 'text-amber-300',  bar: 'bg-amber-400' },
+    { min: 1500, max: 2999, num: 5, name: 'Master',     color: 'text-purple-300', bar: 'bg-purple-400' },
+    { min: 3000, max: Infinity, num: 6, name: 'Legend', color: 'text-rose-300',   bar: 'bg-rose-400' },
+  ]
+  const currentLevel = [...LEVELS].reverse().find(l => totalXP >= l.min) ?? LEVELS[0]
+  const nextLevel = LEVELS[currentLevel.num] ?? null
+  const xpIntoLevel = totalXP - currentLevel.min
+  const xpNeeded = nextLevel ? nextLevel.min - currentLevel.min : 1
+  const levelPct = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpNeeded) * 100)) : 100
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
@@ -134,6 +154,29 @@ export default async function StudentLearnDashboard({ params }) {
               <ClockIcon className="w-4 h-4 text-amber-300 mb-1" />
               <div className="text-lg font-bold">{pendingSubs}</div>
               <div className="text-[10px] text-white/50 uppercase tracking-wider">In asteptare</div>
+            </div>
+          </div>
+
+          {/* XP & Level */}
+          <div className="bg-white/10 rounded-2xl p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <StarIcon className="w-4 h-4 text-yellow-300" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Level {currentLevel.num}</span>
+              </div>
+              <span className={`text-xs font-extrabold ${currentLevel.color}`}>{currentLevel.name}</span>
+            </div>
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <span className="text-2xl font-extrabold text-white">{totalXP}</span>
+                <span className="text-white/40 text-xs ml-1">XP</span>
+              </div>
+              {nextLevel && (
+                <span className="text-[10px] text-white/40">{nextLevel.min - totalXP} XP până la {nextLevel.name}</span>
+              )}
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div className={`h-full ${currentLevel.bar} rounded-full transition-all duration-700`} style={{ width: `${levelPct}%` }} />
             </div>
           </div>
 
