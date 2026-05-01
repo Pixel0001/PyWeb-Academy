@@ -20,6 +20,10 @@ import {
   BoltIcon,
 } from '@heroicons/react/24/outline'
 import SuperStudentToggle from '@/components/admin/SuperStudentToggle'
+import StudentActiveToggle from '@/components/admin/StudentActiveToggle'
+import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
+import StudentModuleAccessTable from '@/components/admin/StudentModuleAccessTable'
+import StudentLearningPayments from '@/components/admin/StudentLearningPayments'
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -72,6 +76,20 @@ export default async function StudentDetailPage({ params }) {
   if (!student) notFound()
 
   const groupIds = student.groupStudents.map(gs => gs.groupId)
+
+  // Date pentru aplicația /learn: module + accese + avansări + plăți
+  const [allModules, moduleAccesses, moduleAdvances, learningPayments] = await Promise.all([
+    prisma.learningModule.findMany({
+      where: { active: true },
+      orderBy: { order: 'asc' },
+      include: { _count: { select: { lessons: true } } },
+    }),
+    prisma.moduleAccess.findMany({ where: { studentId: id }, select: { moduleId: true } }),
+    prisma.moduleAdvance.findMany({ where: { studentId: id }, select: { moduleId: true } }),
+    prisma.learningPayment.findMany({ where: { studentId: id }, orderBy: { paymentDate: 'desc' } }),
+  ])
+  const accessIds = moduleAccesses.map(a => a.moduleId)
+  const advanceIds = moduleAdvances.map(a => a.moduleId)
 
   // 2) Toate prezențele PRESENT ale elevului (descrescător după dată)
   // NOTĂ: Prisma + MongoDB nu suportă orderBy pe câmp relațional, sortăm în JS.
@@ -188,18 +206,44 @@ export default async function StudentDetailPage({ params }) {
               </div>
             )}
             {canEdit.allowed && (
-              <div className="mt-4 flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-                <BoltIcon className="w-5 h-5 text-indigo-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-indigo-900">Super elev</div>
-                  <div className="text-xs text-indigo-600">Accesează orice lecție fără restricții de progres</div>
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-slate-900">Status cont</div>
+                    <div className="text-xs text-slate-500">Dezactivează pentru a bloca accesul elevului în aplicație</div>
+                  </div>
+                  <StudentActiveToggle studentId={id} initialValue={student.active !== false} />
                 </div>
-                <SuperStudentToggle studentId={id} initialValue={student.superStudent ?? false} />
+                <div className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                  <BoltIcon className="w-5 h-5 text-indigo-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-indigo-900">Super elev</div>
+                    <div className="text-xs text-indigo-600">Accesează orice lecție fără restricții de progres</div>
+                  </div>
+                  <SuperStudentToggle studentId={id} initialValue={student.superStudent ?? false} />
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* /learn — parolă, plăți, acces module */}
+      {canEdit.allowed && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-4">
+          <StudentPasswordSetter studentId={id} hasPassword={!!student.password} />
+          <StudentLearningPayments studentId={id} initialPayments={learningPayments} />
+        </div>
+      )}
+
+      {canEdit.allowed && (
+        <StudentModuleAccessTable
+          studentId={id}
+          modules={allModules}
+          accessIds={accessIds}
+          advanceIds={advanceIds}
+        />
+      )}
 
       {/* Statistici sumare */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4">

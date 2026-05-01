@@ -23,9 +23,30 @@ export default async function StudentLearnDashboard({ params }) {
   const { token } = await params
   const student = await prisma.student.findFirst({
     where: { accessToken: token },
-    select: { id: true, fullName: true, superStudent: true },
+    select: { id: true, fullName: true, superStudent: true, active: true },
   })
   if (!student) notFound()
+  if (student.active === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+        <div className="max-w-md bg-white rounded-2xl shadow-lg border border-rose-200 p-8 text-center">
+          <LockClosedIcon className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+          <h1 className="text-xl font-bold text-gray-900">Cont dezactivat</h1>
+          <p className="text-sm text-gray-600 mt-2">Contul tău este momentan dezactivat. Te rugăm să contactezi profesorul pentru reactivare.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const latestPayment = await prisma.learningPayment.findFirst({
+    where: { studentId: student.id },
+    orderBy: { paymentDate: 'desc' },
+  })
+  const paymentDaysLeft = latestPayment
+    ? Math.ceil((new Date(latestPayment.expiresAt).getTime() - Date.now()) / 86400000)
+    : null
+  const paymentExpired = paymentDaysLeft !== null && paymentDaysLeft < 0
+  const paymentExpiringSoon = paymentDaysLeft !== null && paymentDaysLeft >= 0 && paymentDaysLeft <= 3
 
   const [modules, accesses, advances, progresses, pendingSubs] = await Promise.all([
     prisma.learningModule.findMany({
@@ -107,6 +128,41 @@ export default async function StudentLearnDashboard({ params }) {
               <div className="text-[10px] text-white/50 uppercase tracking-wider">In asteptare</div>
             </div>
           </div>
+
+          {/* Subscription status */}
+          {latestPayment && (
+            <div className={`rounded-2xl p-3 border ${
+              paymentExpired ? 'bg-rose-500/20 border-rose-400/40' :
+              paymentExpiringSoon ? 'bg-amber-400/20 border-amber-300/40' :
+              'bg-emerald-500/15 border-emerald-400/30'
+            }`}>
+              <div className="flex items-center gap-2">
+                <ClockIcon className={`w-4 h-4 ${paymentExpired ? 'text-rose-200' : paymentExpiringSoon ? 'text-amber-200' : 'text-emerald-200'}`} />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-white/70">Abonament</span>
+              </div>
+              <div className="mt-1 text-sm font-extrabold text-white">
+                {paymentExpired
+                  ? `Expirat de ${Math.abs(paymentDaysLeft)} zile`
+                  : paymentDaysLeft === 0 ? 'Expiră astăzi'
+                  : `${paymentDaysLeft} ${paymentDaysLeft === 1 ? 'zi' : 'zile'} rămase`
+                }
+              </div>
+              <div className="text-[10px] text-white/60 mt-0.5">
+                {latestPayment.amount} {latestPayment.currency} • până la {new Date(latestPayment.expiresAt).toLocaleDateString('ro-RO')}
+              </div>
+              {(paymentExpired || paymentExpiringSoon) && (
+                <div className="text-[10px] text-white/80 mt-1.5 font-semibold">
+                  Contactează profesorul pentru a reînnoi.
+                </div>
+              )}
+            </div>
+          )}
+          {!latestPayment && (
+            <div className="rounded-2xl p-3 bg-white/5 border border-white/10">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-white/50">Abonament</div>
+              <div className="text-xs text-white/60 mt-1">Începe perioada de probă. Contactează profesorul pentru abonament.</div>
+            </div>
+          )}
 
           {/* Random CTA */}
           <Link href={`/learn/${token}/random`}

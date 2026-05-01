@@ -10,6 +10,17 @@ export default async function LessonPage({ params }) {
   const { token, lessonId } = await params
   const student = await prisma.student.findFirst({ where: { accessToken: token } })
   if (!student) notFound()
+  if (student.active === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+        <div className="max-w-md bg-white rounded-2xl shadow-lg border border-rose-200 p-8 text-center">
+          <LockClosedIcon className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+          <h1 className="text-xl font-bold text-gray-900">Cont dezactivat</h1>
+          <p className="text-sm text-gray-600 mt-2">Contul tău este momentan dezactivat. Te rugăm să contactezi profesorul.</p>
+        </div>
+      </div>
+    )
+  }
 
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },

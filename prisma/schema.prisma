@@ -349,6 +349,8 @@ model Student {
   parentEmail  String?
   notes        String?
   accessToken  String?  // token persistent pentru portalul elevului /learn/[token] (unique enforced in app code)
+  password     String?  // hash parolă opțional pentru autentificare alternativă (Argon2id)
+  active       Boolean  @default(true) // dacă e false, /learn/[token] returnează acces interzis
   superStudent Boolean  @default(false) // Super elev — accesează orice lecție din orice modul, indiferent de progres
   createdById  String?  @db.ObjectId // ID-ul userului care a creat elevul (profesor sau admin)
   createdAt    DateTime @default(now())
@@ -367,9 +369,11 @@ model Student {
   moduleAdvances       ModuleAdvance[]
   lessonProgresses     LessonProgress[]
   problemSubmissions   ProblemSubmission[]
+  learningPayments     LearningPayment[]
 
   @@index([createdById])
   @@index([accessToken])
+  @@index([active])
   @@map("students")
 }
 
@@ -1027,4 +1031,27 @@ enum SubmissionStatus {
   PENDING        // așteaptă feedback profesor
   GRADED         // notată (trecută)
   NEEDS_REVISION // profesorul cere refacere
+}
+
+// ==================== LEARNING APP PAYMENTS ====================
+// Plata pentru abonament la aplicația /learn (separat de plata pentru lecții la cursuri)
+
+model LearningPayment {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId     String   @db.ObjectId
+  amount        Float    // suma achitată
+  currency      String   @default("MDL")
+  paymentDate   DateTime @default(now())
+  validDays     Int      @default(30) // perioada de valabilitate în zile
+  expiresAt     DateTime // calculat: paymentDate + validDays
+  notes         String?
+  createdById   String?  @db.ObjectId // userul care a înregistrat plata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, paymentDate])
+  @@index([expiresAt])
+  @@map("learning_payments")
 }

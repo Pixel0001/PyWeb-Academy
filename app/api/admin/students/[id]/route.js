@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { requireAdmin, getCurrentUser } from '@/lib/session'
 import { require2FAToken } from '@/lib/security/action-tokens'
 import { checkPermission } from '@/lib/permissions'
+import { hashPassword } from '@/lib/security/argon2'
 
 export async function GET(request, { params }) {
   try {
@@ -85,10 +86,21 @@ export async function PATCH(request, { params }) {
     const { id } = await params
     const body = await request.json()
 
-    const allowedFields = ['superStudent']
+    const allowedFields = ['superStudent', 'active']
     const data = {}
     for (const key of allowedFields) {
       if (key in body) data[key] = body[key]
+    }
+
+    // Password (hash if provided, null to clear)
+    if ('password' in body) {
+      if (body.password === null || body.password === '') {
+        data.password = null
+      } else if (typeof body.password === 'string' && body.password.length >= 4) {
+        data.password = await hashPassword(body.password)
+      } else {
+        return NextResponse.json({ error: 'Parola trebuie să aibă minim 4 caractere' }, { status: 400 })
+      }
     }
 
     if (Object.keys(data).length === 0) {
@@ -96,7 +108,8 @@ export async function PATCH(request, { params }) {
     }
 
     const student = await prisma.student.update({ where: { id }, data })
-    return NextResponse.json(student)
+    // Nu returnăm password hash
+    return NextResponse.json({ ...student, password: undefined, hasPassword: !!student.password })
   } catch (error) {
     console.error('Error patching student:', error)
     if (error.message === 'Unauthorized' || error.message === 'Forbidden') {

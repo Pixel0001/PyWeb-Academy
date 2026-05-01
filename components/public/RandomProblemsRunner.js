@@ -61,7 +61,13 @@ export default function RandomProblemsRunner({ token, student, topics }) {
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
       setSubmissions(s => ({ ...s, [p.id]: d.submission }))
-      toast.success(d.autoCorrect === true ? 'Corect! Bravo!' : 'Trimis profesorului')
+      if (p.type === 'CODING') {
+        toast('Trimis profesorului', { icon: '👨‍🏫' })
+      } else if (d.autoCorrect === true) {
+        toast.success('Corect! Bravo!')
+      } else {
+        toast.error('Gresit — incearca alta problema')
+      }
     } catch (e) { toast.error(e.message) }
   }
 

@@ -122,8 +122,13 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
       const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
-      if (d.autoCorrect === true) toast.success('Corect! Bravo!')
-      else toast('Trimis — asteapta verificarea profesorului')
+      if (cur.type === 'CODING') {
+        toast('Trimis — asteapta verificarea profesorului', { icon: '👨‍🏫' })
+      } else if (d.autoCorrect === true) {
+        toast.success('Corect! Bravo!')
+      } else {
+        toast.error('Gresit — incearca din nou sau treci mai departe')
+      }
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
 
