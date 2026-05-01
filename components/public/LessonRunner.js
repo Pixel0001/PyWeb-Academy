@@ -81,6 +81,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [time, setTime] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [transitioning, setTransitioning] = useState(false)
   const startRef = useRef(Date.now())
 
   useEffect(() => {
@@ -92,6 +93,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   useEffect(() => {
     setAnswer(''); setCode(problems[idx]?.starterCode || ''); setShowHint(false)
     startRef.current = Date.now(); setTime(0)
+    setTransitioning(true)
+    const t = setTimeout(() => setTransitioning(false), 120)
+    return () => clearTimeout(t)
   }, [idx, problems])
 
   const cur = problems[idx]
@@ -132,14 +136,15 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
 
-  const nextProblem = async () => {
+  const nextProblem = () => {
     const ni = idx + 1
     if (ni < problems.length) {
       setIdx(ni)
-      await fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
+      // fire-and-forget — nu blocăm UI
+      fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentProblemIndex: ni }),
-      })
+      }).catch(() => {})
     }
   }
 
@@ -422,7 +427,21 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
             )}
 
             {/* PROBLEM */}
-            {step === 'problems' && cur && (
+            {step === 'problems' && cur && transitioning && (
+              <div className="space-y-3 animate-pulse">
+                <div className="bg-white rounded-xl shadow-sm h-12" />
+                <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                  <div className="h-5 bg-slate-200 rounded-lg w-3/4" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-full" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-5/6" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-2/3" />
+                  <div className="mt-4 h-28 bg-slate-100 rounded-xl" />
+                  <div className="h-10 bg-slate-200 rounded-xl w-1/3 ml-auto" />
+                </div>
+              </div>
+            )}
+
+            {step === 'problems' && cur && !transitioning && (
               <div className="space-y-3">
                 {/* Problem nav pills (mobile-friendly horizontal scroll) */}
                 <div className="bg-white rounded-xl shadow-sm p-2 flex gap-1.5 overflow-x-auto">
