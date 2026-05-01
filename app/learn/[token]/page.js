@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
+import LockedLessonCard from '@/components/public/LockedLessonCard'
 
 const MODULE_THEMES = [
   { from: 'from-amber-400', to: 'to-orange-500', soft: 'from-amber-50 to-orange-50', ring: 'ring-amber-200' },
@@ -359,16 +360,17 @@ export default async function StudentLearnDashboard({ params }) {
                         </>
                       )
 
+                      const lockReason = (!unlocked || !prevDone) ? 'module' : 'payment'
+
                       return accessible ? (
                         <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
                           {inner}
                         </Link>
                       ) : (
-                        <div key={l.id} aria-disabled="true"
-                          className={`flex items-center gap-3 p-3 rounded-xl border select-none ${cardCls}`}>
+                        <LockedLessonCard key={l.id} reason={lockReason}>
                           {inner}
-                        </div>
+                        </LockedLessonCard>
                       )
                     })}
                     {m.lessons.length === 0 && (
