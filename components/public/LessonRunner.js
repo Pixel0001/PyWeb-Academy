@@ -323,7 +323,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   )
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="flex bg-slate-100 overflow-hidden" style={{ height: 'calc(100vh - env(safe-area-inset-top))' }}>
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-y-auto">
@@ -333,7 +333,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto">
+          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <div className="flex items-center justify-between px-4 pt-4 shrink-0">
               <span className="text-sm font-bold text-white/70">Navigare</span>
               <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 bg-white/10 rounded-lg">
