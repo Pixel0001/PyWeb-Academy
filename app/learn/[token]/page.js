@@ -43,7 +43,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -70,6 +70,14 @@ async function DashboardContent({ token }) {
     prisma.problemSubmission.findMany({
       where: { studentId: student.id, status: 'GRADED', grade: { gte: 60 } },
       select: { grade: true, problem: { select: { points: true } } },
+    }),
+    prisma.bonusPoint.findMany({
+      where: {
+        studentId: student.id,
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { addedBy: { select: { name: true } } },
     }),
   ])
 
@@ -326,6 +334,41 @@ async function DashboardContent({ token }) {
               <p className="text-sm text-amber-900">
                 Ai <strong>{pendingSubs}</strong> {pendingSubs === 1 ? 'problema in asteptare' : 'probleme in asteptare'} la profesor.
               </p>
+            </div>
+          )}
+
+          {/* Bonus points notifications */}
+          {recentBonusPoints.length > 0 && (
+            <div className="space-y-2">
+              {recentBonusPoints.map(bp => (
+                <div key={bp.id} className={`rounded-2xl p-4 flex items-center gap-3 shadow-sm border ${
+                  bp.points >= 0
+                    ? 'bg-amber-50 border-amber-200'
+                    : 'bg-rose-50 border-rose-200'
+                }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-sm ${
+                    bp.points >= 0 ? 'bg-amber-400 text-amber-900' : 'bg-rose-400 text-white'
+                  }`}>
+                    {bp.points >= 0 ? '+' : ''}{bp.points}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-bold text-sm ${
+                      bp.points >= 0 ? 'text-amber-900' : 'text-rose-900'
+                    }`}>
+                      {bp.points >= 0 ? 'Puncte bonus primite!' : 'Penalizare XP'}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${
+                      bp.points >= 0 ? 'text-amber-700' : 'text-rose-700'
+                    }`}>{bp.reason}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {bp.addedBy?.name} &middot; {new Date(bp.createdAt).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short' })}
+                    </div>
+                  </div>
+                  <StarIcon className={`w-5 h-5 shrink-0 ${
+                    bp.points >= 0 ? 'text-amber-400' : 'text-rose-400'
+                  }`} />
+                </div>
+              ))}
             </div>
           )}
 
