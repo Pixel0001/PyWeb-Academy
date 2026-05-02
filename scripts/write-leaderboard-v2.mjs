@@ -1,4 +1,6 @@
-export const dynamic = 'force-dynamic'
+import { writeFileSync } from 'fs'
+
+const c = `export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
@@ -242,3 +244,7 @@ export default async function LeaderboardPage({ params }) {
     </div>
   )
 }
+`
+
+writeFileSync('app/learn/[token]/leaderboard/page.js', c, 'utf8')
+console.log('OK')
