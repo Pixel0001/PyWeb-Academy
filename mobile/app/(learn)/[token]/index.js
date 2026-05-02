@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [bonusExpanded, setBonusExpanded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +70,11 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const { student, modules, subscription } = data;
+  const { student, modules, subscription, bonusPoints = [] } = data;
+  const totalBonus = bonusPoints.reduce((s, bp) => s + bp.points, 0);
+  const recentBonus = bonusPoints.filter(bp => Date.now() - new Date(bp.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000);
+  const hasNewBonus = recentBonus.length > 0;
+  const visibleBonus = bonusExpanded ? bonusPoints : bonusPoints.slice(0, 3);
   const sub = subscription || {};
   const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
   const completedLessons = modules.reduce(
@@ -206,6 +211,91 @@ export default function Dashboard() {
                 {sub.expiresAt ? ` · până la ${new Date(sub.expiresAt).toLocaleDateString('ro-RO')}` : ''}
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Bonus points history */}
+        {bonusPoints.length > 0 && (
+          <View className={`rounded-2xl mb-4 overflow-hidden border shadow-sm ${
+            hasNewBonus ? 'border-amber-200 bg-amber-50' : 'border-gray-100 bg-white'
+          }`}>
+            {/* Header */}
+            <View className="px-4 py-3 flex-row items-center gap-3">
+              <View className={`w-9 h-9 rounded-xl items-center justify-center ${
+                hasNewBonus ? 'bg-amber-400' : 'bg-slate-100'
+              }`}>
+                <Ionicons name="star" size={16} color={hasNewBonus ? '#78350f' : '#64748b'} />
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2">
+                  <Text className={`font-bold text-sm ${
+                    hasNewBonus ? 'text-amber-900' : 'text-gray-800'
+                  }`}>Puncte bonus</Text>
+                  {hasNewBonus && (
+                    <View className="px-1.5 py-0.5 bg-amber-400 rounded-full">
+                      <Text className="text-[9px] font-bold text-amber-900 uppercase tracking-wider">Nou</Text>
+                    </View>
+                  )}
+                </View>
+                <Text className={`text-xs mt-0.5 ${
+                  hasNewBonus ? 'text-amber-700' : 'text-gray-500'
+                }`}>
+                  Total bonus: <Text className="font-bold">{totalBonus >= 0 ? '+' : ''}{totalBonus} XP</Text> · {bonusPoints.length} {bonusPoints.length === 1 ? 'intrare' : 'intrări'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Entries */}
+            {visibleBonus.map((bp, idx) => {
+              const isRecent = Date.now() - new Date(bp.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+              return (
+                <View key={bp.id} className={`px-4 py-3 flex-row items-center gap-3 border-t ${
+                  hasNewBonus ? 'border-amber-100' : 'border-gray-50'
+                } ${isRecent && idx === 0 ? (bp.points >= 0 ? 'bg-amber-100/60' : 'bg-rose-100/60') : ''}`}>
+                  <View className={`w-9 h-9 rounded-xl items-center justify-center ${
+                    bp.points >= 0 ? 'bg-amber-400' : 'bg-rose-400'
+                  }`}>
+                    <Text className={`text-xs font-extrabold ${
+                      bp.points >= 0 ? 'text-amber-900' : 'text-white'
+                    }`}>{bp.points >= 0 ? '+' : ''}{bp.points}</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>{bp.reason}</Text>
+                    <Text className="text-[10px] text-gray-400 mt-0.5">
+                      {bp.addedBy?.name} · {new Date(bp.createdAt).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </Text>
+                  </View>
+                  {isRecent && (
+                    <View className="px-1.5 py-0.5 bg-amber-200 rounded-full">
+                      <Text className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">Nou</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {/* Expand/collapse */}
+            {bonusPoints.length > 3 && (
+              <Pressable
+                onPress={() => setBonusExpanded(v => !v)}
+                className={`px-4 py-2.5 flex-row items-center justify-center gap-1.5 border-t ${
+                  hasNewBonus ? 'border-amber-100 active:bg-amber-100' : 'border-gray-50 active:bg-gray-50'
+                }`}
+              >
+                <Ionicons
+                  name={bonusExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={hasNewBonus ? '#92400e' : '#6b7280'}
+                />
+                <Text className={`text-xs font-bold ${
+                  hasNewBonus ? 'text-amber-700' : 'text-gray-500'
+                }`}>
+                  {bonusExpanded
+                    ? 'Ascunde'
+                    : `Vezi tot istoricul (${bonusPoints.length - 3} mai multe)`}
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 

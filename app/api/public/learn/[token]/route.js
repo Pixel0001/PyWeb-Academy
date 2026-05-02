@@ -14,7 +14,7 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: 'Cont dezactivat', locked: true, reason: 'INACTIVE' }, { status: 403 })
   }
 
-  const [latestPayment, modules, accesses, advances, progresses] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, bonusPoints] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -35,6 +35,11 @@ export async function GET(req, { params }) {
     prisma.lessonProgress.findMany({
       where: { studentId: student.id },
       select: { lessonId: true, theoryCompleted: true, currentProblemIndex: true, completedAt: true },
+    }),
+    prisma.bonusPoint.findMany({
+      where: { studentId: student.id },
+      orderBy: { createdAt: 'desc' },
+      include: { addedBy: { select: { name: true } } },
     }),
   ])
 
@@ -95,5 +100,5 @@ export async function GET(req, { params }) {
     }
   })
 
-  return NextResponse.json({ student, modules: enriched, subscription })
+  return NextResponse.json({ student, modules: enriched, subscription, bonusPoints })
 }
