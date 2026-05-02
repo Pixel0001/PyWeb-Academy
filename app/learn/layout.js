@@ -23,5 +23,9 @@ export const viewport = {
 }
 
 export default function LearnLayout({ children }) {
-  return children
+  return (
+    <div style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {children}
+    </div>
+  )
 }
