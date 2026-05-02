@@ -219,6 +219,22 @@ export default async function StudentDetailPage({ params }) {
                 <strong>Notițe:</strong> {student.notes}
               </div>
             )}
+            {student.accessToken && (
+              <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-start gap-2">
+                <BoltIcon className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-0.5">Link acces /learn</div>
+                  <a
+                    href={`/learn/${student.accessToken}`}
+                    target="_blank"
+                    className="text-xs font-mono text-indigo-700 break-all hover:underline"
+                  >
+                    pyweb.online/learn/{student.accessToken}
+                  </a>
+                  <div className="text-[10px] text-indigo-400 mt-0.5">Token: <span className="font-mono">{student.accessToken}</span></div>
+                </div>
+              </div>
+            )}
             {canEdit.allowed && (
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">

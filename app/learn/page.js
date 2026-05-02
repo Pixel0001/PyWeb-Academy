@@ -4,6 +4,7 @@ import {
   CodeBracketIcon, BookOpenIcon, PuzzlePieceIcon, AcademicCapIcon,
   SparklesIcon, RocketLaunchIcon, LockClosedIcon, CheckCircleIcon,
   ChevronRightIcon, StarIcon, UserGroupIcon, ClockIcon, TrophyIcon,
+  KeyIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import LearnPWARedirect from '@/components/public/LearnPWARedirect'
@@ -102,6 +103,11 @@ export default async function PublicLearnPage() {
               <BookOpenIcon className="w-5 h-5" />
               Vezi modulele
             </a>
+            <Link href="/learn/login"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold text-lg rounded-2xl ring-1 ring-white/20 transition">
+              <AcademicCapIcon className="w-5 h-5" />
+              Autentificare elev
+            </Link>
           </div>
 
           <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">

@@ -33,17 +33,21 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: 'Puncte și motiv obligatorii' }, { status: 400 })
   }
 
-  const bp = await prisma.bonusPoint.create({
-    data: {
-      studentId: id,
-      points: Number(points),
-      reason: reason.trim(),
-      addedById: session.user.id,
-    },
-    include: { addedBy: { select: { name: true } } },
-  })
-
-  return NextResponse.json({ bonusPoint: bp })
+  try {
+    const bp = await prisma.bonusPoint.create({
+      data: {
+        studentId: id,
+        points: Math.round(Number(points)),
+        reason: reason.trim(),
+        addedById: session.user.id,
+      },
+      include: { addedBy: { select: { name: true } } },
+    })
+    return NextResponse.json({ bonusPoint: bp })
+  } catch (err) {
+    console.error('[bonus/POST] Prisma error:', err)
+    return NextResponse.json({ error: err.message || 'Eroare la salvare' }, { status: 500 })
+  }
 }
 
 export async function DELETE(req, { params }) {
