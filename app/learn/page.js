@@ -6,6 +6,7 @@ import {
   ChevronRightIcon, StarIcon, UserGroupIcon, ClockIcon, TrophyIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
+import LearnPWARedirect from '@/components/public/LearnPWARedirect'
 
 export const metadata = {
   title: 'Module de învățare online — PyWeb Academy',
@@ -65,6 +66,8 @@ export default async function PublicLearnPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Redirect PWA: dacă e deschis din Home Screen, merge la /learn/[token] */}
+      <LearnPWARedirect />
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-600 text-white">

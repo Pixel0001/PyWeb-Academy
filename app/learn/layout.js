@@ -1,7 +1,6 @@
 // Layout pentru toate paginile /learn — adaugă manifest PWA + viewport mobile
 export const metadata = {
   manifest: '/manifest-learn.json',
-  themeColor: '#4338ca',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -19,7 +18,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#4338ca',
+  themeColor: '#1e3a8a',
   viewportFit: 'cover',
 }
 
