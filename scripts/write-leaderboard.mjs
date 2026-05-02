@@ -1,4 +1,6 @@
-export const dynamic = 'force-dynamic'
+import { writeFileSync } from 'fs'
+
+const content = `export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
@@ -74,7 +76,7 @@ export default async function LeaderboardPage({ params }) {
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-4 py-4 flex items-center gap-3 shadow-lg">
-        <Link href={`/learn/${token}`} className="p-2 hover:bg-white/10 rounded-xl transition">
+        <Link href={\`/learn/\${token}\`} className="p-2 hover:bg-white/10 rounded-xl transition">
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <TrophyIcon className="w-6 h-6 text-amber-300" />
@@ -87,14 +89,14 @@ export default async function LeaderboardPage({ params }) {
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
         {/* My position card */}
-        <div className={`rounded-2xl p-5 border-2 ${myLevel.bg} shadow-sm`}>
+        <div className={\`rounded-2xl p-5 border-2 \${myLevel.bg} shadow-sm\`}>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-14 h-14 bg-gradient-to-br from-blue-900 to-blue-700 rounded-full flex items-center justify-center text-white font-extrabold text-xl shrink-0 shadow-md">
               #{myRank}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-extrabold text-gray-900 text-base">Tu · {me.fullName}</div>
-              <Link href={`/learn/${token}/levels`} className={`text-sm font-bold ${myLevel.color} hover:underline`}>
+              <Link href={\`/learn/\${token}/levels\`} className={\`text-sm font-bold \${myLevel.color} hover:underline\`}>
                 Nivel {myLevel.num} — {myLevel.name}
               </Link>
             </div>
@@ -114,7 +116,7 @@ export default async function LeaderboardPage({ params }) {
                 </span>
               </div>
               <div className="h-3 bg-white/60 rounded-full overflow-hidden">
-                <div className={`h-full ${myLevel.bar} rounded-full transition-all duration-700`} style={{ width: `${myPct}%` }} />
+                <div className={\`h-full \${myLevel.bar} rounded-full transition-all duration-700\`} style={{ width: \`\${myPct}%\` }} />
               </div>
               <div className="text-[10px] text-gray-500 mt-1 text-right">{myXpInto} / {myXpNeeded} XP ({myPct}%)</div>
             </>
@@ -149,23 +151,23 @@ export default async function LeaderboardPage({ params }) {
               const level = getLevel(student.xp)
               const isMe = student.id === me.id
               return (
-                <div key={student.id} className={`px-4 py-3 flex items-center gap-3 ${isMe ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50'}`}>
-                  <div className={`w-8 text-center shrink-0 font-extrabold text-base ${RANK_COLORS[idx] ?? 'text-gray-400'}`}>
-                    {rank <= 3 ? <TrophySolid className={`w-5 h-5 mx-auto ${RANK_COLORS[idx]}`} /> : rank}
+                <div key={student.id} className={\`px-4 py-3 flex items-center gap-3 \${isMe ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50'}\`}>
+                  <div className={\`w-8 text-center shrink-0 font-extrabold text-base \${RANK_COLORS[idx] ?? 'text-gray-400'}\`}>
+                    {rank <= 3 ? <TrophySolid className={\`w-5 h-5 mx-auto \${RANK_COLORS[idx]}\`} /> : rank}
                   </div>
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${isMe ? 'bg-gradient-to-br from-blue-900 to-blue-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <div className={\`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 \${isMe ? 'bg-gradient-to-br from-blue-900 to-blue-700 text-white' : 'bg-slate-100 text-slate-600'}\`}>
                     {student.fullName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-semibold truncate ${isMe ? 'text-blue-900' : 'text-gray-900'}`}>
-                      {isMe ? `${student.fullName} (tu)` : student.fullName}
+                    <div className={\`text-sm font-semibold truncate \${isMe ? 'text-blue-900' : 'text-gray-900'}\`}>
+                      {isMe ? \`\${student.fullName} (tu)\` : student.fullName}
                     </div>
-                    <Link href={`/learn/${token}/levels`} className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ${level.badge}`}>
+                    <Link href={\`/learn/\${token}/levels\`} className={\`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition \${level.badge}\`}>
                       Nivel {level.num} · {level.name}
                     </Link>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className={`text-base font-extrabold ${isMe ? 'text-blue-900' : 'text-gray-900'}`}>{student.xp}</div>
+                    <div className={\`text-base font-extrabold \${isMe ? 'text-blue-900' : 'text-gray-900'}\`}>{student.xp}</div>
                     <div className="text-[10px] text-gray-400">XP</div>
                   </div>
                 </div>
@@ -175,7 +177,7 @@ export default async function LeaderboardPage({ params }) {
         </div>
 
         {/* Link to levels page */}
-        <Link href={`/learn/${token}/levels`} className="flex items-center gap-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:bg-slate-50 transition group">
+        <Link href={\`/learn/\${token}/levels\`} className="flex items-center gap-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:bg-slate-50 transition group">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shrink-0 text-xl">🏆</div>
           <div className="flex-1">
             <div className="font-bold text-gray-900 text-sm">Vezi toate nivelurile</div>
@@ -188,3 +190,7 @@ export default async function LeaderboardPage({ params }) {
     </div>
   )
 }
+`
+
+writeFileSync('app/learn/[token]/leaderboard/page.js', content, 'utf8')
+console.log('Leaderboard written OK')
