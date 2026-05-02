@@ -3,14 +3,18 @@
 
 import { PrismaClient } from '@prisma/client'
 import { pythonEnriched } from './modules-data/python-enriched.mjs'
+import { pythonEnrichedPart2 } from './modules-data/python-enriched-part2.mjs'
+import { jsEnriched } from './modules-data/javascript-enriched.mjs'
+import { htmlEnriched } from './modules-data/html-enriched.mjs'
+import { cssEnriched } from './modules-data/css-enriched.mjs'
 
 const prisma = new PrismaClient()
 
 const enrichmentSets = {
-  'python-fundamentals': pythonEnriched,
-  // 'javascript-essentials': jsEnriched,   // se va adăuga
-  // 'html-mastery': htmlEnriched,
-  // 'css-styling': cssEnriched,
+  'python-fundamentals': { ...pythonEnriched, ...pythonEnrichedPart2 },
+  'javascript-fundamentals': jsEnriched,
+  'html-basics': htmlEnriched,
+  'css-basics': cssEnriched,
 }
 
 async function enrichModule(moduleSlug, enrichments) {
