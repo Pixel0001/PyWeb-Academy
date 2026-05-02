@@ -110,7 +110,7 @@ async function DashboardContent({ token }) {
   const levelPct = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpNeeded) * 100)) : 100
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="flex bg-slate-100 overflow-hidden" style={{ height: 'calc(100vh - env(safe-area-inset-top))' }}>
 
       {/* ── LEFT SIDEBAR ── */}
       <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-y-auto">

@@ -285,7 +285,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
   )
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="flex bg-slate-100 overflow-hidden" style={{ height: 'calc(100vh - env(safe-area-inset-top))' }}>
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
@@ -295,7 +295,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto">
+          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <FilterPanel />
           </div>
           <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />

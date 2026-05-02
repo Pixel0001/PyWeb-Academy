@@ -1,6 +1,6 @@
 export default function LessonLoading() {
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden animate-pulse">
+    <div className="flex bg-slate-100 overflow-hidden animate-pulse" style={{ height: 'calc(100vh - env(safe-area-inset-top))' }}>
       {/* Sidebar skeleton */}
       <aside className="hidden lg:flex flex-col w-64 xl:w-72 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900">
         <div className="p-4 border-b border-white/10">
