@@ -24,6 +24,7 @@ import StudentActiveToggle from '@/components/admin/StudentActiveToggle'
 import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
 import StudentModuleAccessTable from '@/components/admin/StudentModuleAccessTable'
 import StudentLearningPayments from '@/components/admin/StudentLearningPayments'
+import StudentBonusPoints from '@/components/admin/StudentBonusPoints'
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -77,8 +78,8 @@ export default async function StudentDetailPage({ params }) {
 
   const groupIds = student.groupStudents.map(gs => gs.groupId)
 
-  // Date pentru aplicația /learn: module + accese + avansări + plăți
-  const [allModules, moduleAccesses, moduleAdvances, learningPayments] = await Promise.all([
+  // Date pentru aplicația /learn: module + accese + avansări + plăți + XP
+  const [allModules, moduleAccesses, moduleAdvances, learningPayments, gradedSubmissions, bonusPointsRaw] = await Promise.all([
     prisma.learningModule.findMany({
       where: { active: true },
       orderBy: { order: 'asc' },
@@ -87,7 +88,20 @@ export default async function StudentDetailPage({ params }) {
     prisma.moduleAccess.findMany({ where: { studentId: id }, select: { moduleId: true } }),
     prisma.moduleAdvance.findMany({ where: { studentId: id }, select: { moduleId: true } }),
     prisma.learningPayment.findMany({ where: { studentId: id }, orderBy: { paymentDate: 'desc' } }),
+    prisma.problemSubmission.findMany({
+      where: { studentId: id, status: 'GRADED', grade: { gte: 60 } },
+      include: { problem: { select: { points: true } } },
+    }),
+    prisma.bonusPoint.findMany({
+      where: { studentId: id },
+      orderBy: { createdAt: 'desc' },
+      include: { addedBy: { select: { name: true } } },
+    }),
   ])
+
+  const submissionXP = gradedSubmissions.reduce((sum, s) =>
+    sum + Math.round((s.problem?.points ?? 0) * (s.grade / 100)), 0
+  )
   const accessIds = moduleAccesses.map(a => a.moduleId)
   const advanceIds = moduleAdvances.map(a => a.moduleId)
 
@@ -242,6 +256,14 @@ export default async function StudentDetailPage({ params }) {
           modules={allModules}
           accessIds={accessIds}
           advanceIds={advanceIds}
+        />
+      )}
+
+      {canEdit.allowed && (
+        <StudentBonusPoints
+          studentId={id}
+          initialBonusPoints={bonusPointsRaw}
+          submissionXP={submissionXP}
         />
       )}
 

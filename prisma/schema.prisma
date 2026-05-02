@@ -50,6 +50,7 @@ model User {
   createdPayments   Payment[]         @relation("CreatedPayments")
   createdProblems   Problem[]         @relation("CreatedProblems")
   createdSets       GeneratedSet[]    @relation("CreatedSets")
+  bonusPointsAdded  BonusPoint[]      @relation("BonusPointsAdded")
 
   @@map("users")
 }
@@ -370,11 +371,29 @@ model Student {
   lessonProgresses     LessonProgress[]
   problemSubmissions   ProblemSubmission[]
   learningPayments     LearningPayment[]
+  bonusPoints          BonusPoint[]
 
   @@index([createdById])
   @@index([accessToken])
   @@index([active])
   @@map("students")
+}
+
+// ==================== BONUS POINTS ====================
+
+model BonusPoint {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  points    Int
+  reason    String
+  addedById String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  addedBy   User     @relation("BonusPointsAdded", fields: [addedById], references: [id])
+
+  @@index([studentId])
+  @@map("bonus_points")
 }
 
 // ==================== BRANCHES (FILIALE) ====================

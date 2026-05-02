@@ -1,16 +1,18 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import {
   PuzzlePieceIcon, ClockIcon, LockClosedIcon, BookOpenIcon,
   RocketLaunchIcon, ChevronRightIcon, SparklesIcon,
-  CodeBracketIcon, FireIcon, StarIcon,
+  CodeBracketIcon, FireIcon, StarIcon, TrophyIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
-import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
+import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
+import LearnLoading from './loading'
 
 const MODULE_THEMES = [
   { from: 'from-amber-400', to: 'to-orange-500', soft: 'from-amber-50 to-orange-50', ring: 'ring-amber-200' },
@@ -21,8 +23,8 @@ const MODULE_THEMES = [
   { from: 'from-violet-400', to: 'to-purple-500', soft: 'from-violet-50 to-purple-50', ring: 'ring-violet-200' },
 ]
 
-export default async function StudentLearnDashboard({ params }) {
-  const { token } = await params
+async function DashboardContent({ token }) {
+  // ── BATCH 1: student ──
   const student = await prisma.student.findFirst({
     where: { accessToken: token },
     select: { id: true, fullName: true, superStudent: true, active: true },
@@ -40,20 +42,12 @@ export default async function StudentLearnDashboard({ params }) {
     )
   }
 
-  const latestPayment = await prisma.learningPayment.findFirst({
-    where: { studentId: student.id },
-    orderBy: { paymentDate: 'desc' },
-  })
-  const paymentDaysLeft = latestPayment
-    ? Math.ceil((new Date(latestPayment.expiresAt).getTime() - Date.now()) / 86400000)
-    : null
-  const paymentExpired = paymentDaysLeft !== null && paymentDaysLeft < 0
-  const paymentExpiringSoon = paymentDaysLeft !== null && paymentDaysLeft >= 0 && paymentDaysLeft <= 3
-  const subscriptionActive = paymentDaysLeft !== null && paymentDaysLeft >= 0
-  const noPayment = !latestPayment
-  const showPaymentLock = !student.superStudent && (paymentExpired || noPayment)
-
-  const [modules, accesses, advances, progresses, pendingSubs, xpSubs] = await Promise.all([
+  // ── BATCH 2: TOTUL în paralel ──
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs] = await Promise.all([
+    prisma.learningPayment.findFirst({
+      where: { studentId: student.id },
+      orderBy: { paymentDate: 'desc' },
+    }),
     prisma.learningModule.findMany({
       where: { active: true },
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
@@ -82,6 +76,15 @@ export default async function StudentLearnDashboard({ params }) {
   const accessSet = new Set(accesses.map(a => a.moduleId))
   const advanceSet = new Set(advances.map(a => a.moduleId))
   const progressMap = new Map(progresses.map(p => [p.lessonId, p]))
+
+  const paymentDaysLeft = latestPayment
+    ? Math.ceil((new Date(latestPayment.expiresAt).getTime() - Date.now()) / 86400000)
+    : null
+  const paymentExpired = paymentDaysLeft !== null && paymentDaysLeft < 0
+  const paymentExpiringSoon = paymentDaysLeft !== null && paymentDaysLeft >= 0 && paymentDaysLeft <= 3
+  const subscriptionActive = paymentDaysLeft !== null && paymentDaysLeft >= 0
+  const noPayment = !latestPayment
+  const showPaymentLock = !student.superStudent && (paymentExpired || noPayment)
 
   const hasAnyManualAccess = accessSet.size > 0
   const canAccessRandom = student.superStudent || subscriptionActive || hasAnyManualAccess
@@ -237,13 +240,22 @@ export default async function StudentLearnDashboard({ params }) {
             }
           </Link>
 
+          {/* Leaderboard link */}
+          <Link href={`/learn/${token}/leaderboard`}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white transition">
+            <TrophyIcon className="w-4 h-4 shrink-0 text-amber-300" />
+            <span className="flex-1">Clasament</span>
+            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
+          </Link>
+
           {/* Module nav links */}
           <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold px-1 mb-2">Module</p>
             <div className="space-y-0.5">
               {modules.map((m, idx) => {
                 const prev = modules[idx - 1]
-                const unlocked = idx === 0 || (prev && advanceSet.has(prev.id))
+                const hasAccess = accessSet.has(m.id)
+                const unlocked = true // modulele sunt independente
                 const doneL = m.lessons.filter(l => progressMap.get(l.id)?.completedAt).length
                 const pct2 = m.lessons.length > 0 ? Math.round((doneL / m.lessons.length) * 100) : 0
                 return (
@@ -281,6 +293,29 @@ export default async function StudentLearnDashboard({ params }) {
               <Link href={`/learn/${token}/random`}
                 className="flex items-center gap-1.5 px-3 py-2 bg-amber-400 text-amber-900 rounded-xl font-bold text-xs shrink-0">
                 <FireIcon className="w-4 h-4" /> Antrenament
+              </Link>
+            </div>
+
+            {/* XP + Leaderboard row (mobile only) */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="bg-white/10 rounded-xl p-2.5">
+                <div className="flex items-center gap-1 mb-1">
+                  <StarIcon className="w-3 h-3 text-yellow-300" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-white/60">Nivel {currentLevel.num}</span>
+                </div>
+                <div className="text-lg font-extrabold leading-tight">{totalXP} <span className="text-[10px] text-white/40 font-normal">XP</span></div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                  <div className={`h-full ${currentLevel.bar} rounded-full`} style={{ width: `${levelPct}%` }} />
+                </div>
+              </div>
+              <Link href={`/learn/${token}/leaderboard`}
+                className="bg-white/10 hover:bg-white/20 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95">
+                <TrophyIcon className="w-5 h-5 text-amber-300 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-white/60">Clasament</div>
+                  <div className="text-sm font-extrabold leading-tight">Vezi top</div>
+                </div>
+                <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
               </Link>
             </div>
           </div>
@@ -322,8 +357,8 @@ export default async function StudentLearnDashboard({ params }) {
           {/* Module cards */}
           {modules.map((m, idx) => {
             const prev = modules[idx - 1]
-            const unlocked = idx === 0 || (prev && advanceSet.has(prev.id))
             const hasFullAccess = accessSet.has(m.id)
+            const unlocked = true // modulele sunt independente
             const advanceGranted = advanceSet.has(m.id)
             const totalL = m.lessons.length
             const doneL = m.lessons.filter(l => progressMap.get(l.id)?.completedAt).length
@@ -364,23 +399,15 @@ export default async function StudentLearnDashboard({ params }) {
                   <div className={`h-full bg-gradient-to-r ${theme.from} ${theme.to} transition-all duration-700`} style={{ width: `${pct}%` }} />
                 </div>
 
-                {/* Locked message */}
-                {!unlocked && (
-                  <div className="px-5 py-3 bg-slate-50 flex items-center gap-2 text-sm text-slate-600">
-                    <LockClosedIcon className="w-4 h-4 text-slate-400 shrink-0" />
-                    Termina modulul anterior pentru a debloca.
-                    <Link href={`/learn/${token}/random`} className="underline text-indigo-600 font-medium ml-1">Antrenament alternativ</Link>
-                  </div>
-                )}
-
                 {/* Lessons grid */}
                 <div className="p-4">
                   <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
                     {m.lessons.map((l, li) => {
+                      // În interiorul modulului, lecțiile sunt secvențiale
                       const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
                       const accessible = student.superStudent
                         ? true
-                        : unlocked && (subscriptionActive || hasFullAccess || l.isFree) && prevDone
+                        : (subscriptionActive || hasFullAccess || l.isFree) && prevDone
                       const prog = progressMap.get(l.id)
                       const done = !!prog?.completedAt
                       const started = !!prog?.theoryCompleted && !done
@@ -420,7 +447,7 @@ export default async function StudentLearnDashboard({ params }) {
                         </>
                       )
 
-                      const lockReason = (!unlocked || !prevDone) ? 'module' : 'payment'
+                      const lockReason = !prevDone ? 'module' : 'payment'
 
                       return accessible ? (
                         <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
@@ -446,5 +473,14 @@ export default async function StudentLearnDashboard({ params }) {
         </div>
       </main>
     </div>
+  )
+}
+
+export default async function StudentLearnDashboard({ params }) {
+  const { token } = await params
+  return (
+    <Suspense fallback={<LearnLoading />}>
+      <DashboardContent token={token} />
+    </Suspense>
   )
 }

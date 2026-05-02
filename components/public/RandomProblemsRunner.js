@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   ChevronLeftIcon, FireIcon, AdjustmentsHorizontalIcon, ArrowPathIcon,
   PaperAirplaneIcon, CheckCircleIcon, ClockIcon, LightBulbIcon,
   PuzzlePieceIcon, SparklesIcon, BoltIcon, ChevronUpIcon, ChevronDownIcon,
-  XMarkIcon, ExclamationTriangleIcon,
+  XMarkIcon, ExclamationTriangleIcon, CodeBracketIcon, GlobeAltIcon,
+  SwatchIcon, Squares2X2Icon, CubeTransparentIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 
@@ -19,40 +20,46 @@ const DIFF_CONFIG = {
 }
 
 const LANG_ICONS = {
-  python: { emoji: '🐍', color: 'from-yellow-400 to-amber-500' },
-  javascript: { emoji: '⚡', color: 'from-yellow-300 to-yellow-500' },
-  html: { emoji: '🌐', color: 'from-orange-400 to-red-500' },
-  css: { emoji: '🎨', color: 'from-blue-400 to-indigo-500' },
+  python:     { Icon: CodeBracketIcon,  color: 'from-yellow-400 to-amber-500' },
+  javascript: { Icon: BoltIcon,         color: 'from-yellow-300 to-yellow-500' },
+  html:       { Icon: GlobeAltIcon,     color: 'from-orange-400 to-red-500' },
+  css:        { Icon: SwatchIcon,       color: 'from-blue-400 to-indigo-500' },
 }
 
 function CountPicker({ value, onChange }) {
-  const min = 1, max = 15
+  const min = 1, max = 10
+  const trackRef = useRef(null)
+
+  const compute = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
+    return Math.round(pct * (max - min) + min)
+  }
+
   const pct = ((value - min) / (max - min)) * 100
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <span className="text-[10px] text-white/40 font-bold">1</span>
-        <span className="text-lg font-extrabold text-white tabular-nums">{value}</span>
-        <span className="text-[10px] text-white/40 font-bold">15</span>
+        <span className="text-[10px] text-white/40 font-bold">{min}</span>
+        <span className="text-2xl font-extrabold text-white tabular-nums">{value}</span>
+        <span className="text-[10px] text-white/40 font-bold">{max}</span>
       </div>
-      <div className="relative h-6 flex items-center">
-        {/* Track background */}
+      <div
+        ref={trackRef}
+        className="relative h-8 flex items-center cursor-pointer select-none"
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); onChange(compute(e.clientX)) }}
+        onPointerMove={(e) => { if (e.buttons > 0) onChange(compute(e.clientX)) }}
+      >
         <div className="absolute inset-x-0 h-2 rounded-full bg-white/15" />
-        {/* Filled track */}
         <div
-          className="absolute left-0 h-2 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 pointer-events-none"
+          className="absolute left-0 h-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 pointer-events-none"
           style={{ width: `${pct}%` }}
         />
-        {/* Native input invisible but functional */}
-        <input
-          type="range" min={min} max={max} value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          className="absolute inset-x-0 w-full opacity-0 h-6 cursor-pointer z-10"
-        />
-        {/* Custom thumb */}
+        {/* thumb: left=${pct}% + translateX(-${pct}%) perfectly centers it */}
         <div
-          className="absolute w-5 h-5 rounded-full bg-white shadow-lg shadow-orange-500/40 border-2 border-orange-400 pointer-events-none transition-all"
-          style={{ left: `calc(${pct}% - ${pct * 0.4}px - 2px)` }}
+          className="absolute w-5 h-5 rounded-full bg-white shadow-lg border-2 border-amber-400 pointer-events-none"
+          style={{ left: `${pct}%`, transform: `translateX(-${pct}%)` }}
         />
       </div>
     </div>
@@ -104,7 +111,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
       if (!r.ok) throw new Error(d.error || 'Eroare')
       setSubmissions(s => ({ ...s, [p.id]: d.submission }))
       if (p.type === 'CODING') {
-        toast('Trimis profesorului', { icon: '👨‍🏫' })
+        toast('Trimis profesorului', { icon: '�' })
       } else if (d.autoCorrect === true) {
         toast.success('Corect! Bravo!')
       } else {
@@ -162,13 +169,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
             className={`w-full mb-2 py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               !moduleId ? 'bg-white text-slate-800 shadow-md' : 'bg-white/10 text-white/60 hover:bg-white/20'
             }`}>
-            <span className="text-base">🎯</span>
+            <Squares2X2Icon className="w-4 h-4" />
             <span>Toate modulele</span>
           </button>
           <div className="grid grid-cols-2 gap-1.5">
             {modules.map(m => {
               const lang = m.language?.toLowerCase()
-              const cfg = LANG_ICONS[lang] || { emoji: '📚', color: 'from-slate-400 to-slate-500' }
+              const cfg = LANG_ICONS[lang] || { Icon: CubeTransparentIcon, color: 'from-slate-400 to-slate-500' }
               const active = moduleId === m.id
               return (
                 <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
@@ -177,7 +184,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                       ? `bg-gradient-to-br ${cfg.color} text-white shadow-lg`
                       : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
                   }`}>
-                  <span className="text-sm">{cfg.emoji}</span>
+                  <cfg.Icon className="w-4 h-4 shrink-0" />
                   <span className="truncate">{m.title.replace(' Fundamentals', '').replace(' Basics', '')}</span>
                 </button>
               )
@@ -305,7 +312,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
           </button>
           <div className="w-8 h-8 bg-white/15 rounded-xl flex items-center justify-center hidden lg:flex shrink-0">
             {langCfg
-              ? <span className="text-base">{langCfg.emoji}</span>
+              ? <langCfg.Icon className="w-4 h-4 text-white" />
               : <FireIcon className="w-4 h-4 text-yellow-300" />
             }
           </div>
@@ -350,16 +357,16 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
               {/* Quick module chips on empty state */}
               <div className="flex flex-wrap gap-2 justify-center mb-6">
                 <button onClick={() => setModuleId('')}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition ${!moduleId ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
-                  🎯 Toate
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${!moduleId ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
+                  <Squares2X2Icon className="w-4 h-4" /> Toate
                 </button>
                 {modules.map(m => {
-                  const cfg = LANG_ICONS[m.language?.toLowerCase()] || { emoji: '📚' }
+                  const cfg = LANG_ICONS[m.language?.toLowerCase()] || { Icon: CubeTransparentIcon }
                   const active = moduleId === m.id
                   return (
                     <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${active ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
-                      {cfg.emoji} {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${active ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
+                      <cfg.Icon className="w-4 h-4" /> {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
                     </button>
                   )
                 })}

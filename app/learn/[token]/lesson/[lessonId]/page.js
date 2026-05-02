@@ -1,16 +1,28 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import LessonRunner from '@/components/public/LessonRunner'
+import LessonLoading from './loading'
 import { LockClosedIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
-import { getStudentLearningAccess } from '@/lib/learning-access'
 
-export default async function LessonPage({ params }) {
-  const { token, lessonId } = await params
-  const student = await prisma.student.findFirst({ where: { accessToken: token } })
-  if (!student) notFound()
+async function LessonContent({ token, lessonId }) {
+  // ── BATCH 1: student + lesson în PARALEL ──
+  const [student, lesson] = await Promise.all([
+    prisma.student.findFirst({ where: { accessToken: token } }),
+    prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        module: { select: { id: true, title: true, slug: true } },
+        problems: { orderBy: { lessonOrder: 'asc' } },
+      },
+    }),
+  ])
+
+  if (!student || !lesson) notFound()
+
   if (student.active === false) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
@@ -23,20 +35,40 @@ export default async function LessonPage({ params }) {
     )
   }
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    include: {
-      module: { select: { id: true, title: true, slug: true } },
-      problems: { orderBy: { lessonOrder: 'asc' } },
-    },
-  })
-  if (!lesson) notFound()
+  const moduleId = lesson.module.id
+  const problemIds = lesson.problems.map(p => p.id)
 
-  // Acces (cu plată inclusă)
-  const learningAccess = await getStudentLearningAccess(student.id)
-  const access = learningAccess.canAccessLesson({ isFree: lesson.isFree, moduleId: lesson.module.id })
+  // ── BATCH 2: TOATE restul în PARALEL (7 query-uri deodată) ──
+  const [latestPayment, manualAccesses, subs, progress, advance, moduleLessons, allProgresses] = await Promise.all([
+    prisma.learningPayment.findFirst({ where: { studentId: student.id }, orderBy: { paymentDate: 'desc' } }),
+    prisma.moduleAccess.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
+    prisma.problemSubmission.findMany({
+      where: { studentId: student.id, lessonId, problemId: { in: problemIds } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.lessonProgress.findUnique({
+      where: { studentId_lessonId: { studentId: student.id, lessonId } },
+    }),
+    prisma.moduleAdvance.findUnique({
+      where: { studentId_moduleId: { studentId: student.id, moduleId } },
+    }),
+    prisma.lesson.findMany({
+      where: { moduleId, active: true },
+      orderBy: { order: 'asc' },
+      select: { id: true, title: true, order: true, isFree: true, _count: { select: { problems: true } } },
+    }),
+    prisma.lessonProgress.findMany({
+      where: { studentId: student.id, lesson: { moduleId } },
+      select: { lessonId: true, completedAt: true, theoryCompleted: true },
+    }),
+  ])
 
-  if (!access) {
+  // Acces inline — fără DB call extra
+  const subscriptionActive = latestPayment && new Date(latestPayment.expiresAt) > new Date()
+  const manualModuleIds = new Set(manualAccesses.map(a => a.moduleId))
+  const canAccess = student.superStudent || subscriptionActive || lesson.isFree || manualModuleIds.has(moduleId)
+
+  if (!canAccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-rose-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-rose-100 p-8 text-center">
@@ -48,7 +80,8 @@ export default async function LessonPage({ params }) {
             Lecția <strong>{lesson.title}</strong> face parte din modulul <strong>{lesson.module.title}</strong> și necesită un abonament activ.
           </p>
           <p className="text-slate-500 text-sm mb-5">
-            Vorbește cu profesorul pentru a achita abonamentul și a continua aceste module. <span className="text-emerald-600 font-semibold">Progresul tău este salvat</span> și te așteaptă.
+            Vorbește cu profesorul pentru a achita abonamentul și a continua aceste module.{' '}
+            <span className="text-emerald-600 font-semibold">Progresul tău este salvat</span> și te așteaptă.
           </p>
           <Link href={`/learn/${token}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition">
             <ChevronLeftIcon className="w-4 h-4" /> Înapoi la modulele tale
@@ -58,36 +91,9 @@ export default async function LessonPage({ params }) {
     )
   }
 
-  // Submisii existente
-  const subs = await prisma.problemSubmission.findMany({
-    where: { studentId: student.id, lessonId, problemId: { in: lesson.problems.map(p => p.id) } },
-    orderBy: { createdAt: 'desc' },
-  })
   const subByProblem = {}
   for (const s of subs) if (!subByProblem[s.problemId]) subByProblem[s.problemId] = s
-
   const problemsWithSub = lesson.problems.map(p => ({ ...p, submission: subByProblem[p.id] || null }))
-
-  const progress = await prisma.lessonProgress.findUnique({
-    where: { studentId_lessonId: { studentId: student.id, lessonId } },
-  })
-
-  const advance = await prisma.moduleAdvance.findUnique({
-    where: { studentId_moduleId: { studentId: student.id, moduleId: lesson.module.id } },
-  })
-
-  // Toate lectiile modulului + progresul lor
-  const [moduleLessons, allProgresses] = await Promise.all([
-    prisma.lesson.findMany({
-      where: { moduleId: lesson.module.id, active: true },
-      orderBy: { order: 'asc' },
-      select: { id: true, title: true, order: true, isFree: true, _count: { select: { problems: true } } },
-    }),
-    prisma.lessonProgress.findMany({
-      where: { studentId: student.id, lesson: { moduleId: lesson.module.id } },
-      select: { lessonId: true, completedAt: true, theoryCompleted: true },
-    }),
-  ])
   const progressByLesson = Object.fromEntries(allProgresses.map(p => [p.lessonId, p]))
 
   return (
@@ -101,5 +107,14 @@ export default async function LessonPage({ params }) {
       progressByLesson={progressByLesson}
       superStudent={student.superStudent ?? false}
     />
+  )
+}
+
+export default async function LessonPage({ params }) {
+  const { token, lessonId } = await params
+  return (
+    <Suspense fallback={<LessonLoading />}>
+      <LessonContent token={token} lessonId={lessonId} />
+    </Suspense>
   )
 }

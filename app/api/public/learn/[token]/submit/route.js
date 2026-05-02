@@ -38,13 +38,16 @@ export async function POST(req, { params }) {
     }
   }
 
-  // Verificare automată dacă tipul permite (toate cu excepția CODING)
+  // Dacă vine cod (fără answer text), tratează mereu ca CODING → merge la profesor
+  const isCoding = problem.type === 'CODING' || (code && !answer)
+
+  // Verificare automată doar pentru non-CODING
   let autoCorrect = null
   let status = 'PENDING'
   let grade = null
   let gradedAt = null
-  if (problem.type !== 'CODING') {
-    const v = verifyAnswer(problem, answer || code || '')
+  if (!isCoding) {
+    const v = verifyAnswer(problem, answer || '')
     autoCorrect = v.isCorrect
     status = 'GRADED'
     grade = autoCorrect ? 100 : 0

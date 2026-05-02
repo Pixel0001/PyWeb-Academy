@@ -34,11 +34,11 @@ export async function GET(req, { params }) {
   const advanceSet = new Set(advances.map(a => a.moduleId))
   const progressMap = new Map(progresses.map(p => [p.lessonId, p]))
 
-  // Calculează disponibilitatea: primul modul mereu accesibil (lecții free); modulele următoare doar dacă advance pe precedentul
+  // Modulele sunt independente — nu necesită terminarea modulului anterior
   const enriched = modules.map((m, idx) => {
     const prev = modules[idx - 1]
-    const unlocked = idx === 0 || (prev && advanceSet.has(prev.id))
     const hasFullAccess = accessSet.has(m.id)
+    const unlocked = true // modulele sunt mereu vizibile
     return {
       id: m.id,
       slug: m.slug,

@@ -192,13 +192,13 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         {/* Step tabs */}
         <div className="grid grid-cols-2 gap-1.5">
           <button onClick={() => { setStep('theory'); setMobileSidebarOpen(false) }}
-            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${step === 'theory' ? 'bg-white text-indigo-700 shadow' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${step === 'theory' ? 'bg-white text-blue-800 shadow' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
             <BookOpenIcon className="w-3.5 h-3.5" /> Teorie
             {progress.theoryCompleted && <CheckSolid className="w-3 h-3 text-emerald-500" />}
           </button>
           <button onClick={() => { if (progress.theoryCompleted) { setStep('problems'); setMobileSidebarOpen(false) } }}
             disabled={!progress.theoryCompleted}
-            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${step === 'problems' ? 'bg-white text-purple-700 shadow' : progress.theoryCompleted ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${step === 'problems' ? 'bg-white text-blue-800 shadow' : progress.theoryCompleted ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>
             <PuzzlePieceIcon className="w-3.5 h-3.5" /> Probleme
           </button>
         </div>
@@ -227,7 +227,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                 <button key={p.id} onClick={() => { setIdx(i); setMobileSidebarOpen(false) }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition ${isActive ? 'bg-white/20 ring-1 ring-white/40' : 'hover:bg-white/10'}`}>
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                    isActive ? 'bg-white text-indigo-700'
+                    isActive ? 'bg-white text-blue-800'
                     : isOk ? 'bg-emerald-500 text-white'
                     : isRev ? 'bg-rose-500 text-white'
                     : isPending ? 'bg-amber-500 text-white'
@@ -260,10 +260,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
               const inner = (
                 <>
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                    isCurrent ? 'bg-white text-indigo-700'
+                    isCurrent ? 'bg-white text-blue-800'
                     : done ? 'bg-emerald-500 text-white'
                     : locked ? 'bg-white/5 text-white/20'
-                    : started ? 'bg-indigo-400 text-white'
+                    : started ? 'bg-blue-500 text-white'
                     : 'bg-white/15 text-white/60'
                   }`}>
                     {done && !isCurrent
@@ -313,7 +313,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       {step === 'problems' && allDone && (
         <div className="p-4 border-t border-white/10">
           <button onClick={finishLesson} disabled={finishing}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition disabled:opacity-60">
+            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition disabled:opacity-60">
             <TrophyIcon className="w-5 h-5" />
             {finishing ? 'Se salveaza...' : 'Finalizeaza lectia'}
           </button>
@@ -326,14 +326,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     <div className="flex h-screen bg-slate-100 overflow-hidden">
 
       {/* ── DESKTOP SIDEBAR ── */}
-      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-indigo-700 via-purple-700 to-indigo-800 text-white overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-y-auto">
         <SidebarContent />
       </aside>
 
       {/* ── MOBILE SIDEBAR OVERLAY ── */}
       {mobileSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="w-72 bg-gradient-to-b from-indigo-700 via-purple-700 to-indigo-800 text-white flex flex-col overflow-y-auto">
+          <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col overflow-y-auto">
             <div className="flex items-center justify-between px-4 pt-4 shrink-0">
               <span className="text-sm font-bold text-white/70">Navigare</span>
               <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 bg-white/10 rounded-lg">
@@ -350,7 +350,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <div className={`shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 text-white shadow-sm ${step === 'theory' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`}>
+        <div className={`shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 text-white shadow-sm bg-gradient-to-r from-blue-900 to-blue-700`}>
           {/* Mobile menu btn */}
           <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-1.5 bg-white/15 rounded-lg">
             <Bars3Icon className="w-5 h-5 text-white" />
@@ -391,12 +391,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
             {/* THEORY */}
             {step === 'theory' && (
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-100 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow">
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-100 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-800 to-blue-900 flex items-center justify-center shadow">
                     <AcademicCapIcon className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-indigo-600 font-bold">Teorie</div>
+                    <div className="text-[10px] uppercase tracking-wider text-blue-700 font-bold">Teorie</div>
                     <h1 className="text-lg font-extrabold text-slate-900">{lesson.title}</h1>
                   </div>
                 </div>
@@ -451,7 +451,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     const isRev = s?.status === 'NEEDS_REVISION'
                     const isPending = s && !isOk && !isRev
                     const cls = i === idx
-                      ? 'bg-indigo-600 text-white ring-2 ring-indigo-300'
+                      ? 'bg-blue-800 text-white ring-2 ring-blue-300'
                       : isOk ? 'bg-emerald-100 text-emerald-700'
                       : isRev ? 'bg-rose-100 text-rose-700'
                       : isPending ? 'bg-amber-100 text-amber-700'
@@ -521,7 +521,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           <div className="space-y-2">
                             {cur.options?.map((opt, i) => (
                               <label key={i} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${answer === opt ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'}`}>
-                                <input type="radio" name="opt" checked={answer === opt} onChange={() => setAnswer(opt)} className="w-4 h-4 accent-indigo-600" />
+                                <input type="radio" name="opt" checked={answer === opt} onChange={() => setAnswer(opt)} className="w-4 h-4 accent-blue-700" />
                                 <span className="text-sm text-slate-800">{opt}</span>
                               </label>
                             ))}
@@ -529,18 +529,18 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         )}
                         {cur.type === 'SHORT_ANSWER' && (
                           <input value={answer} onChange={e => setAnswer(e.target.value)}
-                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition"
                             placeholder="Scrie raspunsul tau..." />
                         )}
                         {cur.type === 'INPUT_OUTPUT' && (
                           <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={4}
-                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-mono text-sm focus:border-indigo-500 outline-none"
+                              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-mono text-sm focus:border-blue-600 outline-none"
                             placeholder="Output asteptat..." />
                         )}
                         {cur.type === 'CODING' && (
                           <div>
                             <textarea value={code} onChange={e => setCode(e.target.value)} rows={12}
-                              className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 focus:border-indigo-400 outline-none"
+                              className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 focus:border-blue-500 outline-none"
                               placeholder={cur.starterCode || `# scrie codul tau (${cur.language || 'python'})`} />
                             <p className="text-xs text-slate-400 mt-1.5">Codul va fi trimis profesorului pentru verificare.</p>
                           </div>
@@ -554,7 +554,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             </button>
                           )}
                           <button onClick={submit} disabled={submitting}
-                            className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition disabled:opacity-50 shadow text-sm">
+                            className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition disabled:opacity-50 shadow text-sm">
                             <PaperAirplaneIcon className="w-4 h-4" />
                             {submitting ? 'Se trimite...' : 'Trimite raspunsul'}
                           </button>
@@ -581,7 +581,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         </button>
                       ) : allDone ? (
                         <button onClick={finishLesson} disabled={finishing}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow">
+                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow">
                           <TrophyIcon className="w-5 h-5" />
                           {finishing ? 'Se salveaza...' : 'Finalizeaza lectia'}
                         </button>
