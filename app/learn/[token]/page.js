@@ -102,7 +102,11 @@ async function DashboardContent({ token }) {
   const globalPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
   // XP & Level
-  const totalXP = xpSubs.reduce((s, sub) => s + Math.round((sub.problem?.points ?? 10) * (sub.grade / 100)), 0)
+  const submissionXP = xpSubs.reduce((s, sub) => s + Math.round((sub.problem?.points ?? 10) * (sub.grade / 100)), 0)
+  const bonusXP = recentBonusPoints.reduce((s, bp) => s + bp.points, 0)
+  // totalXP needs ALL bonus points, not just recent — refetch all
+  const allBonusXP = await prisma.bonusPoint.aggregate({ where: { studentId: student.id }, _sum: { points: true } })
+  const totalXP = submissionXP + (allBonusXP._sum.points ?? 0)
   const LEVELS = [
     { min: 0,    max: 99,   num: 1, name: 'Novice',     color: 'text-slate-300',  bar: 'bg-slate-400' },
     { min: 100,  max: 299,  num: 2, name: 'Explorator', color: 'text-blue-300',   bar: 'bg-blue-400' },
