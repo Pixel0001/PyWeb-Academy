@@ -101,12 +101,10 @@ elev = True
 \`\`\`
 
 ## Tipuri de date principale
-| Tip | Exemplu | Descriere |
-|-----|---------|-----------|
-| **int** | 12 | Număr întreg |
-| **float** | 3.14 | Număr cu virgulă |
-| **str** | "Ana" | Text (string) |
-| **bool** | True / False | Adevărat / Fals |
+- ****int**** — Exemplu: 12 • Descriere: Număr întreg
+- ****float**** — Exemplu: 3.14 • Descriere: Număr cu virgulă
+- ****str**** — Exemplu: "Ana" • Descriere: Text (string)
+- ****bool**** — Exemplu: True / False • Descriere: Adevărat / Fals
 
 ## Reguli pentru nume de variabile
 - Începe cu **literă** sau \`_\`
@@ -227,20 +225,17 @@ print("Anul viitor vei avea", varsta + 1, "ani")
       theory: `# Operatori în Python
 
 ## Aritmetici
-| Operator | Exemplu | Rezultat |
-|----------|---------|----------|
-| \`+\` | 5 + 3 | 8 |
-| \`-\` | 5 - 3 | 2 |
-| \`*\` | 5 * 3 | 15 |
-| \`/\` | 10 / 3 | 3.333... |
-| \`//\` | 10 // 3 | 3 (cât întreg) |
-| \`%\` | 10 % 3 | 1 (rest) |
-| \`**\` | 2 ** 3 | 8 (putere) |
+- **\`+\`** — Exemplu: 5 + 3 • Rezultat: 8
+- **\`-\`** — Exemplu: 5 - 3 • Rezultat: 2
+- **\`*\`** — Exemplu: 5 * 3 • Rezultat: 15
+- **\`/\`** — Exemplu: 10 / 3 • Rezultat: 3.333...
+- **\`//\`** — Exemplu: 10 // 3 • Rezultat: 3 (cât întreg)
+- **\`%\`** — Exemplu: 10 % 3 • Rezultat: 1 (rest)
+- **\`**\`** — Exemplu: 2 ** 3 • Rezultat: 8 (putere)
 
 ## Comparație (returnează True/False)
-| \`==\` | egal | \`5 == 5\` → True |
-| \`!=\` | diferit | \`5 != 3\` → True |
-| \`<\`, \`>\`, \`<=\`, \`>=\` | comparații |
+- **\`!=\`** — egal: diferit • \`5 == 5\` → True: \`5 != 3\` → True
+- **\`<\`, \`>\`, \`<=\`, \`>=\`** — egal: comparații • \`5 == 5\` → True: 
 `,
       problems: [
         mc('Împărțire întreagă',

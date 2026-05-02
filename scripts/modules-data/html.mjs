@@ -424,11 +424,9 @@ Linia 1<br>Linia 2
 \`\`\`
 
 ## Diferență
-| | div | span |
-|---|---|---|
-| Display | block | inline |
-| Linie nouă | Da | Nu |
-| Folosit pentru | grupuri mari | text/elemente mici |
+- **Display** — div: block • span: inline
+- **Linie nouă** — div: Da • span: Nu
+- **Folosit pentru** — div: grupuri mari • span: text/elemente mici
 
 ## ⚠️ Folosește elemente semantice când e posibil!
 În loc de \`<div>\` pentru header, folosește \`<header>\`.

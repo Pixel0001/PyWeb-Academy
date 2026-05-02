@@ -205,19 +205,16 @@ let f = parseFloat("3.14");
       theory: `# Operatori JavaScript
 
 ## Aritmetici
-| Op | Exemplu | Rezultat |
-|----|---------|----------|
-| \`+\` \`-\` \`*\` \`/\` | 10/3 | 3.333... |
-| \`%\` | 10%3 | 1 |
-| \`**\` | 2**3 | 8 |
-| \`++\` | x++ | incrementează |
-| \`--\` | x-- | decrementează |
+- **\`+\` \`-\` \`*\` \`/\`** — Exemplu: 10/3 • Rezultat: 3.333...
+- **\`%\`** — Exemplu: 10%3 • Rezultat: 1
+- **\`**\`** — Exemplu: 2**3 • Rezultat: 8
+- **\`++\`** — Exemplu: x++ • Rezultat: incrementează
+- **\`--\`** — Exemplu: x-- • Rezultat: decrementează
 
 ## Comparație
-| \`==\` | egal **slab** (cu conversie de tip) |
-| \`===\` | egal **strict** (recomandat!) |
-| \`!=\`, \`!==\` | diferit |
-| \`<\`, \`>\`, \`<=\`, \`>=\` | comparații |
+- **\`===\`** — egal **strict** (recomandat!)
+- **\`!=\`, \`!==\`** — diferit
+- **\`<\`, \`>\`, \`<=\`, \`>=\`** — comparații
 
 ## ⚠️ == vs ===
 \`\`\`javascript

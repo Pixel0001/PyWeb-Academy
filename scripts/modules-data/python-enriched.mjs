@@ -97,12 +97,10 @@ Iubesc Python!
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect | De ce |
-|--------|--------|-------|
-| \`Print("hi")\` | \`print("hi")\` | Python e **case-sensitive** — minusculă! |
-| \`print("hi)\` | \`print("hi")\` | Lipsește ghilimea de închidere |
-| \`print"hi"\` | \`print("hi")\` | Lipsesc parantezele |
-| \`print(hi)\` | \`print("hi")\` | Lipsesc ghilimelele |
+- **\`Print("hi")\`** — Corect: \`print("hi")\` • De ce: Python e **case-sensitive** — minusculă!
+- **\`print("hi)\`** — Corect: \`print("hi")\` • De ce: Lipsește ghilimea de închidere
+- **\`print"hi"\`** — Corect: \`print("hi")\` • De ce: Lipsesc parantezele
+- **\`print(hi)\`** — Corect: \`print("hi")\` • De ce: Lipsesc ghilimelele
 
 ## 🎓 Ce ai învățat
 - ✅ Ce este Python și de ce e important
@@ -382,11 +380,9 @@ print(varsta + 1)
 
 Avem **3 funcții magice** pentru conversii:
 
-| Funcție | Ce face | Exemplu |
-|---------|---------|---------|
-| \`int()\` | text/float → întreg | \`int("42") = 42\` |
-| \`float()\` | text/int → cu virgulă | \`float("3.14") = 3.14\` |
-| \`str()\` | orice → text | \`str(42) = "42"\` |
+- **\`int()\`** — Ce face: text/float → întreg • Exemplu: \`int("42") = 42\`
+- **\`float()\`** — Ce face: text/int → cu virgulă • Exemplu: \`float("3.14") = 3.14\`
+- **\`str()\`** — Ce face: orice → text • Exemplu: \`str(42) = "42"\`
 
 ### Exemple:
 \`\`\`python
@@ -528,15 +524,13 @@ Operatorii sunt **simboluri** care fac operații pe valori. Sunt ca **uneltele**
 
 ## 🧮 Operatori aritmetici (matematici)
 
-| Operator | Nume | Exemplu | Rezultat |
-|----------|------|---------|----------|
-| \`+\` | Adunare | \`5 + 3\` | \`8\` |
-| \`-\` | Scădere | \`10 - 4\` | \`6\` |
-| \`*\` | Înmulțire | \`6 * 7\` | \`42\` |
-| \`/\` | Împărțire | \`10 / 4\` | \`2.5\` |
-| \`//\` | Împărțire întreagă | \`10 // 4\` | \`2\` |
-| \`%\` | Rest (modulo) | \`10 % 4\` | \`2\` |
-| \`**\` | Putere | \`2 ** 3\` | \`8\` |
+- **\`+\`** — Nume: Adunare • Exemplu: \`5 + 3\` • Rezultat: \`8\`
+- **\`-\`** — Nume: Scădere • Exemplu: \`10 - 4\` • Rezultat: \`6\`
+- **\`*\`** — Nume: Înmulțire • Exemplu: \`6 * 7\` • Rezultat: \`42\`
+- **\`/\`** — Nume: Împărțire • Exemplu: \`10 / 4\` • Rezultat: \`2.5\`
+- **\`//\`** — Nume: Împărțire întreagă • Exemplu: \`10 // 4\` • Rezultat: \`2\`
+- **\`%\`** — Nume: Rest (modulo) • Exemplu: \`10 % 4\` • Rezultat: \`2\`
+- **\`**\`** — Nume: Putere • Exemplu: \`2 ** 3\` • Rezultat: \`8\`
 
 ### 🎯 Diferența dintre \`/\` și \`//\`
 
@@ -576,14 +570,12 @@ print(16 ** 0.5)     # 4.0 (rădăcina pătrată!)
 
 ## 🔍 Operatori de comparare (returnează True/False)
 
-| Operator | Nume | Exemplu |
-|----------|------|---------|
-| \`==\` | Egal | \`5 == 5\` → True |
-| \`!=\` | Diferit | \`5 != 3\` → True |
-| \`>\` | Mai mare | \`5 > 3\` → True |
-| \`<\` | Mai mic | \`5 < 3\` → False |
-| \`>=\` | Mai mare sau egal | \`5 >= 5\` → True |
-| \`<=\` | Mai mic sau egal | \`5 <= 4\` → False |
+- **\`==\`** — Nume: Egal • Exemplu: \`5 == 5\` → True
+- **\`!=\`** — Nume: Diferit • Exemplu: \`5 != 3\` → True
+- **\`>\`** — Nume: Mai mare • Exemplu: \`5 > 3\` → True
+- **\`<\`** — Nume: Mai mic • Exemplu: \`5 < 3\` → False
+- **\`>=\`** — Nume: Mai mare sau egal • Exemplu: \`5 >= 5\` → True
+- **\`<=\`** — Nume: Mai mic sau egal • Exemplu: \`5 <= 4\` → False
 
 ### ⚠️ \`=\` vs \`==\`
 
@@ -622,12 +614,10 @@ print(not e_zi_lucratoare)    # True
 
 ### 📊 Tabela completă
 
-| A | B | A and B | A or B | not A |
-|---|---|---------|--------|-------|
-| True | True | True | True | False |
-| True | False | False | True | False |
-| False | True | False | True | True |
-| False | False | False | False | True |
+- **True** — B: True • A and B: True • A or B: True • not A: False
+- **True** — B: False • A and B: False • A or B: True • not A: False
+- **False** — B: True • A and B: False • A or B: True • not A: True
+- **False** — B: False • A and B: False • A or B: False • not A: True
 
 ## 🔢 Ordinea operațiilor (PEMDAS)
 
@@ -905,12 +895,10 @@ else:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect | Problemă |
-|--------|--------|----------|
-| \`if x = 5:\` | \`if x == 5:\` | Comparare = \`==\` |
-| \`if x > 5\` | \`if x > 5:\` | Lipsește \`:\` |
-| \`If x:\` | \`if x:\` | i mic! |
-| \`if x and y > 5\` | \`if x > 5 and y > 5\` | "x și y mai mari" se scrie complet |
+- **\`if x = 5:\`** — Corect: \`if x == 5:\` • Problemă: Comparare = \`==\`
+- **\`if x > 5\`** — Corect: \`if x > 5:\` • Problemă: Lipsește \`:\`
+- **\`If x:\`** — Corect: \`if x:\` • Problemă: i mic!
+- **\`if x and y > 5\`** — Corect: \`if x > 5 and y > 5\` • Problemă: "x și y mai mari" se scrie complet
 
 ## 🎓 Ce ai învățat
 - ✅ \`if / elif / else\` pentru decizii
@@ -1133,14 +1121,12 @@ while i <= 5:
 **Output:** 1, 2, 3, 4, 5
 
 ### Pas cu pas:
-| i | i <= 5? | Acțiune |
-|---|---------|---------|
-| 1 | True | print(1), i devine 2 |
-| 2 | True | print(2), i devine 3 |
-| 3 | True | print(3), i devine 4 |
-| 4 | True | print(4), i devine 5 |
-| 5 | True | print(5), i devine 6 |
-| 6 | False | STOP |
+- **1** — i <= 5?: True • Acțiune: print(1), i devine 2
+- **2** — i <= 5?: True • Acțiune: print(2), i devine 3
+- **3** — i <= 5?: True • Acțiune: print(3), i devine 4
+- **4** — i <= 5?: True • Acțiune: print(4), i devine 5
+- **5** — i <= 5?: True • Acțiune: print(5), i devine 6
+- **6** — i <= 5?: False • Acțiune: STOP
 
 ## ⚠️ BUCLA INFINITĂ — pericol!
 
@@ -1230,11 +1216,9 @@ while True:
 
 ## 🆚 break vs continue
 
-| Cuvânt | Ce face |
-|--------|---------|
-| \`break\` | **Iese** complet din buclă |
-| \`continue\` | Sare la **următoarea iterație** |
-| \`pass\` | Nu face nimic (placeholder) |
+- **\`break\`** — **Iese** complet din buclă
+- **\`continue\`** — Sare la **următoarea iterație**
+- **\`pass\`** — Nu face nimic (placeholder)
 
 ## 🎓 Ce ai învățat
 - ✅ \`while\` repetă cât timp condiția e True
@@ -1353,11 +1337,9 @@ for i, fruct in enumerate(fructe):
 
 ## 🆚 for vs while
 
-| Folosește **for** când | Folosește **while** când |
-|------------------------|--------------------------|
-| Știi câte iterații (10 ori) | Nu știi câte iterații |
-| Parcurgi o listă/string | Aștepți o condiție |
-| range(...) | utilizator răspunde "stop" |
+- **Știi câte iterații (10 ori)** — Nu știi câte iterații
+- **Parcurgi o listă/string** — Aștepți o condiție
+- **range(...)** — utilizator răspunde "stop"
 
 ## 🎓 Ce ai învățat
 - ✅ \`for variabilă in secvență:\` parcurge fiecare valoare

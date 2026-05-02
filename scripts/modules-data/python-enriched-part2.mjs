@@ -13,12 +13,10 @@ Ambele sunt **bucle** (repetiții), dar le folosim în situații diferite. Ca do
 
 ## 📊 Tabel rapid de comparație
 
-| Întrebare | Folosește |
-|---|---|
-| **Știu de câte ori repet?** (ex: 10 ori) | \`for\` ✅ |
-| **Repet până se întâmplă ceva?** (necunoscut) | \`while\` ✅ |
-| **Parcurg o listă?** | \`for\` ✅ |
-| **Aștept input corect de la user?** | \`while\` ✅ |
+- ****Știu de câte ori repet?** (ex: 10 ori)** — \`for\` ✅
+- ****Repet până se întâmplă ceva?** (necunoscut)** — \`while\` ✅
+- ****Parcurg o listă?**** — \`for\` ✅
+- ****Aștept input corect de la user?**** — \`while\` ✅
 
 ## 🎯 Exemplu 1 — Știu numărul de repetări
 
@@ -62,10 +60,8 @@ while i <= 5:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | De ce |
-|---|---|
-| \`while\` fără să schimbi variabila | **Buclă infinită** 💥 |
-| \`for i in range(5)\` apoi \`i = 100\` în interior | Nu schimbă numărul de repetări |
+- **\`while\` fără să schimbi variabila** — **Buclă infinită** 💥
+- **\`for i in range(5)\` apoi \`i = 100\` în interior** — Nu schimbă numărul de repetări
 
 ## 🎓 Ce ai învățat
 - ✅ \`for\` = când **știi** de câte ori
@@ -251,12 +247,10 @@ fructe[0] = "ananas"      # schimbă elementul de pe poziția 0
 
 ## 🔍 Verificare
 
-| Operație | Cod | Rezultat |
-|---|---|---|
-| Lungime | \`len(fructe)\` | număr de elemente |
-| Există? | \`"mar" in fructe\` | True / False |
-| Poziția unui element | \`fructe.index("mar")\` | indexul |
-| De câte ori apare | \`fructe.count("mar")\` | un număr |
+- **Lungime** — Cod: \`len(fructe)\` • Rezultat: număr de elemente
+- **Există?** — Cod: \`"mar" in fructe\` • Rezultat: True / False
+- **Poziția unui element** — Cod: \`fructe.index("mar")\` • Rezultat: indexul
+- **De câte ori apare** — Cod: \`fructe.count("mar")\` • Rezultat: un număr
 
 ## 🔗 Combinare
 
@@ -279,11 +273,9 @@ numere.sort(reverse=True)  # descrescător
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`fructe.append("mar", "para")\` | \`fructe.append("mar")\` apoi \`fructe.append("para")\` |
-| \`fructe[10] = "x"\` (poziție inexistentă) | Verifică \`len()\` întâi |
-| \`fructe = fructe.append(...)\` | \`fructe.append(...)\` (e \`None\`!) |
+- **\`fructe.append("mar", "para")\`** — \`fructe.append("mar")\` apoi \`fructe.append("para")\`
+- **\`fructe[10] = "x"\` (poziție inexistentă)** — Verifică \`len()\` întâi
+- **\`fructe = fructe.append(...)\`** — \`fructe.append(...)\` (e \`None\`!)
 
 ## 🎓 Ce ai învățat
 - ✅ \`append\`, \`insert\`, \`remove\`, \`pop\`
@@ -402,10 +394,8 @@ print(preturi)  # [20, 40, 60]
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`for i in fructe: i = "x"\` (nu schimbă lista) | \`for i in range(len(fructe)): fructe[i] = "x"\` |
-| Uiți \`suma = 0\` înainte | Inițializează acumulator înainte de buclă |
+- **\`for i in fructe: i = "x"\` (nu schimbă lista)** — \`for i in range(len(fructe)): fructe[i] = "x"\`
+- **Uiți \`suma = 0\` înainte** — Inițializează acumulator înainte de buclă
 
 ## 🎓 Ce ai învățat
 - ✅ \`for x in lista\` — parcurgere simplă
@@ -630,19 +620,15 @@ for elev, n in note.items():
 
 ## 📋 Comparație: listă vs dicționar
 
-| Listă | Dicționar |
-|---|---|
-| \`["mar", "para"]\` | \`{"fruct1": "mar", "fruct2": "para"}\` |
-| Acces prin **index** \`l[0]\` | Acces prin **cheie** \`d["fruct1"]\` |
-| Ordonată | Ordonată (din Python 3.7+) |
-| Bună pentru **secvențe** | Bună pentru **etichete** |
+- **\`["mar", "para"]\`** — \`{"fruct1": "mar", "fruct2": "para"}\`
+- **Acces prin **index** \`l[0]\`** — Acces prin **cheie** \`d["fruct1"]\`
+- **Ordonată** — Ordonată (din Python 3.7+)
+- **Bună pentru **secvențe**** — Bună pentru **etichete**
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`elev["nume"]\` la o cheie ce nu există → eroare | Folosește \`elev.get("nume", "default")\` |
-| Cheie \`= valoare\` (cu \`=\`) | Cheie \`:\` valoare (cu \`:\`) |
+- **\`elev["nume"]\` la o cheie ce nu există → eroare** — Folosește \`elev.get("nume", "default")\`
+- **Cheie \`= valoare\` (cu \`=\`)** — Cheie \`:\` valoare (cu \`:\`)
 
 ## 🎓 Ce ai învățat
 - ✅ \`{cheie: valoare}\`
@@ -759,20 +745,16 @@ print(x)        # 10  ← rămâne neschimbată
 
 ## 📋 Recapitulare rapidă
 
-| Concept | Exemplu |
-|---|---|
-| Default | \`def f(x=5):\` |
-| Keyword | \`f(x=10)\` |
-| Multiple return | \`return a, b\` |
-| Variable args | \`def f(*nums):\` |
-| Variabile locale | Există doar în funcție |
+- **Default** — \`def f(x=5):\`
+- **Keyword** — \`f(x=10)\`
+- **Multiple return** — \`return a, b\`
+- **Variable args** — \`def f(*nums):\`
+- **Variabile locale** — Există doar în funcție
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`def f(x=5, y):\` | Defaults la final: \`def f(y, x=5):\` |
-| Folosești variabilă locală în afară | Returnează valoarea sau folosește globală |
+- **\`def f(x=5, y):\`** — Defaults la final: \`def f(y, x=5):\`
+- **Folosești variabilă locală în afară** — Returnează valoarea sau folosește globală
 
 ## 🎓 Ce ai învățat
 - ✅ Parametri default și keyword
@@ -815,15 +797,13 @@ Programele dau **erori** uneori. În loc să se prăbușească, le putem **prind
 
 ## 🐛 Tipuri comune de erori
 
-| Eroare | Când apare | Exemplu |
-|---|---|---|
-| \`SyntaxError\` | Cod scris greșit | \`print("hi"\` (lipsește \`)\`) |
-| \`NameError\` | Variabilă inexistentă | \`print(x)\` când x nu există |
-| \`TypeError\` | Operație imposibilă pe tipul respectiv | \`"a" + 5\` |
-| \`ValueError\` | Tip corect, valoare greșită | \`int("abc")\` |
-| \`ZeroDivisionError\` | Împărțire la 0 | \`5 / 0\` |
-| \`IndexError\` | Index inexistent | \`l[100]\` |
-| \`KeyError\` | Cheie inexistentă în dict | \`d["x"]\` |
+- **\`SyntaxError\`** — Când apare: Cod scris greșit • Exemplu: \`print("hi"\` (lipsește \`)\`)
+- **\`NameError\`** — Când apare: Variabilă inexistentă • Exemplu: \`print(x)\` când x nu există
+- **\`TypeError\`** — Când apare: Operație imposibilă pe tipul respectiv • Exemplu: \`"a" + 5\`
+- **\`ValueError\`** — Când apare: Tip corect, valoare greșită • Exemplu: \`int("abc")\`
+- **\`ZeroDivisionError\`** — Când apare: Împărțire la 0 • Exemplu: \`5 / 0\`
+- **\`IndexError\`** — Când apare: Index inexistent • Exemplu: \`l[100]\`
+- **\`KeyError\`** — Când apare: Cheie inexistentă în dict • Exemplu: \`d["x"]\`
 
 ## 🎯 Sintaxa de bază
 
@@ -882,10 +862,8 @@ def imparte(a, b):
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`except:\` gol prinde și \`Ctrl+C\` | Specifică tipul: \`except ValueError:\` |
-| Pui mult cod în \`try\` | Doar linia care poate da eroare |
+- **\`except:\` gol prinde și \`Ctrl+C\`** — Specifică tipul: \`except ValueError:\`
+- **Pui mult cod în \`try\`** — Doar linia care poate da eroare
 
 ## 🎓 Ce ai învățat
 - ✅ Tipurile comune de erori
@@ -955,10 +933,8 @@ print(rex.varsta) # 3
 
 ## 🔍 Ce este \`__init__\` și \`self\`?
 
-| Concept | Explicație |
-|---|---|
-| \`__init__\` | Funcția "constructor" — rulează automat la crearea obiectului |
-| \`self\` | "Eu, obiectul curent" — referința către instanță |
+- **\`__init__\`** — Funcția "constructor" — rulează automat la crearea obiectului
+- **\`self\`** — "Eu, obiectul curent" — referința către instanță
 
 > 💡 Fiecare metodă **trebuie** să aibă \`self\` ca prim parametru.
 
@@ -986,11 +962,9 @@ print(ana.medie())   # 9.5
 
 ## 🌳 De ce OOP?
 
-| Fără OOP | Cu OOP |
-|---|---|
-| Funcții și variabile separate | Totul grupat logic |
-| Greu de scalat | Ușor de extins |
-| Duplicare cod | Reutilizare |
+- **Funcții și variabile separate** — Totul grupat logic
+- **Greu de scalat** — Ușor de extins
+- **Duplicare cod** — Reutilizare
 
 ## 🎯 Mini-vocabular OOP
 
@@ -1002,11 +976,9 @@ print(ana.medie())   # 9.5
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Uiți \`self\` în metodă | \`def metoda(self, x):\` |
-| Apelezi clasa fără paranteze | \`obj = Clasa(args)\` |
-| \`nume = "x"\` în loc de \`self.nume = "x"\` | Atributele se setează prin self |
+- **Uiți \`self\` în metodă** — \`def metoda(self, x):\`
+- **Apelezi clasa fără paranteze** — \`obj = Clasa(args)\`
+- **\`nume = "x"\` în loc de \`self.nume = "x"\`** — Atributele se setează prin self
 
 ## 🎓 Ce ai învățat
 - ✅ Diferența clasă / obiect

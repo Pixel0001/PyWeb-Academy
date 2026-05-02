@@ -36,14 +36,12 @@ Imaginează-ți un site ca o casă:
 
 ## 🧩 Ce înseamnă fiecare parte?
 
-| Tag | Rol |
-|---|---|
-| \`<!DOCTYPE html>\` | "Folosesc HTML5" — întotdeauna pe prima linie |
-| \`<html>\` | Începutul și sfârșitul paginii |
-| \`<head>\` | **Informații** despre pagină (nu apar pe ecran) |
-| \`<title>\` | Numele afișat în tab-ul browserului |
-| \`<meta charset>\` | Permite litere cu diacritice (ă, î, ș) |
-| \`<body>\` | **Conținutul** vizibil |
+- **\`<!DOCTYPE html>\`** — "Folosesc HTML5" — întotdeauna pe prima linie
+- **\`<html>\`** — Începutul și sfârșitul paginii
+- **\`<head>\`** — **Informații** despre pagină (nu apar pe ecran)
+- **\`<title>\`** — Numele afișat în tab-ul browserului
+- **\`<meta charset>\`** — Permite litere cu diacritice (ă, î, ș)
+- **\`<body>\`** — **Conținutul** vizibil
 
 ## 🏷️ Ce e un tag?
 
@@ -68,11 +66,9 @@ Un **tag** e o etichetă scrisă cu \`<\` și \`>\`:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<p>text\` (uitat închidere) | \`<p>text</p>\` |
-| \`<P>\` cu majuscule (vechi) | \`<p>\` cu minuscule |
-| Nu pui \`<!DOCTYPE html>\` | Pune-l mereu pe prima linie |
+- **\`<p>text\` (uitat închidere)** — \`<p>text</p>\`
+- **\`<P>\` cu majuscule (vechi)** — \`<p>\` cu minuscule
+- **Nu pui \`<!DOCTYPE html>\`** — Pune-l mereu pe prima linie
 
 ## 🎓 Ce ai învățat
 - ✅ HTML = scheletul site-ului
@@ -177,11 +173,9 @@ Hai să descoperim cele mai importante tag-uri pentru text 📝.
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Mai mulți \`<h1>\` | Doar unul pe pagină |
-| \`<br />\` (XHTML vechi) | \`<br>\` (HTML5) |
-| Folosești \`<b>\` peste tot | Folosește \`<strong>\` pentru sens |
+- **Mai mulți \`<h1>\`** — Doar unul pe pagină
+- **\`<br />\` (XHTML vechi)** — \`<br>\` (HTML5)
+- **Folosești \`<b>\` peste tot** — Folosește \`<strong>\` pentru sens
 
 ## 🎓 Ce ai învățat
 - ✅ Titluri \`<h1>\` - \`<h6>\`
@@ -224,14 +218,12 @@ HTML are tag-uri pentru orice fel de text 📚.
 
 ## 💪 Importanță
 
-| Tag | Ce înseamnă |
-|---|---|
-| \`<strong>\` | Foarte important (bold) |
-| \`<em>\` | Accentuat (italic) |
-| \`<mark>\` | Evidențiat (cu galben) |
-| \`<small>\` | Text mai mic |
-| \`<del>\` | Tăiat (șters) |
-| \`<ins>\` | Subliniat (adăugat) |
+- **\`<strong>\`** — Foarte important (bold)
+- **\`<em>\`** — Accentuat (italic)
+- **\`<mark>\`** — Evidențiat (cu galben)
+- **\`<small>\`** — Text mai mic
+- **\`<del>\`** — Tăiat (șters)
+- **\`<ins>\`** — Subliniat (adăugat)
 
 \`\`\`html
 <p>
@@ -262,12 +254,10 @@ def salut():
 </pre>
 \`\`\`
 
-| Tag | Pentru |
-|---|---|
-| \`<code>\` | Cod inline (în mijloc de propoziție) |
-| \`<pre>\` | Cod multi-linie (păstrează spațiile) |
-| \`<kbd>\` | Tastă apăsată: \`<kbd>Ctrl</kbd>\` |
-| \`<samp>\` | Exemplu output |
+- **\`<code>\`** — Cod inline (în mijloc de propoziție)
+- **\`<pre>\`** — Cod multi-linie (păstrează spațiile)
+- **\`<kbd>\`** — Tastă apăsată: \`<kbd>Ctrl</kbd>\`
+- **\`<samp>\`** — Exemplu output
 
 ## 💬 Citate
 
@@ -279,10 +269,8 @@ def salut():
 <p>Profesorul a spus <q>să învățăm bine</q>.</p>
 \`\`\`
 
-| Tag | Pentru |
-|---|---|
-| \`<blockquote>\` | Citat lung (paragraf) |
-| \`<q>\` | Citat scurt (în text) — adaugă automat ghilimele |
+- **\`<blockquote>\`** — Citat lung (paragraf)
+- **\`<q>\`** — Citat scurt (în text) — adaugă automat ghilimele
 
 ## 🎯 Adresă
 
@@ -295,10 +283,8 @@ def salut():
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<b>\` peste tot | \`<strong>\` pentru sens |
-| Spații multiple în text | \`<pre>\` păstrează spațiile |
+- **\`<b>\` peste tot** — \`<strong>\` pentru sens
+- **Spații multiple în text** — \`<pre>\` păstrează spațiile
 
 ## 🎓 Ce ai învățat
 - ✅ Tag-uri semantice pentru importanță
@@ -411,11 +397,9 @@ Link-urile sunt **podurile** dintre pagini 🌉.
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<a>Click</a>\` (fără href) | \`<a href="...">Click</a>\` |
-| "Click aici" ca text | Text descriptiv: "Vezi raportul anual" |
-| Lipsă \`rel="noopener"\` la _blank | Adaugă-l mereu |
+- **\`<a>Click</a>\` (fără href)** — \`<a href="...">Click</a>\`
+- **"Click aici" ca text** — Text descriptiv: "Vezi raportul anual"
+- **Lipsă \`rel="noopener"\` la _blank** — Adaugă-l mereu
 
 ## 🎓 Ce ai învățat
 - ✅ \`<a href="...">text</a>\`
@@ -466,14 +450,12 @@ Imaginile aduc viață paginilor! 🎨
 
 ## 🏷️ Atribute principale
 
-| Atribut | Rol |
-|---|---|
-| \`src\` | Adresa imaginii (obligatoriu!) |
-| \`alt\` | Text alternativ (foarte important!) |
-| \`width\` | Lățime (px) |
-| \`height\` | Înălțime (px) |
-| \`title\` | Tooltip la hover |
-| \`loading="lazy"\` | Încarcă doar când e nevoie |
+- **\`src\`** — Adresa imaginii (obligatoriu!)
+- **\`alt\`** — Text alternativ (foarte important!)
+- **\`width\`** — Lățime (px)
+- **\`height\`** — Înălțime (px)
+- **\`title\`** — Tooltip la hover
+- **\`loading="lazy"\`** — Încarcă doar când e nevoie
 
 \`\`\`html
 <img src="cat.jpg" alt="Pisică portocalie" width="300" loading="lazy">
@@ -529,21 +511,17 @@ Imaginile aduc viață paginilor! 🎨
 
 ## 🎯 Format-uri de imagine
 
-| Format | Folosit pentru |
-|---|---|
-| \`.jpg\` / \`.jpeg\` | Fotografii |
-| \`.png\` | Imagini cu transparență |
-| \`.gif\` | Animații simple |
-| \`.svg\` | Iconițe, logo-uri (vector) |
-| \`.webp\` | Modern, mai mic |
+- **\`.jpg\` / \`.jpeg\`** — Fotografii
+- **\`.png\`** — Imagini cu transparență
+- **\`.gif\`** — Animații simple
+- **\`.svg\`** — Iconițe, logo-uri (vector)
+- **\`.webp\`** — Modern, mai mic
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Fără \`alt\` | Adaugă mereu \`alt\` |
-| Imagine 5MB pentru thumbnail | Optimizează dimensiunea |
-| Setezi doar \`width\` | Setează și \`height\` (evită layout shift) |
+- **Fără \`alt\`** — Adaugă mereu \`alt\`
+- **Imagine 5MB pentru thumbnail** — Optimizează dimensiunea
+- **Setezi doar \`width\`** — Setează și \`height\` (evită layout shift)
 
 ## 🎓 Ce ai învățat
 - ✅ \`<img src="..." alt="...">\`
@@ -623,13 +601,11 @@ HTML are 3 tipuri de liste 📑.
 <ol reversed>        <!-- numărătoare inversă -->
 \`\`\`
 
-| \`type\` | Afișează |
-|---|---|
-| \`1\` (default) | 1, 2, 3 |
-| \`A\` | A, B, C |
-| \`a\` | a, b, c |
-| \`I\` | I, II, III |
-| \`i\` | i, ii, iii |
+- **\`1\` (default)** — 1, 2, 3
+- **\`A\`** — A, B, C
+- **\`a\`** — a, b, c
+- **\`I\`** — I, II, III
+- **\`i\`** — i, ii, iii
 
 ## 📚 Liste de descrieri: \`<dl>\`
 
@@ -645,11 +621,9 @@ Pentru perechi termen-definiție:
 </dl>
 \`\`\`
 
-| Tag | Înseamnă |
-|---|---|
-| \`<dl>\` | description list |
-| \`<dt>\` | term (termen) |
-| \`<dd>\` | definition (definiție) |
+- **\`<dl>\`** — description list
+- **\`<dt>\`** — term (termen)
+- **\`<dd>\`** — definition (definiție)
 
 ## 🪆 Liste imbricate
 
@@ -672,10 +646,8 @@ Pentru perechi termen-definiție:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<li>\` în afara \`<ul>\` / \`<ol>\` | Mereu în interiorul lor |
-| \`<ul><li>1</li><li>2</li></ul>\` într-o linie | OK dar mai greu de citit |
+- **\`<li>\` în afara \`<ul>\` / \`<ol>\`** — Mereu în interiorul lor
+- **\`<ul><li>1</li><li>2</li></ul>\` într-o linie** — OK dar mai greu de citit
 
 ## 🎓 Ce ai învățat
 - ✅ \`<ul>\` neordonate (puncte)
@@ -741,12 +713,10 @@ Aceste 2 tag-uri NU au înțeles propriu — sunt **cutii goale** pe care le fol
 
 ## 📊 Comparație vizuală
 
-| | \`<div>\` | \`<span>\` |
-|---|---|---|
-| **Tip** | Bloc | Inline |
-| **Lățime** | Tot rândul | Cât e nevoie |
-| **Linie nouă** | Da | Nu |
-| **Folosit pentru** | Layout | Stilizare text |
+- ****Tip**** — \`<div>\`: Bloc • \`<span>\`: Inline
+- ****Lățime**** — \`<div>\`: Tot rândul • \`<span>\`: Cât e nevoie
+- ****Linie nouă**** — \`<div>\`: Da • \`<span>\`: Nu
+- ****Folosit pentru**** — \`<div>\`: Layout • \`<span>\`: Stilizare text
 
 ## 🎯 Exemplu
 
@@ -763,10 +733,8 @@ Aceste 2 tag-uri NU au înțeles propriu — sunt **cutii goale** pe care le fol
 <div class="card" id="card-2">...</div>
 \`\`\`
 
-| Atribut | Reguli |
-|---|---|
-| \`class\` | Poate fi pe **multe** elemente (e o etichetă) |
-| \`id\` | **Unic** pe pagină (un singur element) |
+- **\`class\`** — Poate fi pe **multe** elemente (e o etichetă)
+- **\`id\`** — **Unic** pe pagină (un singur element)
 
 > 💡 Ulterior CSS-ul va folosi \`.card\` (clase) sau \`#card-1\` (id).
 
@@ -786,11 +754,9 @@ Aceste 2 tag-uri NU au înțeles propriu — sunt **cutii goale** pe care le fol
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<div>\` în mijloc de paragraf (rupe linia) | Folosește \`<span>\` |
-| Mai multe elemente cu același \`id\` | Fiecare \`id\` trebuie unic |
-| \`<span>\` ca bloc | Folosește \`<div>\` |
+- **\`<div>\` în mijloc de paragraf (rupe linia)** — Folosește \`<span>\`
+- **Mai multe elemente cu același \`id\`** — Fiecare \`id\` trebuie unic
+- **\`<span>\` ca bloc** — Folosește \`<div>\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`<div>\` = bloc, ocupă tot rândul
@@ -844,15 +810,13 @@ Exemplu real:
 
 ## 🌐 Atribute globale (orice tag le poate avea)
 
-| Atribut | Ce face |
-|---|---|
-| \`id\` | Identificator unic |
-| \`class\` | Etichetă (pentru CSS/JS) |
-| \`style\` | CSS direct (de evitat) |
-| \`title\` | Tooltip la hover |
-| \`lang\` | Limba ("ro", "en") |
-| \`hidden\` | Ascunde elementul |
-| \`data-*\` | Date personalizate |
+- **\`id\`** — Identificator unic
+- **\`class\`** — Etichetă (pentru CSS/JS)
+- **\`style\`** — CSS direct (de evitat)
+- **\`title\`** — Tooltip la hover
+- **\`lang\`** — Limba ("ro", "en")
+- **\`hidden\`** — Ascunde elementul
+- **\`data-*\`** — Date personalizate
 
 \`\`\`html
 <p id="intro" class="big" title="Salut!" lang="ro">Bună ziua!</p>
@@ -860,12 +824,10 @@ Exemplu real:
 
 ## 🎯 Atribute specifice unui tag
 
-| Tag | Atribute proprii |
-|---|---|
-| \`<a>\` | \`href\`, \`target\`, \`download\`, \`rel\` |
-| \`<img>\` | \`src\`, \`alt\`, \`width\`, \`height\` |
-| \`<input>\` | \`type\`, \`name\`, \`value\`, \`placeholder\` |
-| \`<button>\` | \`type\`, \`disabled\` |
+- **\`<a>\`** — \`href\`, \`target\`, \`download\`, \`rel\`
+- **\`<img>\`** — \`src\`, \`alt\`, \`width\`, \`height\`
+- **\`<input>\`** — \`type\`, \`name\`, \`value\`, \`placeholder\`
+- **\`<button>\`** — \`type\`, \`disabled\`
 
 ## 🎯 Atribute booleene
 
@@ -899,11 +861,9 @@ btn.dataset.tip   // "primar"
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<a href=https://...>\` | \`<a href="https://...">\` |
-| \`<input required="true">\` | \`<input required>\` |
-| \`HREF\` | \`href\` (minuscule) |
+- **\`<a href=https://...>\`** — \`<a href="https://...">\`
+- **\`<input required="true">\`** — \`<input required>\`
+- **\`HREF\`** — \`href\` (minuscule)
 
 ## 🎓 Ce ai învățat
 - ✅ Atribute = opțiuni pentru tag-uri
@@ -969,16 +929,14 @@ Tabelele sunt pentru **date organizate în rânduri și coloane** 📋.
 
 ## 🧩 Tag-uri principale
 
-| Tag | Înseamnă |
-|---|---|
-| \`<table>\` | tabel întreg |
-| \`<thead>\` | secțiunea cap (titluri) |
-| \`<tbody>\` | secțiunea de date |
-| \`<tfoot>\` | secțiunea de jos (sume etc.) |
-| \`<tr>\` | rând (table row) |
-| \`<th>\` | celulă de titlu (bold, centrat) |
-| \`<td>\` | celulă de date (table data) |
-| \`<caption>\` | titlul tabelului |
+- **\`<table>\`** — tabel întreg
+- **\`<thead>\`** — secțiunea cap (titluri)
+- **\`<tbody>\`** — secțiunea de date
+- **\`<tfoot>\`** — secțiunea de jos (sume etc.)
+- **\`<tr>\`** — rând (table row)
+- **\`<th>\`** — celulă de titlu (bold, centrat)
+- **\`<td>\`** — celulă de date (table data)
+- **\`<caption>\`** — titlul tabelului
 
 ## 🎯 Cu \`<caption>\`
 
@@ -1047,11 +1005,9 @@ Tabelele sunt pentru **date organizate în rânduri și coloane** 📋.
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<td>\` în afara \`<tr>\` | Mereu în interiorul \`<tr>\` |
-| Folosești tabele pentru layout | Folosește CSS Grid |
-| Uiți \`<thead>\` și \`<tbody>\` | Bună practică |
+- **\`<td>\` în afara \`<tr>\`** — Mereu în interiorul \`<tr>\`
+- **Folosești tabele pentru layout** — Folosește CSS Grid
+- **Uiți \`<thead>\` și \`<tbody>\`** — Bună practică
 
 ## 🎓 Ce ai învățat
 - ✅ Structura: \`<table> > <tr> > <th>/<td>\`
@@ -1105,32 +1061,26 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## 🧩 Tag-uri principale
 
-| Tag | Rol |
-|---|---|
-| \`<form>\` | container — toate input-urile |
-| \`<input>\` | câmp de date |
-| \`<label>\` | etichetă pentru un câmp |
-| \`<button>\` | buton de trimitere |
-| \`<textarea>\` | text lung |
-| \`<select>\` / \`<option>\` | dropdown |
+- **\`<form>\`** — container — toate input-urile
+- **\`<input>\`** — câmp de date
+- **\`<label>\`** — etichetă pentru un câmp
+- **\`<button>\`** — buton de trimitere
+- **\`<textarea>\`** — text lung
+- **\`<select>\` / \`<option>\`** — dropdown
 
 ## 🎯 Atribute pe \`<form>\`
 
-| Atribut | Rol |
-|---|---|
-| \`action\` | URL unde se trimit datele |
-| \`method\` | \`GET\` (în URL) sau \`POST\` (ascuns) |
+- **\`action\`** — URL unde se trimit datele
+- **\`method\`** — \`GET\` (în URL) sau \`POST\` (ascuns)
 
 ## 🏷️ Atribute pe \`<input>\`
 
-| Atribut | Rol |
-|---|---|
-| \`type\` | text, email, password, number, etc. |
-| \`name\` | Numele câmpului (cum e trimis) |
-| \`id\` | Pentru \`<label for="...">\` |
-| \`value\` | Valoare implicită |
-| \`placeholder\` | Text "fantomă" în câmp |
-| \`required\` | Obligatoriu |
+- **\`type\`** — text, email, password, number, etc.
+- **\`name\`** — Numele câmpului (cum e trimis)
+- **\`id\`** — Pentru \`<label for="...">\`
+- **\`value\`** — Valoare implicită
+- **\`placeholder\`** — Text "fantomă" în câmp
+- **\`required\`** — Obligatoriu
 
 \`\`\`html
 <input type="email" name="email" id="email" placeholder="exemplu@site.ro" required>
@@ -1173,11 +1123,9 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Uiți \`name\` pe input | Fără \`name\` valoarea NU se trimite |
-| \`<label>\` fără \`for\` | Adaugă \`for="id-input"\` |
-| \`<button>\` în afara \`<form>\` | E OK dar nu trimite formular |
+- **Uiți \`name\` pe input** — Fără \`name\` valoarea NU se trimite
+- **\`<label>\` fără \`for\`** — Adaugă \`for="id-input"\`
+- **\`<button>\` în afara \`<form>\`** — E OK dar nu trimite formular
 
 ## 🎓 Ce ai învățat
 - ✅ \`<form>\` cu \`action\` și \`method\`
@@ -1220,14 +1168,12 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## 📋 Tipuri text-uri
 
-| Type | Pentru |
-|---|---|
-| \`text\` | Text scurt |
-| \`password\` | Parolă (caracterele apar ca puncte) |
-| \`email\` | Email (validare automată) |
-| \`url\` | URL |
-| \`tel\` | Telefon |
-| \`search\` | Bară căutare |
+- **\`text\`** — Text scurt
+- **\`password\`** — Parolă (caracterele apar ca puncte)
+- **\`email\`** — Email (validare automată)
+- **\`url\`** — URL
+- **\`tel\`** — Telefon
+- **\`search\`** — Bară căutare
 
 \`\`\`html
 <input type="email" placeholder="exemplu@site.ro">
@@ -1236,15 +1182,13 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## 🔢 Numere & date
 
-| Type | Pentru |
-|---|---|
-| \`number\` | Număr (cu săgeți sus/jos) |
-| \`range\` | Slider |
-| \`date\` | Calendar |
-| \`time\` | Oră |
-| \`datetime-local\` | Data + oră |
-| \`month\` | Luna |
-| \`week\` | Săptămână |
+- **\`number\`** — Număr (cu săgeți sus/jos)
+- **\`range\`** — Slider
+- **\`date\`** — Calendar
+- **\`time\`** — Oră
+- **\`datetime-local\`** — Data + oră
+- **\`month\`** — Luna
+- **\`week\`** — Săptămână
 
 \`\`\`html
 <input type="number" min="1" max="100" step="1">
@@ -1273,11 +1217,9 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## 🎨 Speciale
 
-| Type | Pentru |
-|---|---|
-| \`color\` | Selector culoare |
-| \`file\` | Upload fișier |
-| \`hidden\` | Câmp ascuns (date trimise dar invizibile) |
+- **\`color\`** — Selector culoare
+- **\`file\`** — Upload fișier
+- **\`hidden\`** — Câmp ascuns (date trimise dar invizibile)
 
 \`\`\`html
 <input type="color" value="#ff0000">
@@ -1287,16 +1229,14 @@ Formularele permit utilizatorilor să **trimită date** (înregistrare, contact,
 
 ## 🎯 Atribute utile
 
-| Atribut | Rol |
-|---|---|
-| \`min\` / \`max\` | Limite (number, date, range) |
-| \`step\` | Pasul (ex: 0.5) |
-| \`pattern\` | Regex pentru validare |
-| \`maxlength\` | Maxim caractere (text) |
-| \`autocomplete\` | "off" sau "email" etc. |
-| \`autofocus\` | Focus automat |
-| \`readonly\` | Citește, nu modifică |
-| \`disabled\` | Dezactivat (gri) |
+- **\`min\` / \`max\`** — Limite (number, date, range)
+- **\`step\`** — Pasul (ex: 0.5)
+- **\`pattern\`** — Regex pentru validare
+- **\`maxlength\`** — Maxim caractere (text)
+- **\`autocomplete\`** — "off" sau "email" etc.
+- **\`autofocus\`** — Focus automat
+- **\`readonly\`** — Citește, nu modifică
+- **\`disabled\`** — Dezactivat (gri)
 
 ## 🎯 Exemplu complet
 
@@ -1378,13 +1318,11 @@ HTML are validare automată!
 
 ### Atribute de validare
 
-| Atribut | Pentru |
-|---|---|
-| \`required\` | Obligatoriu |
-| \`min\` / \`max\` | Limite numerice |
-| \`minlength\` / \`maxlength\` | Lungime text |
-| \`pattern\` | Regex personalizat |
-| \`type="email/url/..."\` | Format specific |
+- **\`required\`** — Obligatoriu
+- **\`min\` / \`max\`** — Limite numerice
+- **\`minlength\` / \`maxlength\`** — Lungime text
+- **\`pattern\`** — Regex personalizat
+- **\`type="email/url/..."\`** — Format specific
 
 \`\`\`html
 <input type="text" required minlength="3" maxlength="20">
@@ -1436,11 +1374,9 @@ input:required { background: #ffe; }
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Doar placeholder fără label | Folosește mereu \`<label>\` |
-| \`<label for="nume">\` + \`<input>\` fără \`id="nume"\` | Sincronizează id-urile |
-| \`required="true"\` | Doar \`required\` |
+- **Doar placeholder fără label** — Folosește mereu \`<label>\`
+- **\`<label for="nume">\` + \`<input>\` fără \`id="nume"\`** — Sincronizează id-urile
+- **\`required="true"\`** — Doar \`required\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`<label>\` esențial pentru accesibilitate
@@ -1497,18 +1433,16 @@ input:required { background: #ffe; }
 
 ## 🏛️ Tag-uri semantice principale
 
-| Tag | Ce conține |
-|---|---|
-| \`<header>\` | Antet (logo, titlu, navigare) |
-| \`<nav>\` | Meniu navigare |
-| \`<main>\` | Conținut principal (UNUL pe pagină) |
-| \`<article>\` | Articol independent |
-| \`<section>\` | Secțiune tematică |
-| \`<aside>\` | Lateral (sidebar) |
-| \`<footer>\` | Subsol |
-| \`<figure>\` | Imagine cu descriere |
-| \`<figcaption>\` | Descrierea pentru figure |
-| \`<time>\` | Data / ora |
+- **\`<header>\`** — Antet (logo, titlu, navigare)
+- **\`<nav>\`** — Meniu navigare
+- **\`<main>\`** — Conținut principal (UNUL pe pagină)
+- **\`<article>\`** — Articol independent
+- **\`<section>\`** — Secțiune tematică
+- **\`<aside>\`** — Lateral (sidebar)
+- **\`<footer>\`** — Subsol
+- **\`<figure>\`** — Imagine cu descriere
+- **\`<figcaption>\`** — Descrierea pentru figure
+- **\`<time>\`** — Data / ora
 
 ## 🎯 Layout tipic
 
@@ -1563,11 +1497,9 @@ input:required { background: #ffe; }
 
 ## 🤔 \`<article>\` vs \`<section>\` — care când?
 
-| | \`<article>\` | \`<section>\` |
-|---|---|---|
-| Independent? | ✅ Da | ❌ Parte dintr-un tot |
-| Exemple | Postare blog, news | Capitol, subsecțiune |
-| Are sens singur? | ✅ Da | ❌ Nu |
+- **Independent?** — \`<article>\`: ✅ Da • \`<section>\`: ❌ Parte dintr-un tot
+- **Exemple** — \`<article>\`: Postare blog, news • \`<section>\`: Capitol, subsecțiune
+- **Are sens singur?** — \`<article>\`: ✅ Da • \`<section>\`: ❌ Nu
 
 ## 🌟 De ce semantic?
 
@@ -1578,11 +1510,9 @@ input:required { background: #ffe; }
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<div>\` pentru tot | Folosește semantic când e relevant |
-| Mai multe \`<main>\` | Doar unul pe pagină |
-| \`<section>\` fără titlu | Mereu cu \`<h2>\`/\`<h3>\` |
+- **\`<div>\` pentru tot** — Folosește semantic când e relevant
+- **Mai multe \`<main>\`** — Doar unul pe pagină
+- **\`<section>\` fără titlu** — Mereu cu \`<h2>\`/\`<h3>\`
 
 ## 🎓 Ce ai învățat
 - ✅ Tag-uri semantice = cu sens
@@ -1641,14 +1571,12 @@ HTML5 are tag-uri native pentru **muzică** și **clipuri** 🎵🎥.
 
 ## 🏷️ Atribute comune
 
-| Atribut | Ce face |
-|---|---|
-| \`controls\` | Afișează butoanele play/pauză |
-| \`autoplay\` | Pornește automat (de obicei mut) |
-| \`muted\` | Fără sunet |
-| \`loop\` | Repetă la sfârșit |
-| \`preload\` | "auto" / "metadata" / "none" |
-| \`poster\` (video) | Imagine afișată înainte de play |
+- **\`controls\`** — Afișează butoanele play/pauză
+- **\`autoplay\`** — Pornește automat (de obicei mut)
+- **\`muted\`** — Fără sunet
+- **\`loop\`** — Repetă la sfârșit
+- **\`preload\`** — "auto" / "metadata" / "none"
+- **\`poster\` (video)** — Imagine afișată înainte de play
 
 \`\`\`html
 <video src="film.mp4" controls autoplay muted loop poster="thumb.jpg">
@@ -1681,18 +1609,14 @@ Browser-uri diferite suportă format-uri diferite:
 ## 🎯 Format-uri populare
 
 ### Video
-| Format | Notă |
-|---|---|
-| \`.mp4\` | Cel mai compatibil |
-| \`.webm\` | Modern, mai mic |
-| \`.ogv\` | Vechi |
+- **\`.mp4\`** — Cel mai compatibil
+- **\`.webm\`** — Modern, mai mic
+- **\`.ogv\`** — Vechi
 
 ### Audio
-| Format | Notă |
-|---|---|
-| \`.mp3\` | Cel mai compatibil |
-| \`.ogg\` | Modern, open source |
-| \`.wav\` | Necomprimat (mare) |
+- **\`.mp3\`** — Cel mai compatibil
+- **\`.ogg\`** — Modern, open source
+- **\`.wav\`** — Necomprimat (mare)
 
 ## 🎯 Embed YouTube
 
@@ -1757,15 +1681,13 @@ Imaginează-ți o "fereastră" care se uită la un alt site 🪟.
 
 ## 🏷️ Atribute principale
 
-| Atribut | Rol |
-|---|---|
-| \`src\` | URL-ul de afișat |
-| \`width\` / \`height\` | Dimensiuni |
-| \`title\` | Descriere (accesibilitate!) |
-| \`allowfullscreen\` | Permite full-screen |
-| \`loading="lazy"\` | Încărcare amânată |
-| \`sandbox\` | Securitate (limitează ce poate face) |
-| \`referrerpolicy\` | Controlează ce date trimit |
+- **\`src\`** — URL-ul de afișat
+- **\`width\` / \`height\`** — Dimensiuni
+- **\`title\`** — Descriere (accesibilitate!)
+- **\`allowfullscreen\`** — Permite full-screen
+- **\`loading="lazy"\`** — Încărcare amânată
+- **\`sandbox\`** — Securitate (limitează ce poate face)
+- **\`referrerpolicy\`** — Controlează ce date trimit
 
 ## 🎯 Exemple comune
 
@@ -1800,12 +1722,10 @@ Limitează ce poate face conținutul:
 <iframe src="..." sandbox="allow-scripts allow-forms"></iframe>
 \`\`\`
 
-| Valoare | Permite |
-|---|---|
-| \`allow-scripts\` | JavaScript |
-| \`allow-forms\` | Trimitere formulare |
-| \`allow-same-origin\` | Acces la cookies |
-| \`allow-popups\` | Pop-up-uri |
+- **\`allow-scripts\`** — JavaScript
+- **\`allow-forms\`** — Trimitere formulare
+- **\`allow-same-origin\`** — Acces la cookies
+- **\`allow-popups\`** — Pop-up-uri
 
 > 💡 \`sandbox=""\` (gol) = totul **interzis** — maximă securitate.
 
@@ -1826,11 +1746,9 @@ Soluție:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Fără \`title\` | Adaugă mereu \`title="..."\` |
-| iframe pentru tot | Doar pentru embed-uri (video, hărți) |
-| Fără \`loading="lazy"\` | Salvează date și încarcă mai rapid |
+- **Fără \`title\`** — Adaugă mereu \`title="..."\`
+- **iframe pentru tot** — Doar pentru embed-uri (video, hărți)
+- **Fără \`loading="lazy"\`** — Salvează date și încarcă mai rapid
 
 ## 🎓 Ce ai învățat
 - ✅ \`<iframe>\` afișează alte pagini
@@ -2062,13 +1980,11 @@ h1 {
 }
 \`\`\`
 
-| Parte | Ce e |
-|---|---|
-| \`h1\` | **selector** (cui aplici stilul) |
-| \`color\` | **proprietate** |
-| \`red\` | **valoare** |
-| \`{ }\` | bloc cu reguli |
-| \`;\` | separă reguli |
+- **\`h1\`** — **selector** (cui aplici stilul)
+- **\`color\`** — **proprietate**
+- **\`red\`** — **valoare**
+- **\`{ }\`** — bloc cu reguli
+- **\`;\`** — separă reguli
 
 ## 🎯 Selectori de bază
 
@@ -2088,16 +2004,14 @@ p { color: blue; }
 
 ## 🎨 Proprietăți populare
 
-| Proprietate | Exemplu |
-|---|---|
-| \`color\` | \`color: red;\` |
-| \`background-color\` | \`background-color: yellow;\` |
-| \`font-size\` | \`font-size: 20px;\` |
-| \`text-align\` | \`text-align: center;\` |
-| \`margin\` | \`margin: 10px;\` |
-| \`padding\` | \`padding: 5px;\` |
-| \`border\` | \`border: 2px solid black;\` |
-| \`width\` / \`height\` | \`width: 200px;\` |
+- **\`color\`** — \`color: red;\`
+- **\`background-color\`** — \`background-color: yellow;\`
+- **\`font-size\`** — \`font-size: 20px;\`
+- **\`text-align\`** — \`text-align: center;\`
+- **\`margin\`** — \`margin: 10px;\`
+- **\`padding\`** — \`padding: 5px;\`
+- **\`border\`** — \`border: 2px solid black;\`
+- **\`width\` / \`height\`** — \`width: 200px;\`
 
 ## 🎯 Exemplu complet
 
@@ -2139,11 +2053,9 @@ body {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`color: 'red'\` (cu ghilimele) | \`color: red;\` |
-| Uiți \`;\` la final | Pune mereu \`;\` |
-| Selector greșit (clasă fără \`.\`) | \`.clasa\`, \`#id\`, \`tag\` |
+- **\`color: 'red'\` (cu ghilimele)** — \`color: red;\`
+- **Uiți \`;\` la final** — Pune mereu \`;\`
+- **Selector greșit (clasă fără \`.\`)** — \`.clasa\`, \`#id\`, \`tag\`
 
 ## 🎓 Ce ai învățat
 - ✅ Inline / Internal / External CSS
@@ -2231,11 +2143,9 @@ JavaScript dă **viață** paginilor: interactivitate, animații, calcule 🎮.
 
 ## 🆚 \`defer\` vs \`async\`
 
-| Atribut | Cum se comportă |
-|---|---|
-| (nimic) | Blochează parsarea HTML — RĂU |
-| \`async\` | Descarcă paralel, rulează imediat ce e gata |
-| \`defer\` | Descarcă paralel, rulează după ce HTML e gata |
+- **(nimic)** — Blochează parsarea HTML — RĂU
+- **\`async\`** — Descarcă paralel, rulează imediat ce e gata
+- **\`defer\`** — Descarcă paralel, rulează după ce HTML e gata
 
 ## 🎯 Exemplu interactiv
 
@@ -2281,11 +2191,9 @@ JavaScript dă **viață** paginilor: interactivitate, animații, calcule 🎮.
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`<script src="app.js" />\` | \`<script src="app.js"></script>\` |
-| JS în \`<head>\` fără \`defer\` | Adaugă \`defer\` sau pune-l la sfârșit |
-| JS care manipulează HTML neîncărcat | Pune scriptul după elemente |
+- **\`<script src="app.js" />\`** — \`<script src="app.js"></script>\`
+- **JS în \`<head>\` fără \`defer\`** — Adaugă \`defer\` sau pune-l la sfârșit
+- **JS care manipulează HTML neîncărcat** — Pune scriptul după elemente
 
 ## 🎓 Ce ai învățat
 - ✅ Inline / Internal / External JS
@@ -2439,12 +2347,10 @@ Poți scrie HTML-ul în minte? 💭
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Mai multe \`<h1>\` | Doar unul |
-| h1 → h4 (sărim h2, h3) | h1 → h2 → h3 |
-| \`<div>\` peste tot | Folosește semantic |
-| Lipsă viewport | Adaugă-l mereu |
+- **Mai multe \`<h1>\`** — Doar unul
+- **h1 → h4 (sărim h2, h3)** — h1 → h2 → h3
+- **\`<div>\` peste tot** — Folosește semantic
+- **Lipsă viewport** — Adaugă-l mereu
 
 ## 🎓 Ce ai învățat
 - ✅ Structura completă a unei pagini

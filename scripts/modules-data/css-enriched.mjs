@@ -37,13 +37,11 @@ h1 {
 }
 \`\`\`
 
-| Parte | Rol |
-|---|---|
-| \`h1\` | **selector** — cui aplici |
-| \`color\` | **proprietate** — ce schimbi |
-| \`red\` | **valoare** — cum |
-| \`{ }\` | bloc cu reguli |
-| \`;\` | separă reguli |
+- **\`h1\`** — **selector** — cui aplici
+- **\`color\`** — **proprietate** — ce schimbi
+- **\`red\`** — **valoare** — cum
+- **\`{ }\`** — bloc cu reguli
+- **\`;\`** — separă reguli
 
 ## 3️⃣ Moduri de a folosi CSS
 
@@ -114,12 +112,10 @@ p {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`color: 'red';\` (cu ghilimele) | \`color: red;\` |
-| Uiți \`;\` | Pune mereu \`;\` |
-| \`color = red\` | \`color: red;\` (cu \`:\`) |
-| \`{ p color: red; }\` | \`p { color: red; }\` |
+- **\`color: 'red';\` (cu ghilimele)** — \`color: red;\`
+- **Uiți \`;\`** — Pune mereu \`;\`
+- **\`color = red\`** — \`color: red;\` (cu \`:\`)
+- **\`{ p color: red; }\`** — \`p { color: red; }\`
 
 ## 🎓 Ce ai învățat
 - ✅ CSS = stilurile pentru HTML
@@ -250,13 +246,11 @@ img[alt*="cat"] { border: 2px red; }  /* conține */
 
 Care regulă câștigă când se aplică mai multe?
 
-| Selector | Greutate |
-|---|---|
-| \`*\` | 0 |
-| \`tag\` | 1 |
-| \`.clasa\` | 10 |
-| \`#id\` | 100 |
-| \`style="..."\` | 1000 |
+- **\`*\`** — 0
+- **\`tag\`** — 1
+- **\`.clasa\`** — 10
+- **\`#id\`** — 100
+- **\`style="..."\`** — 1000
 
 \`\`\`css
 p { color: red; }              /* greutate 1 */
@@ -266,11 +260,9 @@ p { color: red; }              /* greutate 1 */
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`.clasa\` fără punct | Mereu cu \`.\` |
-| \`#id\` fără diez | Mereu cu \`#\` |
-| Folosești \`!important\` peste tot | Doar în cazuri excepționale |
+- **\`.clasa\` fără punct** — Mereu cu \`.\`
+- **\`#id\` fără diez** — Mereu cu \`#\`
+- **Folosești \`!important\` peste tot** — Doar în cazuri excepționale
 
 ## 🎓 Ce ai învățat
 - ✅ Selectori: tag, \`.class\`, \`#id\`, \`*\`
@@ -335,13 +327,11 @@ color: #000000;     /* negru */
 color: #f00;        /* scurt = #ff0000 */
 \`\`\`
 
-| Cifra | Reprezintă |
-|---|---|
-| \`#FF\` | 255 (max) |
-| \`#00\` | 0 (min) |
-| Primele 2 | Roșu |
-| Următoarele 2 | Verde |
-| Ultimele 2 | Albastru |
+- **\`#FF\`** — 255 (max)
+- **\`#00\`** — 0 (min)
+- **Primele 2** — Roșu
+- **Următoarele 2** — Verde
+- **Ultimele 2** — Albastru
 
 ## 🎨 RGB
 
@@ -370,11 +360,9 @@ color: hsl(120, 100%, 50%);      /* verde */
 color: hsl(240, 100%, 50%);      /* albastru */
 \`\`\`
 
-| Parte | Înseamnă |
-|---|---|
-| **H**ue | 0-360 grade (cercul culorilor) |
-| **S**aturation | 0-100% (intensitate) |
-| **L**ightness | 0-100% (luminozitate) |
+- ****H**ue** — 0-360 grade (cercul culorilor)
+- ****S**aturation** — 0-100% (intensitate)
+- ****L**ightness** — 0-100% (luminozitate)
 
 ## 🎨 Background
 
@@ -471,12 +459,10 @@ p { font-size: 1.2rem; }   /* relativ la root */
 p { font-size: 120%; }     /* procentaj */
 \`\`\`
 
-| Unitate | Recomandare |
-|---|---|
-| \`px\` | Fix — bun pentru control precis |
-| \`em\` | Relativ la părinte |
-| \`rem\` | Relativ la \`<html>\` — preferat |
-| \`%\` | Procentaj |
+- **\`px\`** — Fix — bun pentru control precis
+- **\`em\`** — Relativ la părinte
+- **\`rem\`** — Relativ la \`<html>\` — preferat
+- **\`%\`** — Procentaj
 
 ## 🔤 Font-family
 
@@ -578,11 +564,9 @@ h1 {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Fără fallback la \`font-family\` | Adaugă \`sans-serif\` etc. |
-| \`font-size: 16\` (fără unitate) | \`font-size: 16px;\` |
-| \`text-decoration: underlined\` | \`underline\` (fără d) |
+- **Fără fallback la \`font-family\`** — Adaugă \`sans-serif\` etc.
+- **\`font-size: 16\` (fără unitate)** — \`font-size: 16px;\`
+- **\`text-decoration: underlined\`** — \`underline\` (fără d)
 
 ## 🎓 Ce ai învățat
 - ✅ \`font-size\`, \`font-family\`, \`font-weight\`
@@ -640,12 +624,10 @@ h1 {
 
 ## 4️⃣ Părțile unei cutii
 
-| Parte | Ce e |
-|---|---|
-| **content** | Conținutul (text, imagine) |
-| **padding** | Spațiu **între conținut și border** |
-| **border** | Rama |
-| **margin** | Spațiu **între cutie și alte cutii** |
+- ****content**** — Conținutul (text, imagine)
+- ****padding**** — Spațiu **între conținut și border**
+- ****border**** — Rama
+- ****margin**** — Spațiu **între cutie și alte cutii**
 
 ## 🎨 Exemplu
 
@@ -734,11 +716,9 @@ Marginea verticală **se "absorbește"**:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Fără \`box-sizing: border-box\` | Adaugă-l mereu |
-| \`padding\` cu valori negative | Padding NU poate fi negativ; margin DA |
-| \`border\` fără \`style\` | \`border: 2px solid red;\` cu toate 3 |
+- **Fără \`box-sizing: border-box\`** — Adaugă-l mereu
+- **\`padding\` cu valori negative** — Padding NU poate fi negativ; margin DA
+- **\`border\` fără \`style\`** — \`border: 2px solid red;\` cu toate 3
 
 ## 🎓 Ce ai învățat
 - ✅ Box model: content + padding + border + margin
@@ -804,22 +784,18 @@ Cum controlăm **mărimea** elementelor? Multe unități, multe trucuri 📏.
 ## 📐 Unități — comparație
 
 ### Absolute (fixe)
-| Unitate | Detaliu |
-|---|---|
-| \`px\` | Pixeli — cel mai folosit |
-| \`pt\` | Puncte (din print) |
-| \`cm\`, \`mm\`, \`in\` | Lume reală (rar) |
+- **\`px\`** — Pixeli — cel mai folosit
+- **\`pt\`** — Puncte (din print)
+- **\`cm\`, \`mm\`, \`in\`** — Lume reală (rar)
 
 ### Relative
-| Unitate | Relativ la |
-|---|---|
-| \`%\` | Părinte |
-| \`em\` | Font-size părinte |
-| \`rem\` | Font-size \`<html>\` (root) |
-| \`vw\` | 1% din lățimea viewport |
-| \`vh\` | 1% din înălțimea viewport |
-| \`vmin\` | min(vw, vh) |
-| \`vmax\` | max(vw, vh) |
+- **\`%\`** — Părinte
+- **\`em\`** — Font-size părinte
+- **\`rem\`** — Font-size \`<html>\` (root)
+- **\`vw\`** — 1% din lățimea viewport
+- **\`vh\`** — 1% din înălțimea viewport
+- **\`vmin\`** — min(vw, vh)
+- **\`vmax\`** — max(vw, vh)
 
 ## 💡 Exemple practice
 
@@ -867,22 +843,18 @@ Cum controlăm **mărimea** elementelor? Multe unități, multe trucuri 📏.
 
 ## 📊 Unități recomandate când
 
-| Pentru | Folosește |
-|---|---|
-| Lățimi container | \`%\` sau \`max-width: ...px\` |
-| Font-size | \`rem\` |
-| Padding/margin în text | \`em\` |
-| Imagini responsive | \`max-width: 100%\` |
-| Înălțime ecran | \`100vh\` |
-| Border, mici detalii | \`px\` |
+- **Lățimi container** — \`%\` sau \`max-width: ...px\`
+- **Font-size** — \`rem\`
+- **Padding/margin în text** — \`em\`
+- **Imagini responsive** — \`max-width: 100%\`
+- **Înălțime ecran** — \`100vh\`
+- **Border, mici detalii** — \`px\`
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`width: 100\` (fără unitate) | \`width: 100px;\` |
-| Toate width-urile fixe | Folosește \`%\` și \`max-width\` |
-| Fără \`max-width\` la imagini | \`img { max-width: 100%; }\` |
+- **\`width: 100\` (fără unitate)** — \`width: 100px;\`
+- **Toate width-urile fixe** — Folosește \`%\` și \`max-width\`
+- **Fără \`max-width\` la imagini** — \`img { max-width: 100%; }\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`width\`, \`height\`, \`min/max-width/height\`
@@ -925,14 +897,12 @@ Proprietatea \`display\` controlează **cum** elementul ocupă spațiul 📦.
 
 ## 🎯 Valori principale
 
-| Valoare | Comportament |
-|---|---|
-| \`block\` | Linie nouă, ocupă tot rândul |
-| \`inline\` | În linie, ocupă cât e nevoie |
-| \`inline-block\` | În linie + dimensiuni reglabile |
-| \`flex\` | Flexbox (vezi lecția dedicată) |
-| \`grid\` | CSS Grid |
-| \`none\` | **Ascuns** complet |
+- **\`block\`** — Linie nouă, ocupă tot rândul
+- **\`inline\`** — În linie, ocupă cât e nevoie
+- **\`inline-block\`** — În linie + dimensiuni reglabile
+- **\`flex\`** — Flexbox (vezi lecția dedicată)
+- **\`grid\`** — CSS Grid
+- **\`none\`** — **Ascuns** complet
 
 ## 🟦 \`block\`
 
@@ -1025,11 +995,9 @@ nav a { padding: 10px; background: #333; color: white; }
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`width\` pe \`inline\` element | Schimbă la \`inline-block\` sau \`block\` |
-| Confuzie \`display: none\` vs \`visibility: hidden\` | Verifică care vrei |
-| Folosești tabele pentru aranjare | Folosește flex sau grid |
+- **\`width\` pe \`inline\` element** — Schimbă la \`inline-block\` sau \`block\`
+- **Confuzie \`display: none\` vs \`visibility: hidden\`** — Verifică care vrei
+- **Folosești tabele pentru aranjare** — Folosește flex sau grid
 
 ## 🎓 Ce ai învățat
 - ✅ \`block\` (linie nouă), \`inline\` (în linie)
@@ -1072,13 +1040,11 @@ Proprietatea \`position\` controlează **unde** apare elementul 🎯.
 
 ## 5️⃣ Valori
 
-| Valoare | Cum funcționează |
-|---|---|
-| \`static\` | Default — în fluxul normal |
-| \`relative\` | Mutat **față de poziția normală** |
-| \`absolute\` | Față de **primul părinte cu position** |
-| \`fixed\` | Față de **fereastra browser** |
-| \`sticky\` | **Lipit** când scroll-ezi |
+- **\`static\`** — Default — în fluxul normal
+- **\`relative\`** — Mutat **față de poziția normală**
+- **\`absolute\`** — Față de **primul părinte cu position**
+- **\`fixed\`** — Față de **fereastra browser**
+- **\`sticky\`** — **Lipit** când scroll-ezi
 
 ## 🎯 \`static\` (default)
 
@@ -1188,11 +1154,9 @@ Când elementele se suprapun, \`z-index\` decide **cine e deasupra**:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`top: 10px\` pe element static | Setează mai întâi \`position\` |
-| \`absolute\` fără părinte cu position | Adaugă \`relative\` pe părinte |
-| \`z-index\` peste tot | Folosește scară: 1, 10, 100 |
+- **\`top: 10px\` pe element static** — Setează mai întâi \`position\`
+- **\`absolute\` fără părinte cu position** — Adaugă \`relative\` pe părinte
+- **\`z-index\` peste tot** — Folosește scară: 1, 10, 100
 
 ## 🎓 Ce ai învățat
 - ✅ \`relative\`, \`absolute\`, \`fixed\`, \`sticky\`
@@ -1341,11 +1305,9 @@ nav {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`display: flex\` pe copil | Pe părinte! |
-| Confuzie axă principală vs cruce | Depinde de \`flex-direction\` |
-| Folosești \`text-align: center\` pentru centrare flex | Folosește \`justify-content\` |
+- **\`display: flex\` pe copil** — Pe părinte!
+- **Confuzie axă principală vs cruce** — Depinde de \`flex-direction\`
+- **Folosești \`text-align: center\` pentru centrare flex** — Folosește \`justify-content\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`display: flex\` pe părinte
@@ -1523,10 +1485,8 @@ button {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`flex: 1\` pe părinte | E pentru copii! |
-| Confuzie shorthand | \`flex: 1\` = grow:1, shrink:1, basis:0 |
+- **\`flex: 1\` pe părinte** — E pentru copii!
+- **Confuzie shorthand** — \`flex: 1\` = grow:1, shrink:1, basis:0
 
 ## 🎓 Ce ai învățat
 - ✅ \`flex-grow\`, \`flex-shrink\`, \`flex-basis\`
@@ -1682,11 +1642,9 @@ column-gap: 10px;
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`display: grid\` pe copii | Pe părinte! |
-| \`width\` cu px peste tot | Folosește \`fr\` și \`minmax\` |
-| Nu folosești \`gap\` | E mai bun decât margin |
+- **\`display: grid\` pe copii** — Pe părinte!
+- **\`width\` cu px peste tot** — Folosește \`fr\` și \`minmax\`
+- **Nu folosești \`gap\`** — E mai bun decât margin
 
 ## 🎓 Ce ai învățat
 - ✅ \`display: grid\` pe părinte
@@ -1846,10 +1804,8 @@ grid-auto-flow: dense;     /* umple spațiile goale */
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Index începe de la 0 | Liniile grid încep de la **1** |
-| \`grid-column: 1 / 2\` (doar 1 coloană) | E corect — de la 1 până la 2 |
+- **Index începe de la 0** — Liniile grid încep de la **1**
+- **\`grid-column: 1 / 2\` (doar 1 coloană)** — E corect — de la 1 până la 2
 
 ## 🎓 Ce ai învățat
 - ✅ \`grid-column / grid-row\` pentru plasare
@@ -1908,14 +1864,12 @@ border-color: black;         /* culoare */
 
 ### Stiluri
 
-| Valoare | Aspect |
-|---|---|
-| \`solid\` | linie continuă |
-| \`dashed\` | liniuțe |
-| \`dotted\` | puncte |
-| \`double\` | două linii |
-| \`groove\` / \`ridge\` | 3D |
-| \`none\` / \`hidden\` | fără |
+- **\`solid\`** — linie continuă
+- **\`dashed\`** — liniuțe
+- **\`dotted\`** — puncte
+- **\`double\`** — două linii
+- **\`groove\` / \`ridge\`** — 3D
+- **\`none\` / \`hidden\`** — fără
 
 ### Doar pe o latură
 
@@ -1961,12 +1915,10 @@ box-shadow: x y blur color;
 }
 \`\`\`
 
-| Parte | Înseamnă |
-|---|---|
-| \`0\` (x) | Offset orizontal |
-| \`4px\` (y) | Offset vertical |
-| \`8px\` | Cât de blurată |
-| \`rgba(...)\` | Culoarea |
+- **\`0\` (x)** — Offset orizontal
+- **\`4px\` (y)** — Offset vertical
+- **\`8px\`** — Cât de blurată
+- **\`rgba(...)\`** — Culoarea
 
 ### Cu spread și inset
 
@@ -2010,10 +1962,8 @@ box-shadow:
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`border: red\` (fără width și style) | Toate 3: \`border: 2px solid red;\` |
-| \`box-shadow: gray\` (incomplet) | Cu poziție: \`0 4px 8px gray\` |
+- **\`border: red\` (fără width și style)** — Toate 3: \`border: 2px solid red;\`
+- **\`box-shadow: gray\` (incomplet)** — Cu poziție: \`0 4px 8px gray\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`border\` cu width, style, color
@@ -2070,14 +2020,12 @@ Site-urile **prind viață** când userul interacționează 🎮.
 
 ## 🎯 Alte pseudo-clase
 
-| Pseudo-clasă | Când |
-|---|---|
-| \`:hover\` | Mouse deasupra |
-| \`:focus\` | Element focusat (tab/click) |
-| \`:active\` | Apăsat (mouse down) |
-| \`:visited\` | Link vizitat |
-| \`:checked\` | Checkbox/radio bifat |
-| \`:disabled\` | Element dezactivat |
+- **\`:hover\`** — Mouse deasupra
+- **\`:focus\`** — Element focusat (tab/click)
+- **\`:active\`** — Apăsat (mouse down)
+- **\`:visited\`** — Link vizitat
+- **\`:checked\`** — Checkbox/radio bifat
+- **\`:disabled\`** — Element dezactivat
 
 \`\`\`css
 input:focus { border-color: blue; outline: none; }
@@ -2189,11 +2137,9 @@ button:focus-visible { outline: 2px solid blue; }      /* doar la tab (NU click)
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`:hover\` doar pe mobil | Adaugă \`:active\` pentru touch |
-| Schimbări brutal fără transition | Adaugă \`transition: 0.3s\` |
-| \`outline: none\` fără alternativă | Înlocuiește cu \`box-shadow\` pentru focus |
+- **\`:hover\` doar pe mobil** — Adaugă \`:active\` pentru touch
+- **Schimbări brutal fără transition** — Adaugă \`transition: 0.3s\`
+- **\`outline: none\` fără alternativă** — Înlocuiește cu \`box-shadow\` pentru focus
 
 ## 🎓 Ce ai învățat
 - ✅ \`:hover\`, \`:focus\`, \`:active\`
@@ -2260,14 +2206,12 @@ transition: transform 0.2s, opacity 0.4s;
 
 ## ⏱️ Timing functions
 
-| Funcție | Curs |
-|---|---|
-| \`linear\` | Constant |
-| \`ease\` | Default — accelerare apoi decelerare |
-| \`ease-in\` | Accelerează la sfârșit |
-| \`ease-out\` | Începe rapid, încetinește |
-| \`ease-in-out\` | Lent → rapid → lent |
-| \`cubic-bezier(...)\` | Custom |
+- **\`linear\`** — Constant
+- **\`ease\`** — Default — accelerare apoi decelerare
+- **\`ease-in\`** — Accelerează la sfârșit
+- **\`ease-out\`** — Începe rapid, încetinește
+- **\`ease-in-out\`** — Lent → rapid → lent
+- **\`cubic-bezier(...)\`** — Custom
 
 ## 🎯 Multiple proprietăți
 
@@ -2356,11 +2300,9 @@ transform: translateY(-5px) scale(1.05) rotate(2deg);
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`transition\` pe \`:hover\` | Pe stare normală! |
-| \`all\` peste tot | Specific = mai performant |
-| Animezi \`width\` constant | Folosește \`transform: scale()\` |
+- **\`transition\` pe \`:hover\`** — Pe stare normală!
+- **\`all\` peste tot** — Specific = mai performant
+- **Animezi \`width\` constant** — Folosește \`transform: scale()\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`transition: prop dur timing\`
@@ -2430,13 +2372,11 @@ Aplică CSS **doar** pentru anumite dimensiuni de ecran:
 
 ## 📐 Breakpoints comuni
 
-| Device | Min-width |
-|---|---|
-| Mobil mic | < 480px |
-| Mobil | 480-767px |
-| Tabletă | 768-1023px |
-| Laptop | 1024-1439px |
-| Desktop mare | ≥ 1440px |
+- **Mobil mic** — < 480px
+- **Mobil** — 480-767px
+- **Tabletă** — 768-1023px
+- **Laptop** — 1024-1439px
+- **Desktop mare** — ≥ 1440px
 
 ## 🎯 Mobile-first vs Desktop-first
 
@@ -2474,12 +2414,10 @@ Aplică CSS **doar** pentru anumite dimensiuni de ecran:
 
 ## 📐 Unități responsive
 
-| Unitate | Bun pentru |
-|---|---|
-| \`%\` | Lățimi |
-| \`vw\` / \`vh\` | Hero sections |
-| \`rem\` | Font-size |
-| \`clamp()\` | Mărimi adaptabile |
+- **\`%\`** — Lățimi
+- **\`vw\` / \`vh\`** — Hero sections
+- **\`rem\`** — Font-size
+- **\`clamp()\`** — Mărimi adaptabile
 
 ### \`clamp()\` magic!
 
@@ -2546,11 +2484,9 @@ nav ul {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Lipsă \`viewport\` meta | Adaugă-l mereu |
-| Fix \`width: 1200px\` | \`max-width: 1200px; width: 100%\` |
-| Doar mobile sau doar desktop | Testează ambele |
+- **Lipsă \`viewport\` meta** — Adaugă-l mereu
+- **Fix \`width: 1200px\`** — \`max-width: 1200px; width: 100%\`
+- **Doar mobile sau doar desktop** — Testează ambele
 
 ## 🎓 Ce ai învățat
 - ✅ \`viewport\` meta — esențial
@@ -2593,13 +2529,11 @@ CSS 2025 are **multe** unități noi pentru responsive 🎉.
 
 ## 📐 Recap unități clasice
 
-| Unitate | Ce e |
-|---|---|
-| \`px\` | Pixeli |
-| \`%\` | Procentaj din părinte |
-| \`em\` | Relativ la font-size părinte |
-| \`rem\` | Relativ la font-size root |
-| \`vw\` / \`vh\` | 1% din viewport |
+- **\`px\`** — Pixeli
+- **\`%\`** — Procentaj din părinte
+- **\`em\`** — Relativ la font-size părinte
+- **\`rem\`** — Relativ la font-size root
+- **\`vw\` / \`vh\`** — 1% din viewport
 
 ## 🆕 \`vmin\` și \`vmax\`
 
@@ -2607,10 +2541,8 @@ CSS 2025 are **multe** unități noi pentru responsive 🎉.
 .square { width: 50vmin; height: 50vmin; }
 \`\`\`
 
-| Unitate | Ce e |
-|---|---|
-| \`vmin\` | Min(vw, vh) |
-| \`vmax\` | Max(vw, vh) |
+- **\`vmin\`** — Min(vw, vh)
+- **\`vmax\`** — Max(vw, vh)
 
 > Util pentru forme care trebuie să intre **întotdeauna** pe ecran.
 
@@ -2618,11 +2550,9 @@ CSS 2025 are **multe** unități noi pentru responsive 🎉.
 
 Pe mobil, bara browser-ului poate apărea/dispărea — \`100vh\` are probleme.
 
-| Unitate | Ce e |
-|---|---|
-| \`svh\` | small viewport (cu bare vizibile) |
-| \`lvh\` | large viewport (fără bare) |
-| \`dvh\` | dynamic — se schimbă |
+- **\`svh\`** — small viewport (cu bare vizibile)
+- **\`lvh\`** — large viewport (fără bare)
+- **\`dvh\`** — dynamic — se schimbă
 
 \`\`\`css
 .fullscreen {
@@ -2657,10 +2587,8 @@ font-size: max(14px, 1vw);   /* cel puțin 14px */
 
 ## 🎯 \`ch\` și \`ex\` — relativ la font
 
-| Unitate | Ce e |
-|---|---|
-| \`ch\` | Lățimea caracterului "0" |
-| \`ex\` | Înălțimea literei "x" |
+- **\`ch\`** — Lățimea caracterului "0"
+- **\`ex\`** — Înălțimea literei "x"
 
 \`\`\`css
 p { max-width: 65ch; }    /* cca 65 caractere — bun pentru lectură */
@@ -2668,12 +2596,10 @@ p { max-width: 65ch; }    /* cca 65 caractere — bun pentru lectură */
 
 ## 🎯 \`%\` raportat la
 
-| Pe | Raportat la |
-|---|---|
-| \`width: 50%\` | Lățimea părintelui |
-| \`height: 50%\` | Înălțimea părintelui |
-| \`padding: 10%\` | **Lățimea** părintelui (chiar și vertical!) |
-| \`margin: 10%\` | Lățimea părintelui |
+- **\`width: 50%\`** — Lățimea părintelui
+- **\`height: 50%\`** — Înălțimea părintelui
+- **\`padding: 10%\`** — **Lățimea** părintelui (chiar și vertical!)
+- **\`margin: 10%\`** — Lățimea părintelui
 
 ## 🎯 \`fr\` (Grid)
 
@@ -2685,22 +2611,18 @@ grid-template-columns: 1fr 2fr 1fr;
 
 ## 🎨 Bune practici
 
-| Pentru | Folosește |
-|---|---|
-| Font-size | \`rem\` sau \`clamp()\` |
-| Padding/margin | \`rem\` sau \`em\` |
-| Container max-width | \`px\` cu \`max-width\` |
-| Lățimi responsive | \`%\` |
-| Hero height | \`100dvh\` |
-| Lățime text lectură | \`65ch\` |
+- **Font-size** — \`rem\` sau \`clamp()\`
+- **Padding/margin** — \`rem\` sau \`em\`
+- **Container max-width** — \`px\` cu \`max-width\`
+- **Lățimi responsive** — \`%\`
+- **Hero height** — \`100dvh\`
+- **Lățime text lectură** — \`65ch\`
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Folosești doar \`px\` | Combină cu \`rem\`, \`%\`, \`vw\` |
-| \`100vh\` pe mobil | Folosește \`100dvh\` |
-| Lățimi text 100% | \`max-width: 65ch\` |
+- **Folosești doar \`px\`** — Combină cu \`rem\`, \`%\`, \`vw\`
+- **\`100vh\` pe mobil** — Folosește \`100dvh\`
+- **Lățimi text 100%** — \`max-width: 65ch\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`vmin\`, \`vmax\` pentru forme

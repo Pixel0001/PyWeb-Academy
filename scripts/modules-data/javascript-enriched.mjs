@@ -62,11 +62,9 @@ console.log("Vârsta:", 12, "ani");
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`Console.log("hi")\` | \`console.log("hi")\` (case-sensitive!) |
-| \`console.log(hi)\` | \`console.log("hi")\` |
-| \`console.log("hi)\` | \`console.log("hi")\` |
+- **\`Console.log("hi")\`** — \`console.log("hi")\` (case-sensitive!)
+- **\`console.log(hi)\`** — \`console.log("hi")\`
+- **\`console.log("hi)\`** — \`console.log("hi")\`
 
 ## 🎓 Ce ai învățat
 - ✅ JavaScript e limbajul webului
@@ -109,11 +107,9 @@ O **variabilă** = o cutiuță cu etichetă unde păstrezi o valoare 📦.
 
 ## 🎯 Cele 3 cuvinte cheie
 
-| Cuvânt | Ce înseamnă | Când îl folosești |
-|---|---|---|
-| \`let\` | "lasă să fie" — poate fi schimbată | **Modern, recomandat** |
-| \`const\` | "constantă" — NU poate fi schimbată | Pentru valori fixe |
-| \`var\` | Vechi, are reguli ciudate | **Evită** în cod nou |
+- **\`let\`** — Ce înseamnă: "lasă să fie" — poate fi schimbată • Când îl folosești: **Modern, recomandat**
+- **\`const\`** — Ce înseamnă: "constantă" — NU poate fi schimbată • Când îl folosești: Pentru valori fixe
+- **\`var\`** — Ce înseamnă: Vechi, are reguli ciudate • Când îl folosești: **Evită** în cod nou
 
 \`\`\`javascript
 let nume = "Ana";
@@ -161,11 +157,9 @@ console.log(a % b);    // 2 (rest)
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`let 1nume = "x"\` | \`let nume1 = "x"\` |
-| \`const x; x = 5;\` | \`const x = 5;\` (const cere valoare imediat) |
-| \`Let nume = ...\` | \`let nume = ...\` (case-sensitive) |
+- **\`let 1nume = "x"\`** — \`let nume1 = "x"\`
+- **\`const x; x = 5;\`** — \`const x = 5;\` (const cere valoare imediat)
+- **\`Let nume = ...\`** — \`let nume = ...\` (case-sensitive)
 
 ## 🎓 Ce ai învățat
 - ✅ \`let\` (variabile) și \`const\` (constante)
@@ -242,12 +236,10 @@ console.log(Number(varsta) + 1);  // 12 ✅
 
 ## 🔄 Conversii utile
 
-| Funcție | Ce face |
-|---|---|
-| \`Number(x)\` | text → număr |
-| \`String(x)\` | număr → text |
-| \`parseInt(x)\` | text → număr întreg |
-| \`parseFloat(x)\` | text → număr cu zecimale |
+- **\`Number(x)\`** — text → număr
+- **\`String(x)\`** — număr → text
+- **\`parseInt(x)\`** — text → număr întreg
+- **\`parseFloat(x)\`** — text → număr cu zecimale
 
 \`\`\`javascript
 Number("42")       // 42
@@ -266,10 +258,8 @@ alert("Salut, " + numeUser + "! Anul viitor vei avea " + (varsta + 1) + " ani.")
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`prompt + 1\` direct | Convertește cu \`Number()\` mai întâi |
-| Uiți să salvezi rezultatul | \`let x = prompt(...)\` |
+- **\`prompt + 1\` direct** — Convertește cu \`Number()\` mai întâi
+- **Uiți să salvezi rezultatul** — \`let x = prompt(...)\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`alert\`, \`prompt\`, \`confirm\`
@@ -311,37 +301,31 @@ Operatorii sunt **simbolurile cu care faci calcule și comparații** ⚡.
 
 ## 🧮 Aritmetici
 
-| Op | Nume | Exemplu | Rezultat |
-|---|---|---|---|
-| \`+\` | Adunare | \`5 + 3\` | 8 |
-| \`-\` | Scădere | \`5 - 3\` | 2 |
-| \`*\` | Înmulțire | \`5 * 3\` | 15 |
-| \`/\` | Împărțire | \`10 / 4\` | 2.5 |
-| \`%\` | Rest (modulo) | \`10 % 3\` | 1 |
-| \`**\` | Putere | \`2 ** 3\` | 8 |
+- **\`+\`** — Nume: Adunare • Exemplu: \`5 + 3\` • Rezultat: 8
+- **\`-\`** — Nume: Scădere • Exemplu: \`5 - 3\` • Rezultat: 2
+- **\`*\`** — Nume: Înmulțire • Exemplu: \`5 * 3\` • Rezultat: 15
+- **\`/\`** — Nume: Împărțire • Exemplu: \`10 / 4\` • Rezultat: 2.5
+- **\`%\`** — Nume: Rest (modulo) • Exemplu: \`10 % 3\` • Rezultat: 1
+- **\`**\`** — Nume: Putere • Exemplu: \`2 ** 3\` • Rezultat: 8
 
 ## 📊 Comparare (returnează true/false)
 
-| Op | Înseamnă | Exemplu |
-|---|---|---|
-| \`==\` | Egal (cu conversie) | \`5 == "5"\` → true |
-| \`===\` | **Strict** egal | \`5 === "5"\` → false |
-| \`!=\` | Diferit | \`5 != 6\` → true |
-| \`!==\` | Strict diferit | \`5 !== "5"\` → true |
-| \`>\` | Mai mare | \`5 > 3\` → true |
-| \`<\` | Mai mic | \`5 < 3\` → false |
-| \`>=\` | Mai mare sau egal | \`5 >= 5\` → true |
-| \`<=\` | Mai mic sau egal | \`4 <= 5\` → true |
+- **\`==\`** — Înseamnă: Egal (cu conversie) • Exemplu: \`5 == "5"\` → true
+- **\`===\`** — Înseamnă: **Strict** egal • Exemplu: \`5 === "5"\` → false
+- **\`!=\`** — Înseamnă: Diferit • Exemplu: \`5 != 6\` → true
+- **\`!==\`** — Înseamnă: Strict diferit • Exemplu: \`5 !== "5"\` → true
+- **\`>\`** — Înseamnă: Mai mare • Exemplu: \`5 > 3\` → true
+- **\`<\`** — Înseamnă: Mai mic • Exemplu: \`5 < 3\` → false
+- **\`>=\`** — Înseamnă: Mai mare sau egal • Exemplu: \`5 >= 5\` → true
+- **\`<=\`** — Înseamnă: Mai mic sau egal • Exemplu: \`4 <= 5\` → true
 
 > 💡 **Important**: folosește mereu \`===\` și \`!==\` (strict). Sunt mai sigure.
 
 ## 🔗 Logici
 
-| Op | Nume | Exemplu |
-|---|---|---|
-| \`&&\` | ȘI (and) | \`true && false\` → false |
-| \`\\|\\|\` | SAU (or) | \`true \\|\\| false\` → true |
-| \`!\` | NU (not) | \`!true\` → false |
+- **\`&&\`** — Nume: ȘI (and) • Exemplu: \`true && false\` → false
+- **\`\\** — Nume: \\ • Exemplu: \`
+- **\`!\`** — Nume: NU (not) • Exemplu: \`!true\` → false
 
 ## 🎯 Atribuire scurtă
 
@@ -497,11 +481,9 @@ if (0) {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`if x > 5 {\` | \`if (x > 5) {\` (parantezele!) |
-| \`if (x = 5)\` (atribuire) | \`if (x === 5)\` (comparare) |
-| \`else if\` lipit \`elseif\` | \`else if\` cu spațiu |
+- **\`if x > 5 {\`** — \`if (x > 5) {\` (parantezele!)
+- **\`if (x = 5)\` (atribuire)** — \`if (x === 5)\` (comparare)
+- **\`else if\` lipit \`elseif\`** — \`else if\` cu spațiu
 
 ## 🎓 Ce ai învățat
 - ✅ \`if / else / else if\`
@@ -585,13 +567,11 @@ console.log(litera);
 
 ## 🎯 Problema 4: Categorie după vârstă
 
-| Vârstă | Categorie |
-|---|---|
-| 0-2 | bebeluș |
-| 3-12 | copil |
-| 13-19 | adolescent |
-| 20-64 | adult |
-| 65+ | senior |
+- **0-2** — bebeluș
+- **3-12** — copil
+- **13-19** — adolescent
+- **20-64** — adult
+- **65+** — senior
 
 \`\`\`javascript
 let varsta = 11;
@@ -779,11 +759,9 @@ for (let i = 0; i < 5; i++) {
 }
 \`\`\`
 
-| Parte | Ce face | Când rulează |
-|---|---|---|
-| \`let i = 0\` | inițializare | **O dată**, la început |
-| \`i < 5\` | condiție | înainte de fiecare iterație |
-| \`i++\` | pas | după fiecare iterație |
+- **\`let i = 0\`** — Ce face: inițializare • Când rulează: **O dată**, la început
+- **\`i < 5\`** — Ce face: condiție • Când rulează: înainte de fiecare iterație
+- **\`i++\`** — Ce face: pas • Când rulează: după fiecare iterație
 
 **Output:** \`0 1 2 3 4\`
 
@@ -833,10 +811,8 @@ console.log(suma);   // 5050
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`for (i = 0; ...)\` (uiți \`let\`) | \`for (let i = 0; ...)\` |
-| \`i <= fructe.length\` | \`i < fructe.length\` (off-by-one!) |
+- **\`for (i = 0; ...)\` (uiți \`let\`)** — \`for (let i = 0; ...)\`
+- **\`i <= fructe.length\`** — \`i < fructe.length\` (off-by-one!)
 
 ## 🎓 Ce ai învățat
 - ✅ \`for (init; condiție; pas)\`
@@ -875,12 +851,10 @@ console.log(suma);   // 5050
   'for-vs-while-js': {
     theory: `# 🔁 \`for\` vs \`while\` — care când?
 
-| Întrebare | Folosește |
-|---|---|
-| Știi de **câte ori** repeți? | \`for\` |
-| Repeți până se **întâmplă ceva**? | \`while\` |
-| Parcurgi un array? | \`for...of\` sau \`forEach\` |
-| Aștepți input valid? | \`while\` |
+- **Știi de **câte ori** repeți?** — \`for\`
+- **Repeți până se **întâmplă ceva**?** — \`while\`
+- **Parcurgi un array?** — \`for...of\` sau \`forEach\`
+- **Aștepți input valid?** — \`while\`
 
 ## 🎯 Aceeași problemă — ambele variante
 
@@ -930,10 +904,8 @@ for (let i = 1; i <= 100; i++) suma += i;
 
 ## ⚠️ Capcane
 
-| Capcană | Soluție |
-|---|---|
-| \`while\` fără actualizare → infinit | Verifică mereu schimbarea |
-| \`for\` cu \`<=\` în loc de \`<\` | Atenție la dimensiuni |
+- **\`while\` fără actualizare → infinit** — Verifică mereu schimbarea
+- **\`for\` cu \`<=\` în loc de \`<\`** — Atenție la dimensiuni
 
 ## 🎓 Ce ai învățat
 - ✅ Diferența principală: cunoscut vs necunoscut
@@ -1044,10 +1016,8 @@ for (let i = 0; i < grid.length; i++) {
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Folosești \`i\` în ambele bucle | Folosește \`i\` și \`j\` (variabile diferite) |
-| Acolade greșit | Atenție la închiderea fiecărei bucle |
+- **Folosești \`i\` în ambele bucle** — Folosește \`i\` și \`j\` (variabile diferite)
+- **Acolade greșit** — Atenție la închiderea fiecărei bucle
 
 ## 🎓 Ce ai învățat
 - ✅ Bucle în interiorul altora
@@ -1146,19 +1116,15 @@ f.forEach(fruct => console.log(fruct));
 
 ## 🆚 Array vs variabilă obișnuită
 
-| Variabilă | Array |
-|---|---|
-| Conține **o** valoare | Conține **multe** valori |
-| \`let x = 5\` | \`let x = [5, 6, 7]\` |
-| \`x\` | \`x[0]\`, \`x[1]\`, \`x[2]\` |
+- **Conține **o** valoare** — Conține **multe** valori
+- **\`let x = 5\`** — \`let x = [5, 6, 7]\`
+- **\`x\`** — \`x[0]\`, \`x[1]\`, \`x[2]\`
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`f(0)\` | \`f[0]\` (paranteze pătrate!) |
-| \`f.length()\` | \`f.length\` (fără paranteze) |
-| Index începe de la 1 | Index începe de la 0 |
+- **\`f(0)\`** — \`f[0]\` (paranteze pătrate!)
+- **\`f.length()\`** — \`f.length\` (fără paranteze)
+- **Index începe de la 1** — Index începe de la 0
 
 ## 🎓 Ce ai învățat
 - ✅ Array = listă ordonată
@@ -1201,10 +1167,8 @@ Acum învățăm să **adăugăm**, **ștergem** și **transformăm** array-uri 
 
 ## ➕ Adăugare
 
-| Metodă | Adaugă unde |
-|---|---|
-| \`push(x)\` | la **sfârșit** |
-| \`unshift(x)\` | la **început** |
+- **\`push(x)\`** — la **sfârșit**
+- **\`unshift(x)\`** — la **început**
 
 \`\`\`javascript
 let a = [2, 3];
@@ -1214,10 +1178,8 @@ a.unshift(1);    // [1, 2, 3, 4]
 
 ## ➖ Ștergere
 
-| Metodă | Șterge de unde | Întoarce |
-|---|---|---|
-| \`pop()\` | de la **sfârșit** | elementul șters |
-| \`shift()\` | de la **început** | elementul șters |
+- **\`pop()\`** — Șterge de unde: de la **sfârșit** • Întoarce: elementul șters
+- **\`shift()\`** — Șterge de unde: de la **început** • Întoarce: elementul șters
 
 \`\`\`javascript
 let a = [1, 2, 3, 4];
@@ -1353,15 +1315,13 @@ let ana = users.find(u => u.nume === "Ana");
 
 ## 🎯 Tabel rapid
 
-| Metodă | Ce face | Întoarce |
-|---|---|---|
-| \`forEach\` | acționează | nimic |
-| \`map\` | transformă | array nou |
-| \`filter\` | filtrează | array nou |
-| \`reduce\` | combină | o valoare |
-| \`find\` | caută primul | element sau undefined |
-| \`some\` | există unul? | true/false |
-| \`every\` | toți? | true/false |
+- **\`forEach\`** — Ce face: acționează • Întoarce: nimic
+- **\`map\`** — Ce face: transformă • Întoarce: array nou
+- **\`filter\`** — Ce face: filtrează • Întoarce: array nou
+- **\`reduce\`** — Ce face: combină • Întoarce: o valoare
+- **\`find\`** — Ce face: caută primul • Întoarce: element sau undefined
+- **\`some\`** — Ce face: există unul? • Întoarce: true/false
+- **\`every\`** — Ce face: toți? • Întoarce: true/false
 
 ## 🎯 Combo modern
 
@@ -1561,19 +1521,17 @@ s[s.length-1]; // "n"
 
 ## 🛠️ Metode utile
 
-| Metodă | Ce face | Exemplu |
-|---|---|---|
-| \`toUpperCase()\` | MAJUSCULE | "ana".toUpperCase() → "ANA" |
-| \`toLowerCase()\` | minuscule | "ANA".toLowerCase() → "ana" |
-| \`trim()\` | șterge spații margini | "  hi  ".trim() → "hi" |
-| \`split(x)\` | string → array | "a,b,c".split(",") → ["a","b","c"] |
-| \`replace(a, b)\` | înlocuiește | "salut".replace("s", "S") → "Salut" |
-| \`includes(x)\` | conține? | "salut".includes("alu") → true |
-| \`indexOf(x)\` | poziția | "salut".indexOf("u") → 3 |
-| \`slice(a, b)\` | porțiune | "salut".slice(1, 4) → "alu" |
-| \`repeat(n)\` | repetă | "ha".repeat(3) → "hahaha" |
-| \`startsWith(x)\` | începe cu? | "salut".startsWith("sa") → true |
-| \`endsWith(x)\` | se termină cu? | "salut".endsWith("ut") → true |
+- **\`toUpperCase()\`** — Ce face: MAJUSCULE • Exemplu: "ana".toUpperCase() → "ANA"
+- **\`toLowerCase()\`** — Ce face: minuscule • Exemplu: "ANA".toLowerCase() → "ana"
+- **\`trim()\`** — Ce face: șterge spații margini • Exemplu: "  hi  ".trim() → "hi"
+- **\`split(x)\`** — Ce face: string → array • Exemplu: "a,b,c".split(",") → ["a","b","c"]
+- **\`replace(a, b)\`** — Ce face: înlocuiește • Exemplu: "salut".replace("s", "S") → "Salut"
+- **\`includes(x)\`** — Ce face: conține? • Exemplu: "salut".includes("alu") → true
+- **\`indexOf(x)\`** — Ce face: poziția • Exemplu: "salut".indexOf("u") → 3
+- **\`slice(a, b)\`** — Ce face: porțiune • Exemplu: "salut".slice(1, 4) → "alu"
+- **\`repeat(n)\`** — Ce face: repetă • Exemplu: "ha".repeat(3) → "hahaha"
+- **\`startsWith(x)\`** — Ce face: începe cu? • Exemplu: "salut".startsWith("sa") → true
+- **\`endsWith(x)\`** — Ce face: se termină cu? • Exemplu: "salut".endsWith("ut") → true
 
 ## 🎯 Template literals (backticks)
 
@@ -1735,11 +1693,9 @@ elev.adresa.strada;    // "Florilor"
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| \`elev.numele\` (când e \`nume\`) | Atenție la nume |
-| \`elev[nume]\` (variabilă) când vrei cheia "nume" | \`elev["nume"]\` |
-| \`elev = {nume: ...}\` în loc de adăugare | \`elev.nume = ...\` |
+- **\`elev.numele\` (când e \`nume\`)** — Atenție la nume
+- **\`elev[nume]\` (variabilă) când vrei cheia "nume"** — \`elev["nume"]\`
+- **\`elev = {nume: ...}\` în loc de adăugare** — \`elev.nume = ...\`
 
 ## 🎓 Ce ai învățat
 - ✅ \`{ cheie: valoare }\`
@@ -1840,11 +1796,9 @@ const inmultire = function(a, b) {
 
 ## 📊 Diferențe rapide
 
-| Tip | Sintaxă | Hoisting? |
-|---|---|---|
-| Declarație | \`function f() {}\` | ✅ Da |
-| Expression | \`const f = function() {}\` | ❌ Nu |
-| Arrow | \`const f = () => {}\` | ❌ Nu |
+- **Declarație** — Sintaxă: \`function f() {}\` • Hoisting?: ✅ Da
+- **Expression** — Sintaxă: \`const f = function() {}\` • Hoisting?: ❌ Nu
+- **Arrow** — Sintaxă: \`const f = () => {}\` • Hoisting?: ❌ Nu
 
 ## 🎯 Parametri impliciți
 
@@ -1858,11 +1812,9 @@ saluta("Ana");   // Salut, Ana
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Apelezi fără paranteze: \`saluta\` | \`saluta()\` |
-| Uiți \`return\` și aștepți valoare | Adaugă \`return\` |
-| Confunzi \`console.log\` cu \`return\` | \`console.log\` afișează, \`return\` întoarce |
+- **Apelezi fără paranteze: \`saluta\`** — \`saluta()\`
+- **Uiți \`return\` și aștepți valoare** — Adaugă \`return\`
+- **Confunzi \`console.log\` cu \`return\`** — \`console.log\` afișează, \`return\` întoarce
 
 ## 🎓 Ce ai învățat
 - ✅ \`function nume(params) { ... }\`
@@ -2024,12 +1976,10 @@ Erorile sunt **normale** în programare. Le **prindem** ca să nu strice tot �
 
 ## 🐛 Tipuri comune de erori
 
-| Eroare | Când |
-|---|---|
-| \`SyntaxError\` | Cod scris greșit |
-| \`ReferenceError\` | Variabilă neexistentă |
-| \`TypeError\` | Tip greșit (\`null.f()\`) |
-| \`RangeError\` | Valoare în afara intervalului |
+- **\`SyntaxError\`** — Cod scris greșit
+- **\`ReferenceError\`** — Variabilă neexistentă
+- **\`TypeError\`** — Tip greșit (\`null.f()\`)
+- **\`RangeError\`** — Valoare în afara intervalului
 
 ## 🎯 Sintaxa \`try / catch\`
 
@@ -2081,11 +2031,9 @@ err.stack     // unde s-a întâmplat
 
 ## ⚠️ Greșeli frecvente
 
-| Greșit | Corect |
-|---|---|
-| Pui mult cod în \`try\` | Doar codul **riscant** |
-| Înghiți eroarea: \`catch (e) {}\` | Loghează măcar: \`console.log(e)\` |
-| \`throw "text"\` | \`throw new Error("text")\` (mai bun) |
+- **Pui mult cod în \`try\`** — Doar codul **riscant**
+- **Înghiți eroarea: \`catch (e) {}\`** — Loghează măcar: \`console.log(e)\`
+- **\`throw "text"\`** — \`throw new Error("text")\` (mai bun)
 
 ## 🎓 Ce ai învățat
 - ✅ Tipuri de erori comune
@@ -2180,13 +2128,11 @@ btn.addEventListener("click", () => {
 });
 \`\`\`
 
-| Eveniment | Când |
-|---|---|
-| \`click\` | clic mouse |
-| \`mouseover\` | mouse deasupra |
-| \`keydown\` | apasă tastă |
-| \`submit\` | trimitere formular |
-| \`change\` | input se schimbă |
+- **\`click\`** — clic mouse
+- **\`mouseover\`** — mouse deasupra
+- **\`keydown\`** — apasă tastă
+- **\`submit\`** — trimitere formular
+- **\`change\`** — input se schimbă
 
 ## ➕ Creare elemente noi
 
