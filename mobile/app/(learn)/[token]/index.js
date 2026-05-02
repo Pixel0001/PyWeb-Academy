@@ -69,7 +69,8 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const { student, modules } = data;
+  const { student, modules, subscription } = data;
+  const sub = subscription || {};
   const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0);
   const completedLessons = modules.reduce(
     (s, m) => s + m.lessons.filter(l => l.progress?.completedAt).length, 0
@@ -162,6 +163,52 @@ export default function Dashboard() {
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1e3a8a" />}
       >
+        {/* Subscription status banner */}
+        {sub.showPaymentLock && (
+          <View className="bg-gradient-to-br rounded-2xl mb-4 p-4 shadow-sm border border-rose-200" style={{ backgroundColor: '#fef2f2' }}>
+            <View className="flex-row items-start gap-3">
+              <View className="w-10 h-10 bg-rose-500 rounded-xl items-center justify-center shrink-0">
+                <Ionicons name="lock-closed" size={20} color="#fff" />
+              </View>
+              <View className="flex-1">
+                <Text className="font-extrabold text-rose-900 text-base leading-tight">
+                  {sub.expired
+                    ? `Abonament expirat${sub.daysLeft != null ? ` de ${Math.abs(sub.daysLeft)} ${Math.abs(sub.daysLeft) === 1 ? 'zi' : 'zile'}` : ''}`
+                    : 'Niciun abonament activ'}
+                </Text>
+                <Text className="text-rose-800 text-xs mt-1">
+                  {sub.lockMessage || 'Contactează profesorul pentru a achita abonamentul.'}
+                </Text>
+                <Text className="text-rose-700/80 text-[11px] mt-2">
+                  Poți continua doar lecțiile cu badge <Text className="font-bold">„Gratis”</Text>. Antrenamentul aleator este dezactivat.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {!sub.showPaymentLock && sub.active && sub.daysLeft != null && (
+          <View className={`rounded-2xl mb-4 p-3 flex-row items-center gap-3 border ${
+            sub.expiringSoon ? 'border-amber-200' : 'border-emerald-200'
+          }`} style={{ backgroundColor: sub.expiringSoon ? '#fffbeb' : '#ecfdf5' }}>
+            <View className={`w-9 h-9 rounded-xl items-center justify-center ${
+              sub.expiringSoon ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+            </View>
+            <View className="flex-1">
+              <Text className={`font-extrabold text-sm ${sub.expiringSoon ? 'text-amber-900' : 'text-emerald-900'}`}>
+                Abonament activ
+              </Text>
+              <Text className={`text-xs ${sub.expiringSoon ? 'text-amber-700' : 'text-emerald-700'}`}>
+                {sub.daysLeft === 0 ? 'Expiră astăzi'
+                  : `${sub.daysLeft} ${sub.daysLeft === 1 ? 'zi rămasă' : 'zile rămase'}`}
+                {sub.expiresAt ? ` · până la ${new Date(sub.expiresAt).toLocaleDateString('ro-RO')}` : ''}
+              </Text>
+            </View>
+          </View>
+        )}
+
         <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">
           Modulele tale ({modules.length})
         </Text>
@@ -189,9 +236,21 @@ export default function Dashboard() {
                 </View>
                 <View className="flex-1">
                   <Text className="text-white font-extrabold text-base" numberOfLines={1}>{m.title}</Text>
-                  <Text className="text-white/80 text-xs">
-                    {totalL} lecții {m.language ? `· ${m.language}` : ''}
-                  </Text>
+                  <View className="flex-row items-center gap-1.5 mt-0.5 flex-wrap">
+                    <Text className="text-white/80 text-xs">
+                      {totalL} lecții {m.language ? `· ${m.language}` : ''}
+                    </Text>
+                    {!isLocked && m.hasFullAccess && (
+                      <View className="px-1.5 py-0.5 bg-emerald-500 rounded">
+                        <Text className="text-[9px] font-bold text-white uppercase tracking-wider">Acces complet</Text>
+                      </View>
+                    )}
+                    {!isLocked && !m.hasFullAccess && (
+                      <View className="px-1.5 py-0.5 bg-white/30 rounded">
+                        <Text className="text-[9px] font-bold text-white uppercase tracking-wider">Doar Gratis</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
                 {isLocked
                   ? <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.7)" />
@@ -205,38 +264,67 @@ export default function Dashboard() {
                     const done = l.progress?.completedAt;
                     const started = !done && (l.progress?.theoryCompleted || (l.progress?.currentProblemIndex ?? 0) > 0);
                     const accessible = l.accessible;
+                    const showLockAlert = () => {
+                      Alert.alert(
+                        'Lecție blocată',
+                        sub.expired
+                          ? 'Abonamentul a expirat. Contactează profesorul pentru a-l reînnoi.'
+                          : 'Această lecție necesită abonament activ. Contactează profesorul pentru a achita abonamentul.',
+                        [{ text: 'Am înțeles' }]
+                      );
+                    };
 
-                    return (
-                      <Link
-                        key={l.id}
-                        href={accessible ? `/(learn)/${token}/lesson/${l.id}` : `/(learn)/${token}`}
-                        asChild
+                    const Row = (
+                      <Pressable
+                        className="px-4 py-3 flex-row items-center gap-3 active:bg-gray-50 border-t border-gray-50"
+                        onPress={accessible ? undefined : showLockAlert}
                       >
-                        <Pressable
-                          className="px-4 py-3 flex-row items-center gap-3 active:bg-gray-50 border-t border-gray-50"
-                          disabled={!accessible}
-                        >
-                          <View className={`w-8 h-8 rounded-full items-center justify-center ${
-                            done ? 'bg-emerald-100' : started ? 'bg-blue-100' : accessible ? 'bg-gray-100' : 'bg-gray-100'
-                          }`}>
-                            {done
-                              ? <Ionicons name="checkmark" size={16} color="#10b981" />
-                              : !accessible
-                                ? <Ionicons name="lock-closed" size={12} color="#9ca3af" />
-                                : <Text className="text-xs font-bold text-gray-600">{lIdx + 1}</Text>}
-                          </View>
-                          <View className="flex-1">
-                            <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
-                              {l.title}
-                            </Text>
+                        <View className={`w-8 h-8 rounded-full items-center justify-center ${
+                          done ? 'bg-emerald-100' : started ? 'bg-blue-100' : accessible ? 'bg-gray-100' : 'bg-rose-50'
+                        }`}>
+                          {done
+                            ? <Ionicons name="checkmark" size={16} color="#10b981" />
+                            : !accessible
+                              ? <Ionicons name="lock-closed" size={12} color="#f43f5e" />
+                              : <Text className="text-xs font-bold text-gray-600">{lIdx + 1}</Text>}
+                        </View>
+                        <View className="flex-1">
+                          <Text className={`text-sm font-semibold ${accessible ? 'text-gray-900' : 'text-gray-500'}`} numberOfLines={1}>
+                            {l.title}
+                          </Text>
+                          <View className="flex-row items-center gap-1.5 mt-0.5 flex-wrap">
                             <Text className="text-xs text-gray-500">
-                              {l._count?.problems ?? 0} probleme
-                              {l.isFree && !accessible ? ' · Gratis' : ''}
+                              {l._count?.problems ?? 0} {l._count?.problems === 1 ? 'problemă' : 'probleme'}
                             </Text>
+                            {l.isFree && (
+                              <View className="px-1.5 py-0.5 bg-emerald-100 rounded">
+                                <Text className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Gratis</Text>
+                              </View>
+                            )}
+                            {!accessible && (
+                              <View className="px-1.5 py-0.5 bg-rose-100 rounded">
+                                <Text className="text-[9px] font-bold text-rose-700 uppercase tracking-wider">Blocat</Text>
+                              </View>
+                            )}
+                            {started && !done && accessible && (
+                              <View className="px-1.5 py-0.5 bg-indigo-100 rounded">
+                                <Text className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">În curs</Text>
+                              </View>
+                            )}
                           </View>
-                          {accessible && <Ionicons name="chevron-forward" size={16} color="#9ca3af" />}
-                        </Pressable>
+                        </View>
+                        {accessible
+                          ? <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                          : <Ionicons name="lock-closed" size={14} color="#f43f5e" />}
+                      </Pressable>
+                    );
+
+                    return accessible ? (
+                      <Link key={l.id} href={`/(learn)/${token}/lesson/${l.id}`} asChild>
+                        {Row}
                       </Link>
+                    ) : (
+                      <View key={l.id}>{Row}</View>
                     );
                   })}
                   {m.lessons.length > 5 && (
