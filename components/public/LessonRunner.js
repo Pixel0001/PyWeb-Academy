@@ -323,7 +323,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   )
 
   return (
-    <div className="flex bg-slate-100 overflow-hidden" style={{ height: 'calc(100vh - env(safe-area-inset-top))' }}>
+    <div className="flex bg-slate-100 overflow-hidden" style={{ height: '100vh', marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 text-white overflow-y-auto">
@@ -350,7 +350,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <div className={`shrink-0 px-4 sm:px-6 py-3 flex items-center gap-3 text-white shadow-sm bg-gradient-to-r from-blue-900 to-blue-700`}>
+        <div className={`shrink-0 px-4 sm:px-6 pb-3 flex items-center gap-3 text-white shadow-sm bg-gradient-to-r from-blue-900 to-blue-700`} style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
           {/* Mobile menu btn */}
           <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden p-1.5 bg-white/15 rounded-lg">
             <Bars3Icon className="w-5 h-5 text-white" />
