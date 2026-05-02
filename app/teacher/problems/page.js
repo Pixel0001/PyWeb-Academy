@@ -55,7 +55,7 @@ export default async function TeacherProblemsPage({ searchParams }) {
           <h1 className="text-xl xs:text-2xl font-bold">🧠 Banca de Probleme</h1>
           <p className="text-sm text-gray-600">{total} probleme active{(topic || difficulty) ? ' • filtrat' : ''}</p>
         </div>
-        <Link href="/admin/problems/new" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
+        <Link href="/teacher/problems/new" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
           + Adaugă problemă
         </Link>
       </div>

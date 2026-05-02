@@ -11,10 +11,12 @@ const TYPES = [
   { value: 'CODING', label: 'Cod (verifică output)' },
 ]
 
-export default function ProblemForm({ problem, courses = [] }) {
+export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const isEdit = !!problem?.id
+  const resolvedApiUrl = apiUrl || (isEdit ? `/api/admin/problems/${problem.id}` : '/api/admin/problems')
+  const resolvedBackUrl = backUrl || (isEdit ? '/admin/problems' : '/admin/problems')
 
   const [form, setForm] = useState({
     title: problem?.title || '',
@@ -57,7 +59,7 @@ export default function ProblemForm({ problem, courses = [] }) {
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
         courseId: form.courseId || null,
       }
-      const url = isEdit ? `/api/admin/problems/${problem.id}` : '/api/admin/problems'
+      const url = resolvedApiUrl
       const method = isEdit ? 'PATCH' : 'POST'
       const res = await fetch(url, {
         method,
@@ -69,7 +71,7 @@ export default function ProblemForm({ problem, courses = [] }) {
         throw new Error(data.error || 'Eroare')
       }
       toast.success(isEdit ? 'Salvat!' : 'Problemă creată!')
-      router.push('/admin/problems')
+      router.push(resolvedBackUrl)
       router.refresh()
     } catch (err) {
       toast.error(err.message)
