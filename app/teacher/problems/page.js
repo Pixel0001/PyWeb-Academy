@@ -9,6 +9,8 @@ import prisma from '@/lib/prisma'
 const DIFF_LABEL = { EASY: '🟢 Ușor', MEDIUM: '🟡 Mediu', HARD: '🔴 Greu' }
 const TYPE_LABEL = { MULTIPLE_CHOICE: 'Grilă', SHORT_ANSWER: 'Răspuns scurt', CODING: 'Cod', INPUT_OUTPUT: 'I/O' }
 
+const PAGE_SIZE = 20
+
 export default async function TeacherProblemsPage({ searchParams }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/login')
@@ -16,27 +18,42 @@ export default async function TeacherProblemsPage({ searchParams }) {
   const sp = (await searchParams) || {}
   const topic = sp.topic || undefined
   const difficulty = sp.difficulty || undefined
+  const page = Math.max(1, parseInt(sp.page || '1', 10) || 1)
 
   const where = { active: true }
   if (topic) where.topic = topic
   if (difficulty) where.difficulty = difficulty
 
-  const [problems, topics] = await Promise.all([
+  const [problems, total, topicsRaw] = await Promise.all([
     prisma.problem.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: { _count: { select: { attempts: true, submissions: true } } },
     }),
+    prisma.problem.count({ where }),
     prisma.problem.findMany({ where: { active: true }, distinct: ['topic'], select: { topic: true } }),
   ])
+
+  const topics = topicsRaw
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const pageUrl = (p) => {
+    const params = new URLSearchParams()
+    if (topic) params.set('topic', topic)
+    if (difficulty) params.set('difficulty', difficulty)
+    if (p > 1) params.set('page', String(p))
+    const qs = params.toString()
+    return `/teacher/problems${qs ? `?${qs}` : ''}`
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3">
         <div>
           <h1 className="text-xl xs:text-2xl font-bold">🧠 Banca de Probleme</h1>
-          <p className="text-sm text-gray-600">Vezi & creează probleme pentru elevii tăi</p>
+          <p className="text-sm text-gray-600">{total} probleme active{(topic || difficulty) ? ' • filtrat' : ''}</p>
         </div>
         <Link href="/admin/problems/new" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
           + Adaugă problemă
@@ -84,6 +101,48 @@ export default async function TeacherProblemsPage({ searchParams }) {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {problems.map(p => (
+            <div key={p.id} className="p-3">
+              <div className="font-medium text-sm">{p.title}</div>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-xs">{p.topic}</span>
+                <span className="text-xs text-gray-500">{TYPE_LABEL[p.type]}</span>
+                <span className="text-xs">{DIFF_LABEL[p.difficulty]}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex flex-col xs:flex-row items-start xs:items-center gap-2">
+            <div className="text-xs text-gray-500 shrink-0">
+              {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, total)} din {total}
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <Link href={pageUrl(1)}
+                className={`px-2 py-1 text-sm rounded border ${page <= 1 ? 'pointer-events-none opacity-40 border-gray-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                « Prima
+              </Link>
+              <Link href={pageUrl(Math.max(1, page - 1))}
+                className={`px-2 py-1 text-sm rounded border ${page <= 1 ? 'pointer-events-none opacity-40 border-gray-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                ‹ Anterior
+              </Link>
+              <span className="px-3 py-1 text-sm font-medium">{page} / {totalPages}</span>
+              <Link href={pageUrl(Math.min(totalPages, page + 1))}
+                className={`px-2 py-1 text-sm rounded border ${page >= totalPages ? 'pointer-events-none opacity-40 border-gray-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                Următor ›
+              </Link>
+              <Link href={pageUrl(totalPages)}
+                className={`px-2 py-1 text-sm rounded border ${page >= totalPages ? 'pointer-events-none opacity-40 border-gray-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                Ultima »
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

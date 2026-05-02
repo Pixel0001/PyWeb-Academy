@@ -301,11 +301,11 @@ export default function SubmissionsList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2">
-          <div className="text-xs text-gray-500">
+        <div className="bg-white border border-gray-100 rounded-xl px-3 py-2 flex flex-col xs:flex-row items-start xs:items-center gap-2">
+          <div className="text-xs text-gray-500 shrink-0">
             {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, totalCount)} din {totalCount}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <Link
               href={buildHref({ page: '1' })}
               className={`px-2 py-1 text-sm rounded border ${page <= 1 ? 'pointer-events-none opacity-40 border-gray-200' : 'border-gray-200 hover:border-indigo-300'}`}
