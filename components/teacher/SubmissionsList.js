@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useOptimistic } from 'react'
 
 const DIFF = { EASY: '🟢', MEDIUM: '🟡', HARD: '🔴' }
 const STATUS_BADGE = {
@@ -31,6 +31,7 @@ export default function SubmissionsList({
   const [selected, setSelected] = useState(() => new Set())
   const [busy, startTransition] = useTransition()
   const [deleting, setDeleting] = useState(false)
+  const [optimisticCoding, setOptimisticCoding] = useOptimistic(onlyCoding)
 
   const buildHref = useMemo(() => {
     return (overrides = {}) => {
@@ -121,8 +122,14 @@ export default function SubmissionsList({
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
-            checked={onlyCoding}
-            onChange={e => navigate({ type: e.target.checked ? 'CODING' : '', page: '1' })}
+            checked={optimisticCoding}
+            onChange={e => {
+              const next = e.target.checked
+              startTransition(() => {
+                setOptimisticCoding(next)
+                router.push(buildHref({ type: next ? 'CODING' : '', page: '1' }))
+              })
+            }}
             className="w-4 h-4"
           />
           <span>💻 Doar probleme de coding</span>
