@@ -62,7 +62,7 @@ export default async function LevelsPage({ params }) {
     <div className="min-h-screen bg-slate-100">
       {/* Top bar */}
       <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-4 py-4 flex items-center gap-3 shadow-lg">
-        <Link href={`/learn/${token}/leaderboard`} className="p-2 hover:bg-white/10 rounded-xl transition">
+        <Link href={`/learn/${token}`} className="p-2 hover:bg-white/10 rounded-xl transition">
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <TrophyIcon className="w-6 h-6 text-amber-300" />

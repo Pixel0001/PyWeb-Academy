@@ -235,17 +235,7 @@ export default async function LeaderboardPage({ params }) {
           </div>
         </div>
 
-        {/* LINK TO LEVELS */}
-        <Link href={'/learn/' + token + '/levels'} className="flex items-center gap-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:bg-slate-50 transition group">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shrink-0">
-            <TrophySolid className="w-5 h-5 text-amber-300" />
-          </div>
-          <div className="flex-1">
-            <div className="font-bold text-gray-900 text-sm">Vezi toate nivelurile</div>
-            <div className="text-xs text-gray-500">Novice → Explorator → Practicant → Expert → Master → Legend</div>
-          </div>
-          <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
-        </Link>
+
 
       </div>
     </div>
