@@ -44,3 +44,7 @@ next-env.d.ts
 /docs/
 
 /app/generated/prisma
+
+# Material sursa (metodicile profesorului)
+metodici/
+
