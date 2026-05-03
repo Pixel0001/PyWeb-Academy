@@ -34,7 +34,7 @@ export default async function StudentProfilePage({ params }) {
     where: { accessToken: token },
     select: {
       id: true, fullName: true, parentName: true, parentEmail: true, parentPhone: true,
-      grade: true, school: true, active: true, superStudent: true, createdAt: true,
+      age: true, notes: true, active: true, superStudent: true, createdAt: true,
     },
   })
   if (!student) notFound()
@@ -142,11 +142,8 @@ export default async function StudentProfilePage({ params }) {
                 {student.superStudent && (
                   <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[11px] font-bold">⭐ Super Student</span>
                 )}
-                {student.grade && (
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-[11px] font-semibold">Clasa {student.grade}</span>
-                )}
-                {student.school && (
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[11px]">{student.school}</span>
+                {student.age && (
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-[11px] font-semibold">{student.age} ani</span>
                 )}
               </div>
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 mt-3 text-sm text-slate-600">
