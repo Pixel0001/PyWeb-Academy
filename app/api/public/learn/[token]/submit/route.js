@@ -94,7 +94,7 @@ export async function POST(req, { params }) {
     status = 'GRADED'
     gradedAt = new Date()
     if (autoCorrect) {
-      grade = applyHintPenalty(gradeForAttempt(attemptNumber, maxAttempts), hintUsed)
+      grade = applyHintPenalty(gradeForAttempt(problem, attemptNumber), hintUsed)
       locked = true
     } else {
       grade = 0

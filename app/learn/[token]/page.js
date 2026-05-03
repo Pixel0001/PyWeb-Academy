@@ -45,7 +45,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -84,6 +84,7 @@ async function DashboardContent({ token }) {
       take: 5,
     }),
     prisma.moduleHidden.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
+    prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
   ])
 
   const accessSet = new Set(accesses.map(a => a.moduleId))
@@ -91,6 +92,7 @@ async function DashboardContent({ token }) {
   const progressMap = new Map(progresses.map(p => [p.lessonId, p]))
   const hiddenModuleIds = new Set(hiddenModulesRaw.map(h => h.moduleId))
   const visibleModules = modules.filter(m => !hiddenModuleIds.has(m.id))
+  const lessonAccessSet = new Set(lessonAccessesRaw.map(a => a.lessonId))
 
   const paymentDaysLeft = latestPayment
     ? Math.ceil((new Date(latestPayment.expiresAt).getTime() - Date.now()) / 86400000)
@@ -101,7 +103,7 @@ async function DashboardContent({ token }) {
   const noPayment = !latestPayment
   const showPaymentLock = !student.superStudent && (paymentExpired || noPayment)
 
-  const hasAnyManualAccess = accessSet.size > 0
+  const hasAnyManualAccess = accessSet.size > 0 || lessonAccessSet.size > 0
   const canAccessRandom = student.superStudent || subscriptionActive || hasAnyManualAccess
 
   const totalLessons = visibleModules.reduce((s, m) => s + m.lessons.length, 0)
@@ -495,9 +497,12 @@ async function DashboardContent({ token }) {
                     {m.lessons.map((l, li) => {
                       // În interiorul modulului, lecțiile sunt secvențiale
                       const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
+                      const grantedLesson = lessonAccessSet.has(l.id)
                       const accessible = student.superStudent
                         ? true
-                        : (subscriptionActive || hasFullAccess || l.isFree) && prevDone
+                        : grantedLesson
+                          ? true
+                          : (subscriptionActive || hasFullAccess || l.isFree) && prevDone
                       const prog = progressMap.get(l.id)
                       const done = !!prog?.completedAt
                       const started = !!prog?.theoryCompleted && !done

@@ -38,10 +38,11 @@ async function LessonContent({ token, lessonId }) {
   const moduleId = lesson.module.id
   const problemIds = lesson.problems.map(p => p.id)
 
-  // ── BATCH 2: TOATE restul în PARALEL (7 query-uri deodată) ──
-  const [latestPayment, manualAccesses, subs, progress, advance, moduleLessons, allProgresses] = await Promise.all([
+  // ── BATCH 2: TOATE restul în PARALEL (8 query-uri deodată) ──
+  const [latestPayment, manualAccesses, manualLessonAccesses, subs, progress, advance, moduleLessons, allProgresses] = await Promise.all([
     prisma.learningPayment.findFirst({ where: { studentId: student.id }, orderBy: { paymentDate: 'desc' } }),
     prisma.moduleAccess.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
+    prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
     prisma.problemSubmission.findMany({
       where: { studentId: student.id, lessonId, problemId: { in: problemIds } },
       orderBy: { createdAt: 'desc' },
@@ -66,7 +67,8 @@ async function LessonContent({ token, lessonId }) {
   // Acces inline — fără DB call extra
   const subscriptionActive = latestPayment && new Date(latestPayment.expiresAt) > new Date()
   const manualModuleIds = new Set(manualAccesses.map(a => a.moduleId))
-  const canAccess = student.superStudent || subscriptionActive || lesson.isFree || manualModuleIds.has(moduleId)
+  const manualLessonIds = new Set(manualLessonAccesses.map(a => a.lessonId))
+  const canAccess = student.superStudent || subscriptionActive || lesson.isFree || manualModuleIds.has(moduleId) || manualLessonIds.has(lesson.id)
 
   if (!canAccess) {
     return (
@@ -123,6 +125,7 @@ async function LessonContent({ token, lessonId }) {
       moduleLessons={moduleLessons}
       progressByLesson={progressByLesson}
       superStudent={student.superStudent ?? false}
+      grantedLessonIds={[...manualLessonIds]}
     />
   )
 }

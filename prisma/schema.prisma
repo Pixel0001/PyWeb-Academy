@@ -369,6 +369,7 @@ model Student {
   moduleAccesses       ModuleAccess[]
   moduleAdvances       ModuleAdvance[]
   hiddenModules        ModuleHidden[]
+  lessonAccesses       LessonAccess[]
   lessonProgresses     LessonProgress[]
   problemSubmissions   ProblemSubmission[]
   learningPayments     LearningPayment[]
@@ -961,6 +962,7 @@ model Lesson {
   problems       Problem[]           @relation("LessonProblems")
   progresses     LessonProgress[]
   submissions    ProblemSubmission[]
+  accesses       LessonAccess[]
 
   @@unique([moduleId, slug])
   @@index([moduleId, order])
@@ -1009,6 +1011,21 @@ model ModuleHidden {
 
   @@unique([studentId, moduleId])
   @@map("module_hidden")
+}
+
+model LessonAccess {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String   @db.ObjectId
+  lessonId    String   @db.ObjectId
+  grantedById String?  @db.ObjectId
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@map("lesson_accesses")
 }
 
 model LessonProgress {

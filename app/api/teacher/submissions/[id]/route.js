@@ -71,7 +71,7 @@ export async function PATCH(req, { params }) {
     // Aplică punctajul degresiv pentru lecție: max admis = gradeForAttempt(attemptNumber, maxAttempts) - hint
     if (sub.lessonId) {
       const max = applyHintPenalty(
-        gradeForAttempt(sub.attemptNumber || 1, getMaxAttempts(sub.problem)),
+        gradeForAttempt(sub.problem, sub.attemptNumber || 1),
         !!sub.hintUsed
       )
       g = Math.min(g, max)
