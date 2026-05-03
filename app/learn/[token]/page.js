@@ -171,7 +171,7 @@ async function DashboardContent({ token }) {
           </div>
 
           {/* XP & Level */}
-          <div className="bg-white/10 rounded-2xl p-4 space-y-2">
+          <Link href={`/learn/${token}/levels`} className="block bg-white/10 hover:bg-white/15 rounded-2xl p-4 space-y-2 transition active:scale-[0.99]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <StarIcon className="w-4 h-4 text-yellow-300" />
@@ -191,7 +191,8 @@ async function DashboardContent({ token }) {
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
               <div className={`h-full ${currentLevel.bar} rounded-full transition-all duration-700`} style={{ width: `${levelPct}%` }} />
             </div>
-          </div>
+            <div className="text-[10px] text-white/50 font-semibold pt-1">Vezi toate nivelurile →</div>
+          </Link>
 
           {/* Subscription status */}
           {latestPayment && (
@@ -308,7 +309,7 @@ async function DashboardContent({ token }) {
 
             {/* XP + Leaderboard row (mobile only) */}
             <div className="grid grid-cols-2 gap-2 mt-3">
-              <div className="bg-white/10 rounded-xl p-2.5">
+              <Link href={`/learn/${token}/levels`} className="bg-white/10 hover:bg-white/20 rounded-xl p-2.5 transition active:scale-95">
                 <div className="flex items-center gap-1 mb-1">
                   <StarIcon className="w-3 h-3 text-yellow-300" />
                   <span className="text-[9px] font-bold uppercase tracking-wider text-white/60">Nivel {currentLevel.num}</span>
@@ -317,7 +318,7 @@ async function DashboardContent({ token }) {
                 <div className="h-1 bg-white/10 rounded-full overflow-hidden mt-1">
                   <div className={`h-full ${currentLevel.bar} rounded-full`} style={{ width: `${levelPct}%` }} />
                 </div>
-              </div>
+              </Link>
               <Link href={`/learn/${token}/leaderboard`}
                 className="bg-white/10 hover:bg-white/20 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95">
                 <TrophyIcon className="w-5 h-5 text-amber-300 shrink-0" />
