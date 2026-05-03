@@ -25,6 +25,7 @@ import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
 import StudentModuleAccessTable from '@/components/admin/StudentModuleAccessTable'
 import StudentLearningPayments from '@/components/admin/StudentLearningPayments'
 import StudentBonusPoints from '@/components/admin/StudentBonusPoints'
+import GenerateTokenButton from '@/components/admin/GenerateTokenButton'
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -230,16 +231,15 @@ export default async function StudentDetailPage({ params }) {
                 <strong>Notițe:</strong> {student.notes}
               </div>
             )}
-            {student.accessToken && (
+            {canEdit.allowed && (
+              <GenerateTokenButton studentId={id} initialToken={student.accessToken || ''} />
+            )}
+            {!canEdit.allowed && student.accessToken && (
               <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-start gap-2">
                 <BoltIcon className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-0.5">Link acces /learn</div>
-                  <a
-                    href={`/learn/${student.accessToken}`}
-                    target="_blank"
-                    className="text-xs font-mono text-indigo-700 break-all hover:underline"
-                  >
+                  <a href={`/learn/${student.accessToken}`} target="_blank" className="text-xs font-mono text-indigo-700 break-all hover:underline">
                     pyweb.online/learn/{student.accessToken}
                   </a>
                   <div className="text-[10px] text-indigo-400 mt-0.5">Token: <span className="font-mono">{student.accessToken}</span></div>
