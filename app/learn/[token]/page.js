@@ -8,12 +8,13 @@ import {
   PuzzlePieceIcon, ClockIcon, LockClosedIcon, BookOpenIcon,
   RocketLaunchIcon, ChevronRightIcon, SparklesIcon,
   CodeBracketIcon, FireIcon, StarIcon, TrophyIcon,
-  UserCircleIcon,
+  UserCircleIcon, PencilSquareIcon, ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
+import LogoutButton from '@/components/public/LogoutButton'
 import LearnLoading from './loading'
 
 const MODULE_THEMES = [
@@ -121,6 +122,26 @@ async function DashboardContent({ token }) {
   const submissionXP = [...bestPerProblem.values()].reduce(
     (s, b) => s + Math.round(b.points * (b.grade / 100)), 0
   )
+
+  // Filtrează cererile de refacere care deja au fost rezolvate (≥60p) — și marchează-le citite
+  const visibleRevisionNotifs = []
+  const resolvedNotifIds = []
+  for (const n of revisionNotifs) {
+    const pid = n.data?.problemId
+    const best = pid ? bestPerProblem.get(pid) : null
+    if (best && best.grade >= 60) {
+      resolvedNotifIds.push(n.id)
+    } else {
+      visibleRevisionNotifs.push(n)
+    }
+  }
+  if (resolvedNotifIds.length > 0) {
+    // fire-and-forget; nu blocăm randarea
+    prisma.notification.updateMany({
+      where: { id: { in: resolvedNotifIds } },
+      data: { read: true },
+    }).catch(() => {})
+  }
   const bonusXP = recentBonusPoints.reduce((s, bp) => s + bp.points, 0)
   // totalXP needs ALL bonus points, not just recent — refetch all
   const allBonusXP = await prisma.bonusPoint.aggregate({ where: { studentId: student.id }, _sum: { points: true } })
@@ -288,13 +309,10 @@ async function DashboardContent({ token }) {
           </Link>
 
           {/* Deconectare */}
-          <Link href="/learn"
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/5 hover:bg-rose-500/20 text-white/50 hover:text-rose-300 transition">
-            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            <span className="flex-1">Deconectează-te</span>
-          </Link>
+          <LogoutButton className="w-full flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/5 hover:bg-rose-500/20 text-white/50 hover:text-rose-300 transition">
+            <ArrowRightOnRectangleIcon className="w-4 h-4 shrink-0" />
+            <span className="flex-1 text-left">Deconectează-te</span>
+          </LogoutButton>
 
           {/* Module nav links */}
           <div>
@@ -379,16 +397,13 @@ async function DashboardContent({ token }) {
             </Link>
 
             {/* Deconectare (mobile) */}
-            <Link href="/learn"
-              className="mt-1 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95 text-white/40 hover:text-rose-300 hover:bg-rose-500/10">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              <div className="flex-1 min-w-0">
+            <LogoutButton className="w-full mt-1 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95 text-white/40 hover:text-rose-300 hover:bg-rose-500/10">
+              <ArrowRightOnRectangleIcon className="w-5 h-5 shrink-0" />
+              <div className="flex-1 min-w-0 text-left">
                 <div className="text-[9px] font-bold uppercase tracking-wider text-white/40">Cont</div>
                 <div className="text-sm font-extrabold leading-tight">Deconectează-te</div>
               </div>
-            </Link>
+            </LogoutButton>
           </div>
 
           {pendingSubs > 0 && (
@@ -401,30 +416,37 @@ async function DashboardContent({ token }) {
           )}
 
           {/* Revision request notifications */}
-          {revisionNotifs.length > 0 && (
+          {visibleRevisionNotifs.length > 0 && (
             <div className="bg-gradient-to-br from-rose-50 to-pink-50 border-2 border-rose-200 rounded-2xl p-4 space-y-2">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">📝</span>
+                <PencilSquareIcon className="w-5 h-5 text-rose-600 shrink-0" />
                 <h3 className="font-bold text-rose-900 text-sm">
-                  {revisionNotifs.length === 1 ? 'Cerere de refacere' : `${revisionNotifs.length} cereri de refacere`}
+                  {visibleRevisionNotifs.length === 1 ? 'Cerere de refacere' : `${visibleRevisionNotifs.length} cereri de refacere`}
                 </h3>
               </div>
               <div className="space-y-1.5">
-                {revisionNotifs.map(n => {
+                {visibleRevisionNotifs.map(n => {
                   const lessonId = n.data?.lessonId
-                  const moduleSlug = n.data?.moduleSlug
+                  const problemId = n.data?.problemId
                   const lessonTitle = n.data?.lessonTitle
-                  const href = lessonId ? `/learn/${token}/lesson/${lessonId}` : `/learn/${token}`
+                  const href = lessonId
+                    ? `/learn/${token}/lesson/${lessonId}${problemId ? `?problemId=${problemId}` : ''}`
+                    : `/learn/${token}`
+                  // curăț emoji-ul din title (e salvat pe server cu 📝)
+                  const cleanTitle = (n.title || '').replace(/^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\s]+/u, '').trim() || n.title
                   return (
                     <Link
                       key={n.id}
                       href={href}
                       className="flex items-start gap-2 bg-white hover:bg-rose-50 transition rounded-xl p-2.5 ring-1 ring-rose-100"
                     >
+                      <PencilSquareIcon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-rose-900 truncate">{n.title}</div>
+                        <div className="text-sm font-semibold text-rose-900 truncate">{cleanTitle}</div>
                         {lessonTitle && (
-                          <div className="text-xs text-rose-600 mt-0.5">📘 {lessonTitle}</div>
+                          <div className="text-xs text-rose-600 mt-0.5 inline-flex items-center gap-1">
+                            <BookOpenIcon className="w-3 h-3" /> {lessonTitle}
+                          </div>
                         )}
                         <div className="text-xs text-rose-700/80 line-clamp-2 mt-0.5">{n.message}</div>
                       </div>

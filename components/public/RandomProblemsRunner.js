@@ -155,16 +155,18 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         toast('Trimis profesorului', { icon: '📨' })
         setLocked(l => ({ ...l, [p.id]: true }))
       } else if (d.autoCorrect === true) {
-        const g = d.submission?.grade ?? 0
-        toast.success(`Corect! +${g} pct`)
+        const pct = d.submission?.grade ?? 0
+        const earned = Math.round((p.points ?? 10) * pct / 100)
+        toast.success(`Corect! +${earned} pct (${pct}%)`)
       } else {
         const max = d.maxAttempts ?? getMaxAttempts(p)
         const next = d.attemptNumber ?? 0
         if (d.locked || next >= max) {
           toast.error('Greșit — încercări epuizate (0 pct)')
         } else {
-          const nextGrade = applyHintPenalty(gradeForAttempt(p, next + 1), !!hintUsed[p.id])
-          toast.error(`Greșit — încercarea următoare valorează ${nextGrade} pct`)
+          const nextPct = applyHintPenalty(gradeForAttempt(p, next + 1), !!hintUsed[p.id])
+          const nextEarned = Math.round((p.points ?? 10) * nextPct / 100)
+          toast.error(`Greșit — încercarea următoare valorează ${nextEarned} pct`)
         }
       }
     } catch (e) {
@@ -181,8 +183,12 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
   }
 
   const viewSolution = async (p) => {
-    if (locked[p.id] || solutions[p.id]) return
-    if (!confirm('Vezi rezolvarea? Vei primi 0 puncte și problema se închide.')) return
+    if (solutions[p.id]) return
+    const wasLocked = !!locked[p.id]
+    // Dacă nu e blocată încă, cere confirmare (vede soluția → 0 pct)
+    if (!wasLocked) {
+      if (!confirm('Vezi rezolvarea? Vei primi 0 puncte și problema se închide.')) return
+    }
     try {
       const r = await fetch(`/api/public/learn/${token}/solution`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -192,8 +198,10 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
       if (!r.ok) throw new Error(d.error || 'Eroare')
       setSolutions(s => ({ ...s, [p.id]: { correctAnswer: d.correctAnswer, explanation: d.explanation } }))
       setLocked(l => ({ ...l, [p.id]: true }))
-      // marchează ca submisie 0p ca să iasă din "needs work"
-      setSubmissions(s => ({ ...s, [p.id]: { ...(s[p.id] || {}), status: 'GRADED', grade: 0, autoCorrect: false, solutionViewed: true } }))
+      // marchează ca submisie 0p doar dacă nu era deja înnregistrată una
+      if (!wasLocked) {
+        setSubmissions(s => ({ ...s, [p.id]: { ...(s[p.id] || {}), status: 'GRADED', grade: 0, autoCorrect: false, solutionViewed: true } }))
+      }
     } catch (e) { toast.error(e.message) }
   }
 
@@ -612,7 +620,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                           {attempts > 0 && !isOk && (
                             <span className="text-slate-500">· Încercarea {Math.min(attempts, max)}/{max}</span>
                           )}
-                          {isOk && <span className="text-emerald-600 font-semibold">· {sub?.grade ?? 0}/100 ✓</span>}
+                          {isOk && <span className="text-emerald-600 font-semibold">· {Math.round((p.points ?? 10) * (sub?.grade ?? 0) / 100)}/{p.points} pct ✓</span>}
                           {isPending && <span className="text-amber-600 font-semibold">· La profesor</span>}
                           {isLocked && !isOk && (
                             <span className="text-rose-600 font-semibold">
@@ -642,12 +650,12 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                 <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Răspuns greșit — mai poți încerca</span></>
                               )}
                               {typeof sub.grade === 'number' && (isOk || isLocked) && (
-                                <span className="ml-auto text-slate-700">Nota: <strong>{sub.grade}/100</strong></span>
+                                <span className="ml-auto text-slate-700">Nota: <strong>{Math.round((p.points ?? 10) * sub.grade / 100)}/{p.points} pct</strong> <span className="text-slate-400 text-xs">({sub.grade}%)</span></span>
                               )}
                             </div>
                             {!isOk && !isLocked && !isPending && attempts < max && (
                               <div className="mt-2 text-xs text-amber-900">
-                                Următoarea încercare valorează <strong>{nextGrade} pct</strong>
+                                Următoarea încercare valorează <strong>{Math.round((p.points ?? 10) * nextGrade / 100)} pct</strong>
                                 {usedHint ? ' (cu penalizare indiciu)' : ''}.
                               </div>
                             )}
@@ -663,6 +671,15 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                     <div className="text-rose-900 whitespace-pre-wrap">{sol.explanation}</div>
                                   </div>
                                 )}
+                              </div>
+                            )}
+                            {/* Buton "Vezi rezolvarea" când e blocată din încercări epuizate, fără soluție afișată încă */}
+                            {isLocked && !isOk && !sol && p.type !== 'CODING' && (
+                              <div className="mt-3">
+                                <button type="button" onClick={() => viewSolution(p)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-white hover:bg-rose-50 border border-rose-300 rounded-lg transition">
+                                  <EyeIcon className="w-4 h-4" /> Vezi rezolvarea
+                                </button>
                               </div>
                             )}
                           </div>
@@ -719,7 +736,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               <button onClick={() => submit(p)} disabled={!!submitting[p.id]}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition disabled:opacity-60">
                                 <PaperAirplaneIcon className="w-4 h-4" />
-                                {submitting[p.id] ? 'Se trimite...' : (lastWrong ? `Reîncearcă (${nextGrade} pct)` : 'Trimite răspunsul')}
+                                {submitting[p.id] ? 'Se trimite...' : (lastWrong ? `Reîncearcă (${Math.round((p.points ?? 10) * nextGrade / 100)} pct)` : 'Trimite răspunsul')}
                               </button>
                               {p.type !== 'CODING' && attempts >= 2 && (
                                 <button type="button" onClick={() => viewSolution(p)}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import {
   BookOpenIcon, PuzzlePieceIcon, ClockIcon, LightBulbIcon,
@@ -72,10 +72,20 @@ function Timer({ seconds }) {
 
 export default function LessonRunner({ token, lesson, problems, initialProgress, advanceGranted, moduleLessons = [], progressByLesson = {}, superStudent = false, grantedLessonIds = [] }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const grantedLessonSet = new Set(grantedLessonIds)
   const [progress, setProgress] = useState(initialProgress || { theoryCompleted: false, currentProblemIndex: 0 })
   const [step, setStep] = useState(progress.theoryCompleted ? 'problems' : 'theory')
-  const [idx, setIdx] = useState(progress.currentProblemIndex || 0)
+  // Dacă vine ?problemId=... din notificare, pornim direct la problema respectivă
+  const initialIdx = (() => {
+    const targetPid = searchParams?.get('problemId')
+    if (targetPid) {
+      const i = problems.findIndex(p => p.id === targetPid)
+      if (i >= 0) return i
+    }
+    return progress.currentProblemIndex || 0
+  })()
+  const [idx, setIdx] = useState(initialIdx)
   const [submissions, setSubmissions] = useState(problems.map(p => p.submission))
   // Per-problem state, indexed by problem position
   const [attemptsCount, setAttemptsCount] = useState(problems.map(p => p.attemptsCount || 0))
@@ -95,6 +105,15 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
   const startRef = useRef(Date.now())
+
+  // Dacă a venit ?problemId=... și teoria e gata, sărim direct la lista de probleme
+  useEffect(() => {
+    const targetPid = searchParams?.get('problemId')
+    if (targetPid && progress.theoryCompleted) {
+      setStep('problems')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (step !== 'problems') return
