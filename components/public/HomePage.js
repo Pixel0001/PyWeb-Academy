@@ -798,12 +798,65 @@ export default function HomePage({ courses = [], reviews = [] }) {
           {/* Features grid */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
             {[
-              { emoji: '📚', title: 'Lecții interactive', desc: 'Teorie + exerciții practice pentru fiecare lecție. Progresul se salvează automat.' },
-              { emoji: '🎯', title: 'Probleme aleatorii', desc: 'Antrenament personalizat cu probleme generate din lecțiile parcurse, cu sistem de punctaj.' },
-              { emoji: '🏆', title: 'XP & Leaderboard', desc: 'Câștigă XP la fiecare problemă rezolvată și urcă în clasamentul grupei.' },
-              { emoji: '💡', title: 'Indicii & soluții', desc: 'Dacă ești blocat, ceri un indiciu sau ceri să vezi rezolvarea — cu scădere de puncte.' },
-              { emoji: '📊', title: 'Progres vizual', desc: 'Urmărești exact ce ai terminat și ce mai ai de făcut din fiecare modul.' },
-              { emoji: '🔔', title: 'Notificări', desc: 'Primești notificări de la profesor despre teme, feedback și sesiuni recuperare.' },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                ),
+                title: 'Lecții interactive',
+                desc: 'Teorie + exerciții practice pentru fiecare lecție. Progresul se salvează automat.',
+              },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                  </svg>
+                ),
+                title: 'Probleme aleatorii',
+                desc: 'Antrenament personalizat cu probleme generate din lecțiile parcurse, cu sistem de punctaj.',
+              },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/>
+                    <path d="M12 17v4"/><path d="M8 21h8"/><path d="M6 3h12v8a6 6 0 0 1-12 0z"/>
+                  </svg>
+                ),
+                title: 'XP & Leaderboard',
+                desc: 'Câștigă XP la fiecare problemă rezolvată și urcă în clasamentul grupei.',
+              },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                    <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                  </svg>
+                ),
+                title: 'Indicii & soluții',
+                desc: 'Dacă ești blocat, ceri un indiciu sau ceri să vezi rezolvarea — cu scădere de puncte.',
+              },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+                  </svg>
+                ),
+                title: 'Progres vizual',
+                desc: 'Urmărești exact ce ai terminat și ce mai ai de făcut din fiecare modul.',
+              },
+              {
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                ),
+                title: 'Notificări',
+                desc: 'Primești notificări de la profesor despre teme, feedback și sesiuni recuperare.',
+              },
             ].map(f => (
               <div key={f.title} style={{
                 backgroundColor: 'var(--bg-card)',
@@ -813,7 +866,12 @@ export default function HomePage({ courses = [], reviews = [] }) {
                 display: 'flex', flexDirection: 'column', gap: '0.5rem',
                 boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
               }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{f.emoji}</div>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '0.75rem',
+                  backgroundColor: 'var(--color-accent-light)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: '0.25rem',
+                }}>{f.icon}</div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--text-heading)' }}>{f.title}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{f.desc}</div>
               </div>
@@ -825,19 +883,37 @@ export default function HomePage({ courses = [], reviews = [] }) {
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
               Accesul la aplicație este inclus gratuit pentru toți elevii înscriși.
             </p>
-            <a href="#contact" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              backgroundColor: 'var(--color-primary)', color: '#fff',
-              fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem',
-              padding: '0.8rem 2rem', borderRadius: '0.75rem',
-              textDecoration: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              transition: 'var(--transition)',
-            }}
-              onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)' }}
-              onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)' }}
-            >
-              Înscrie-te și primești acces →
-            </a>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="/learn" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                backgroundColor: 'var(--color-primary)', color: '#fff',
+                fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem',
+                padding: '0.8rem 2rem', borderRadius: '0.75rem',
+                textDecoration: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                transition: 'var(--transition)',
+              }}
+                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)' }}
+                onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                Deschide aplicația
+              </a>
+              <a href="#contact" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                backgroundColor: 'transparent', color: 'var(--color-primary)',
+                fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem',
+                padding: '0.8rem 2rem', borderRadius: '0.75rem',
+                textDecoration: 'none', border: '2px solid var(--color-primary)',
+                transition: 'var(--transition)',
+              }}
+                onMouseOver={e => { e.currentTarget.style.backgroundColor = 'var(--color-accent-light)' }}
+                onMouseOut={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+              >
+                Înscrie-te →
+              </a>
+            </div>
           </div>
 
         </div>
