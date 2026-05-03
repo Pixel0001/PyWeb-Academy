@@ -454,6 +454,33 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
             style={{ width: `${problems.length > 0 ? Math.round(doneCount / problems.length * 100) : 0}%` }} />
         </div>
 
+        {/* ── SOURCE FILTER BAR — mereu vizibil ── */}
+        <div className="shrink-0 px-4 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 hidden sm:block">Probleme din:</span>
+          <button
+            onClick={() => setOnlyCompleted(true)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              onlyCompleted
+                ? 'bg-emerald-500 text-white shadow'
+                : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-700'
+            }`}
+          >
+            <AcademicCapIcon className="w-3.5 h-3.5" />
+            Lecțiile mele făcute
+          </button>
+          <button
+            onClick={() => setOnlyCompleted(false)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              !onlyCompleted
+                ? 'bg-blue-800 text-white shadow'
+                : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-700'
+            }`}
+          >
+            <Squares2X2Icon className="w-3.5 h-3.5" />
+            Toate lecțiile
+          </button>
+        </div>
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {problems.length === 0 ? (
