@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { gradeCode, detectAiCode, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
+import { assertAiAccess } from '@/lib/learning-access'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30 // Vercel — extindem timeout pentru OpenAI
 
 // Penalty pentru cod detectat ca AI: scade din nota finală
 const AI_PENALTY = 50 // dacă isAi → scade 50 puncte (de obicei = 0p)
+
+// Limită hard pe input — protecție cost (un cod de 50KB ar costa ~$0.03 doar input)
+const MAX_CODE_LENGTH = 5000
+const MAX_OUTPUT_LENGTH = 2000
 
 function getIp(req) {
   const xff = req.headers.get('x-forwarded-for')
@@ -19,6 +24,9 @@ function getIp(req) {
  */
 export async function GET(req, { params }) {
   const { token } = await params
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return NextResponse.json({ error: 'Token invalid' }, { status: 400 })
+  }
   const student = await prisma.student.findFirst({
     where: { accessToken: token },
     select: { id: true, active: true },
@@ -37,6 +45,9 @@ export async function GET(req, { params }) {
  */
 export async function POST(req, { params }) {
   const { token } = await params
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return NextResponse.json({ error: 'Token invalid' }, { status: 400 })
+  }
   const ip = getIp(req)
 
   const student = await prisma.student.findFirst({
@@ -48,8 +59,29 @@ export async function POST(req, { params }) {
 
   const body = await req.json().catch(() => ({}))
   const { problemId, lessonId, code, output, source = 'lesson' } = body
-  if (!problemId || !code) {
-    return NextResponse.json({ error: 'problemId și code sunt obligatorii' }, { status: 400 })
+  if (!problemId || typeof problemId !== 'string') {
+    return NextResponse.json({ error: 'problemId invalid' }, { status: 400 })
+  }
+  if (lessonId && typeof lessonId !== 'string') {
+    return NextResponse.json({ error: 'lessonId invalid' }, { status: 400 })
+  }
+  if (typeof code !== 'string' || !code.trim()) {
+    return NextResponse.json({ error: 'code obligatoriu' }, { status: 400 })
+  }
+  if (code.length > MAX_CODE_LENGTH) {
+    return NextResponse.json({ error: `Codul e prea lung (max ${MAX_CODE_LENGTH} caractere)` }, { status: 413 })
+  }
+  // Trim output la o limită sigură — nu eroare, doar tunde
+  const safeOutput = typeof output === 'string' ? output.slice(0, MAX_OUTPUT_LENGTH) : ''
+
+  // 0. PAYWALL — doar abonații pot folosi AI (sau lecții free)
+  const aiAccess = await assertAiAccess(student.id, { lessonId })
+  if (!aiAccess.allowed) {
+    return NextResponse.json({
+      error: aiAccess.message || 'Acces AI blocat',
+      locked: true,
+      reason: aiAccess.reason,
+    }, { status: 403 })
   }
 
   // 1. Quota check
@@ -72,6 +104,10 @@ export async function POST(req, { params }) {
   if (!problem) return NextResponse.json({ error: 'Problemă inexistentă' }, { status: 404 })
   if (problem.type !== 'CODING') {
     return NextResponse.json({ error: 'AI grading e doar pentru probleme CODING' }, { status: 400 })
+  }
+  // Securitate: dacă problema aparține unei lecții, lessonId trebuie să corespundă
+  if (problem.lessonId && lessonId && problem.lessonId !== lessonId) {
+    return NextResponse.json({ error: 'Lecția nu corespunde problemei' }, { status: 400 })
   }
 
   // 3. Verifică submisii existente — nu permitem dacă e blocată sau notată > 60 (deja corect)
@@ -96,7 +132,7 @@ export async function POST(req, { params }) {
         expectedSolution: problem.correctAnswer || '',
         studentCode: code,
         language: problem.language || 'python',
-        studentOutput: output || '',
+        studentOutput: safeOutput,
       }),
       detectAiCode({ code, language: problem.language || 'python' }),
     ])

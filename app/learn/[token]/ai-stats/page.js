@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { AI_LIMITS } from '@/lib/ai-grader'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { getStudentLearningAccess, AI_PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
+import { ArrowLeftIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import MrPyWebAvatar from '@/components/learn/MrPyWebAvatar'
 
 function timeUntil(date) {
@@ -30,6 +31,29 @@ export default async function AiStatsPage({ params }) {
     select: { id: true, fullName: true, active: true },
   })
   if (!student || student.active === false) notFound()
+
+  const access = await getStudentLearningAccess(student.id)
+  const canUseAi = access.isSuper || access.subscriptionActive
+
+  if (!canUseAi) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center bg-white/5 border border-white/10 rounded-3xl p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl">
+            <LockClosedIcon className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex justify-center mb-3">
+            <MrPyWebAvatar size={48} animated />
+          </div>
+          <h1 className="text-xl font-extrabold mb-2">Mr. PyWeb e blocat</h1>
+          <p className="text-sm text-indigo-200 mb-5">{AI_PAYMENT_LOCK_MESSAGE}</p>
+          <Link href={`/learn/${token}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-sm transition active:scale-95">
+            <ArrowLeftIcon className="w-4 h-4" /> Înapoi la lecții
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const now = new Date()
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)

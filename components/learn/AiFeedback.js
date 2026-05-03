@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import MrPyWebAvatar from './MrPyWebAvatar'
 
 /**
@@ -70,10 +71,10 @@ export default function AiFeedback({ data, onClose, onRetry, token }) {
       )}
 
       {/* Notă */}
-      <div className="px-4 py-4 flex items-center gap-4">
-        <div className={`shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br ${gradeColor} text-white flex flex-col items-center justify-center shadow-md`}>
-          <div className="text-3xl font-black leading-none">{grade}</div>
-          <div className="text-xs opacity-90">/100</div>
+      <div className="px-4 py-4 flex items-center gap-3 sm:gap-4">
+        <div className={`shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${gradeColor} text-white flex flex-col items-center justify-center shadow-md`}>
+          <div className="text-2xl sm:text-3xl font-black leading-none">{grade}</div>
+          <div className="text-[10px] sm:text-xs opacity-90">/100</div>
         </div>
         <div className="flex-1">
           <div className="text-2xl">{gradeEmoji}</div>
@@ -118,8 +119,8 @@ export default function AiFeedback({ data, onClose, onRetry, token }) {
       )}
 
       {/* Footer — quota + acțiuni */}
-      <div className="bg-gray-50 border-t border-gray-200 px-4 py-2">
-        <div className="flex items-center justify-between">
+      <div className="bg-gray-50 border-t border-gray-200 px-3 sm:px-4 py-2">
+        <div className="flex items-center justify-between flex-wrap gap-1.5">
           <div className="text-xs text-gray-600">
             Verificări AI rămase azi:{' '}
             <span className={`font-bold ${(usage?.remaining ?? 1) === 0 ? 'text-red-600' : (usage?.remaining ?? 1) <= 5 ? 'text-amber-600' : 'text-gray-900'}`}>

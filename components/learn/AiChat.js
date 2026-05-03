@@ -73,7 +73,7 @@ export default function AiChat({ token, problemId, lessonId, getCode, onClose })
   }
 
   return (
-    <div className="rounded-2xl border-2 border-indigo-200 bg-white shadow-lg overflow-hidden flex flex-col h-[480px] max-h-[80vh]">
+    <div className="rounded-2xl border-2 border-indigo-200 bg-white shadow-lg overflow-hidden flex flex-col h-[70vh] sm:h-[480px] max-h-[640px]">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg bg-white/95 flex items-center justify-center shadow p-0.5">

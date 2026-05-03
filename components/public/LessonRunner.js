@@ -74,7 +74,7 @@ function Timer({ seconds }) {
   )
 }
 
-export default function LessonRunner({ token, lesson, problems, initialProgress, advanceGranted, moduleLessons = [], progressByLesson = {}, superStudent = false, grantedLessonIds = [] }) {
+export default function LessonRunner({ token, lesson, problems, initialProgress, advanceGranted, moduleLessons = [], progressByLesson = {}, superStudent = false, grantedLessonIds = [], canUseAi = false }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const grantedLessonSet = new Set(grantedLessonIds)
@@ -232,8 +232,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       if (!code.trim() && !answer.trim()) return toast.error('Introdu un raspuns')
     } else if (!answer.trim()) return toast.error('Introdu un raspuns')
 
-    // Pentru CODING — trimite la AI grader (Mr. PyWeb)
-    if (cur.type === 'CODING') {
+    // Pentru CODING — trimite la AI grader (Mr. PyWeb) doar dacă elevul are acces AI
+    if (cur.type === 'CODING' && canUseAi) {
       if (!code.trim()) return toast.error('Scrie cod înainte de trimitere')
       setSubmitting(true)
       try {
@@ -799,8 +799,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               onOutput={setLastOutput}
                             />
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-xs text-slate-400 flex-1">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" — Mr. PyWeb te va nota cu AI.</p>
-                              {!chatOpen[cur.id] && (
+                              <p className="text-xs text-slate-400 flex-1 min-w-[180px]">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite"{canUseAi ? ' — Mr. PyWeb te va nota cu AI.' : '.'}</p>
+                              {canUseAi && !chatOpen[cur.id] && (
                                 <button
                                   type="button"
                                   onClick={() => setChatOpen(s => ({ ...s, [cur.id]: true }))}
@@ -813,7 +813,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 </button>
                               )}
                             </div>
-                            {chatOpen[cur.id] && (
+                            {!canUseAi && (
+                              <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 flex items-start gap-2.5 text-xs sm:text-sm">
+                                <SparklesIcon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <div className="font-bold text-amber-900">Mr. PyWeb (AI) e disponibil cu abonament</div>
+                                  <div className="text-amber-800 mt-0.5">Cere profesorului să-ți activeze abonamentul pentru notare instant cu AI și ajutor cu indicii. Codul tău va fi trimis profesorului spre evaluare.</div>
+                                </div>
+                              </div>
+                            )}
+                            {canUseAi && chatOpen[cur.id] && (
                               <AiChat
                                 token={token}
                                 problemId={cur.id}
@@ -822,10 +831,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 onClose={() => setChatOpen(s => ({ ...s, [cur.id]: false }))}
                               />
                             )}
-                            {submitting && cur.type === 'CODING' && !aiFeedback[cur.id] && (
+                            {canUseAi && submitting && cur.type === 'CODING' && !aiFeedback[cur.id] && (
                               <AiGradingLoader />
                             )}
-                            {aiFeedback[cur.id] && (
+                            {canUseAi && aiFeedback[cur.id] && (
                               <AiFeedback
                                 data={aiFeedback[cur.id]}
                                 token={token}

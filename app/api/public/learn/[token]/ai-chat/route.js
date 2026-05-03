@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { askMrPyWeb, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
+import { assertAiAccess } from '@/lib/learning-access'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
 const MAX_CHAT_PER_PROBLEM = 5 // max 5 perechi întrebare/răspuns per problemă
+const MAX_QUESTION_LENGTH = 500
+const MAX_CODE_CONTEXT = 5000
 
 function getIp(req) {
   const xff = req.headers.get('x-forwarded-for')
@@ -18,9 +21,14 @@ function getIp(req) {
  */
 export async function GET(req, { params }) {
   const { token } = await params
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return NextResponse.json({ error: 'Token invalid' }, { status: 400 })
+  }
   const url = new URL(req.url)
   const problemId = url.searchParams.get('problemId')
-  if (!problemId) return NextResponse.json({ error: 'problemId obligatoriu' }, { status: 400 })
+  if (!problemId || typeof problemId !== 'string') {
+    return NextResponse.json({ error: 'problemId obligatoriu' }, { status: 400 })
+  }
 
   const student = await prisma.student.findFirst({
     where: { accessToken: token },
@@ -47,6 +55,9 @@ export async function GET(req, { params }) {
  */
 export async function POST(req, { params }) {
   const { token } = await params
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return NextResponse.json({ error: 'Token invalid' }, { status: 400 })
+  }
   const ip = getIp(req)
 
   const student = await prisma.student.findFirst({
@@ -58,11 +69,25 @@ export async function POST(req, { params }) {
 
   const body = await req.json().catch(() => ({}))
   const { problemId, lessonId, question, code = '' } = body
-  if (!problemId || !question?.trim()) {
+  if (!problemId || typeof problemId !== 'string' || !question || typeof question !== 'string' || !question.trim()) {
     return NextResponse.json({ error: 'problemId și question sunt obligatorii' }, { status: 400 })
   }
-  if (question.length > 500) {
-    return NextResponse.json({ error: 'Întrebarea e prea lungă (max 500 caractere)' }, { status: 400 })
+  if (lessonId && typeof lessonId !== 'string') {
+    return NextResponse.json({ error: 'lessonId invalid' }, { status: 400 })
+  }
+  if (question.length > MAX_QUESTION_LENGTH) {
+    return NextResponse.json({ error: `Întrebarea e prea lungă (max ${MAX_QUESTION_LENGTH} caractere)` }, { status: 400 })
+  }
+  const safeCode = typeof code === 'string' ? code.slice(0, MAX_CODE_CONTEXT) : ''
+
+  // 0. PAYWALL
+  const aiAccess = await assertAiAccess(student.id, { lessonId })
+  if (!aiAccess.allowed) {
+    return NextResponse.json({
+      error: aiAccess.message || 'Acces AI blocat',
+      locked: true,
+      reason: aiAccess.reason,
+    }, { status: 403 })
   }
 
   // Limit per problem
@@ -114,7 +139,7 @@ export async function POST(req, { params }) {
       problemTitle: problem.title,
       problemDescription: problem.description,
       language: problem.language || 'python',
-      studentCode: code,
+      studentCode: safeCode,
       history,
       question: question.trim(),
     })

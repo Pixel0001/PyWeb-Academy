@@ -126,6 +126,7 @@ async function LessonContent({ token, lessonId }) {
       progressByLesson={progressByLesson}
       superStudent={student.superStudent ?? false}
       grantedLessonIds={[...manualLessonIds]}
+      canUseAi={student.superStudent || subscriptionActive || lesson.isFree}
     />
   )
 }
