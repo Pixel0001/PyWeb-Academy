@@ -79,7 +79,7 @@ export default async function StudentDetailPage({ params }) {
   const groupIds = student.groupStudents.map(gs => gs.groupId)
 
   // Date pentru aplicația /learn: module + accese + avansări + plăți + XP
-  const [allModules, moduleAccesses, moduleAdvances, learningPayments, gradedSubmissions, bonusPointsRaw] = await Promise.all([
+  const [allModules, moduleAccesses, moduleAdvances, moduleHiddens, learningPayments, gradedSubmissions, bonusPointsRaw] = await Promise.all([
     prisma.learningModule.findMany({
       where: { active: true },
       orderBy: { order: 'asc' },
@@ -87,6 +87,7 @@ export default async function StudentDetailPage({ params }) {
     }),
     prisma.moduleAccess.findMany({ where: { studentId: id }, select: { moduleId: true } }),
     prisma.moduleAdvance.findMany({ where: { studentId: id }, select: { moduleId: true } }),
+    prisma.moduleHidden.findMany({ where: { studentId: id }, select: { moduleId: true } }),
     prisma.learningPayment.findMany({ where: { studentId: id }, orderBy: { paymentDate: 'desc' } }),
     prisma.problemSubmission.findMany({
       where: { studentId: id, status: 'GRADED', grade: { gte: 60 } },
@@ -104,6 +105,7 @@ export default async function StudentDetailPage({ params }) {
   )
   const accessIds = moduleAccesses.map(a => a.moduleId)
   const advanceIds = moduleAdvances.map(a => a.moduleId)
+  const hiddenIds = moduleHiddens.map(h => h.moduleId)
 
   // 2) Toate prezențele PRESENT ale elevului (descrescător după dată)
   // NOTĂ: Prisma + MongoDB nu suportă orderBy pe câmp relațional, sortăm în JS.
@@ -272,6 +274,7 @@ export default async function StudentDetailPage({ params }) {
           modules={allModules}
           accessIds={accessIds}
           advanceIds={advanceIds}
+          hiddenIds={hiddenIds}
         />
       )}
 

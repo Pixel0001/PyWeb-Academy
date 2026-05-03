@@ -45,7 +45,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -83,11 +83,14 @@ async function DashboardContent({ token }) {
       orderBy: { createdAt: 'desc' },
       take: 5,
     }),
+    prisma.moduleHidden.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
   ])
 
   const accessSet = new Set(accesses.map(a => a.moduleId))
   const advanceSet = new Set(advances.map(a => a.moduleId))
   const progressMap = new Map(progresses.map(p => [p.lessonId, p]))
+  const hiddenModuleIds = new Set(hiddenModulesRaw.map(h => h.moduleId))
+  const visibleModules = modules.filter(m => !hiddenModuleIds.has(m.id))
 
   const paymentDaysLeft = latestPayment
     ? Math.ceil((new Date(latestPayment.expiresAt).getTime() - Date.now()) / 86400000)
@@ -101,7 +104,7 @@ async function DashboardContent({ token }) {
   const hasAnyManualAccess = accessSet.size > 0
   const canAccessRandom = student.superStudent || subscriptionActive || hasAnyManualAccess
 
-  const totalLessons = modules.reduce((s, m) => s + m.lessons.length, 0)
+  const totalLessons = visibleModules.reduce((s, m) => s + m.lessons.length, 0)
   const completedLessons = progresses.filter(p => p.completedAt).length
   const globalPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
@@ -286,8 +289,8 @@ async function DashboardContent({ token }) {
           <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold px-1 mb-2">Module</p>
             <div className="space-y-0.5">
-              {modules.map((m, idx) => {
-                const prev = modules[idx - 1]
+              {visibleModules.map((m, idx) => {
+                const prev = visibleModules[idx - 1]
                 const hasAccess = accessSet.has(m.id)
                 const unlocked = true // modulele sunt independente
                 const doneL = m.lessons.filter(l => progressMap.get(l.id)?.completedAt).length
@@ -442,8 +445,8 @@ async function DashboardContent({ token }) {
           )}
 
           {/* Module cards */}
-          {modules.map((m, idx) => {
-            const prev = modules[idx - 1]
+          {visibleModules.map((m, idx) => {
+            const prev = visibleModules[idx - 1]
             const hasFullAccess = accessSet.has(m.id)
             const unlocked = true // modulele sunt independente
             const advanceGranted = advanceSet.has(m.id)
