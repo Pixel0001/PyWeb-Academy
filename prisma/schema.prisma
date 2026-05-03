@@ -1123,6 +1123,23 @@ model AiUsage {
   @@map("ai_usage")
 }
 
+// Chat istoric: elev ↔ Mr. PyWeb (clarificări la o problemă)
+model AiChatMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  problemId String   @db.ObjectId
+  lessonId  String?  @db.ObjectId
+  role      String   // "user" | "assistant"
+  content   String
+  tokensIn  Int?
+  tokensOut Int?
+  createdAt DateTime @default(now())
+
+  @@index([studentId, problemId, createdAt])
+  @@index([createdAt])
+  @@map("ai_chat_messages")
+}
+
 // ==================== LEARNING APP PAYMENTS ====================
 // Plata pentru abonament la aplicația /learn (separat de plata pentru lecții la cursuri)
 

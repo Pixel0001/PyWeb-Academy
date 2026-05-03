@@ -14,6 +14,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
+import AiChat from '@/components/learn/AiChat'
 
 const DIFF_CONFIG = {
   EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
@@ -109,6 +110,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
   const [submitting, setSubmitting] = useState({})
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: AI grade payload }
   const [lastOutput, setLastOutput] = useState({}) // { problemId: stdout }
+  const [chatOpen, setChatOpen] = useState({})
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const fetchProblems = async () => {
@@ -743,6 +745,23 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                   rows={10}
                                   onOutput={(out) => setLastOutput(o => ({ ...o, [p.id]: out }))}
                                 />
+                                {!chatOpen[p.id] && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setChatOpen(s => ({ ...s, [p.id]: true }))}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-200"
+                                  >
+                                    🐍 Întreabă pe Mr. PyWeb
+                                  </button>
+                                )}
+                                {chatOpen[p.id] && (
+                                  <AiChat
+                                    token={token}
+                                    problemId={p.id}
+                                    getCode={() => answers[p.id] || ''}
+                                    onClose={() => setChatOpen(s => ({ ...s, [p.id]: false }))}
+                                  />
+                                )}
                                 {aiFeedback[p.id] && (
                                   <AiFeedback
                                     data={aiFeedback[p.id]}

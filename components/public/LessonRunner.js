@@ -15,6 +15,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
+import AiChat from '@/components/learn/AiChat'
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',
@@ -104,6 +105,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [submitting, setSubmitting] = useState(false)
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
   const [lastOutput, setLastOutput] = useState('')
+  const [chatOpen, setChatOpen] = useState({}) // { problemId: bool }
   const [time, setTime] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -790,7 +792,27 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               rows={12}
                               onOutput={setLastOutput}
                             />
-                            <p className="text-xs text-slate-400 mt-1.5">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" — Mr. PyWeb te va nota cu AI.</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-xs text-slate-400 flex-1">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" — Mr. PyWeb te va nota cu AI.</p>
+                              {!chatOpen[cur.id] && (
+                                <button
+                                  type="button"
+                                  onClick={() => setChatOpen(s => ({ ...s, [cur.id]: true }))}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-200"
+                                >
+                                  🐍 Întreabă pe Mr. PyWeb
+                                </button>
+                              )}
+                            </div>
+                            {chatOpen[cur.id] && (
+                              <AiChat
+                                token={token}
+                                problemId={cur.id}
+                                lessonId={lesson.id}
+                                getCode={() => code}
+                                onClose={() => setChatOpen(s => ({ ...s, [cur.id]: false }))}
+                              />
+                            )}
                             {aiFeedback[cur.id] && (
                               <AiFeedback
                                 data={aiFeedback[cur.id]}
