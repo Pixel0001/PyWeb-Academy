@@ -149,7 +149,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       if (!r.ok) throw new Error(d.error || 'Eroare')
       const nh = [...hintsUsed]; nh[idx] = true; setHintsUsed(nh)
       setShowHint(true)
-      toast('Hint folosit — −10p din scorul final', { icon: '💡' })
+      toast(`Hint folosit — −${Math.round((cur.points ?? 10) * 10 / 100)} XP din scorul final`, { icon: '💡' })
     } catch (e) { toast.error(e.message) } finally { setHintLoading(false) }
   }
 
@@ -209,14 +209,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         const nl = [...locks]; nl[idx] = true; setLocks(nl)
       }
       if (cur.type === 'CODING') {
-        toast('Trimis — asteapta verificarea profesorului', { icon: '👨‍🏫' })
+        toast('Trimis — asteapta verificarea profesorului', { icon: '👨\u200d🏫' })
       } else if (d.autoCorrect === true) {
-        toast.success(`Corect! +${d.submission.grade}p`)
+        const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
+        toast.success(`Corect! +${earnedXP} XP`)
       } else if (d.locked) {
-        toast.error(`Greșit — încercări epuizate. 0p. Resetează lecția pentru a reîncerca.`)
+        toast.error(`Greșit — încercări epuizate. 0 XP. Resetează lecția pentru a reîncerca.`)
       } else {
         const nextGrade = applyHintPenalty(gradeForAttempt(d.attemptNumber + 1, d.maxAttempts), curHintUsed || d.hintUsed)
-        toast.error(`Greșit. Următoarea încercare valorează maxim ${nextGrade}p.`)
+        const nextXP = Math.round((cur.points ?? 10) * (nextGrade / 100))
+        toast.error(`Greșit. Următoarea încercare valorează maxim ${nextXP} XP.`)
       }
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
@@ -573,7 +575,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                       )}
                       {curHintUsed && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
-                          <LightBulbIcon className="w-3 h-3" /> Hint −10p
+                          <LightBulbIcon className="w-3 h-3" /> Hint −{Math.round((cur.points ?? 10) * 10 / 100)} XP
                         </span>
                       )}
                     </div>
@@ -679,7 +681,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               <ExclamationTriangleIcon className="w-4 h-4" /> Răspuns greșit la încercarea {curAttempts}
                             </div>
                             <div className="text-xs text-rose-700 mt-1">
-                              Mai ai {curMaxAttempts - curAttempts} {curMaxAttempts - curAttempts === 1 ? 'încercare' : 'încercări'}. Următoarea valorează maxim {applyHintPenalty(gradeForAttempt(curAttempts + 1, curMaxAttempts), curHintUsed)}p.
+                              Mai ai {curMaxAttempts - curAttempts} {curMaxAttempts - curAttempts === 1 ? 'încercare' : 'încercări'}. Următoarea valorează maxim {Math.round((cur.points ?? 10) * applyHintPenalty(gradeForAttempt(curAttempts + 1, curMaxAttempts), curHintUsed) / 100)} XP.
                             </div>
                           </div>
                         )}
@@ -717,7 +719,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           {cur.hint && curAttempts >= 1 && !curHintUsed && (
                             <button onClick={useHint} disabled={hintLoading}
                               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold disabled:opacity-60">
-                              <LightBulbIcon className="w-4 h-4" /> {hintLoading ? '...' : 'Folosește hint (−10p)'}
+                              <LightBulbIcon className="w-4 h-4" /> {hintLoading ? '...' : `Folosește hint (−${Math.round((cur.points ?? 10) * 10 / 100)} XP)`}
                             </button>
                           )}
                           {cur.hint && curHintUsed && (
