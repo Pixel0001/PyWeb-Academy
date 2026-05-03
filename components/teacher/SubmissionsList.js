@@ -229,6 +229,20 @@ export default function SubmissionsList({
                       <span className={`px-2 py-0.5 rounded-full ${STATUS_BADGE[s.status]}`}>{s.status}</span>
                       {s.autoCorrect === true && <div className="text-emerald-600 text-xs mt-0.5">✓ auto</div>}
                       {s.autoCorrect === false && <div className="text-red-600 text-xs mt-0.5">✗ auto</div>}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {s.attemptNumber > 1 && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">Înc. {s.attemptNumber}</span>
+                        )}
+                        {s.hintUsed && (
+                          <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded text-[10px] font-bold" title="Hint folosit (-10p)">💡 hint</span>
+                        )}
+                        {s.solutionViewed && (
+                          <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold" title="Elevul a văzut rezolvarea">👁 rezolvare</span>
+                        )}
+                        {s.locked && (
+                          <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold" title="Problemă blocată">🔒</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm font-bold">{s.grade ?? '—'}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{new Date(s.createdAt).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' })}</td>
@@ -280,6 +294,23 @@ export default function SubmissionsList({
                     <div className="text-xs text-gray-500 mt-0.5 flex items-center justify-between">
                       <span>{s.source === 'lesson' ? s.lesson?.title : '🎲 random'}</span>
                       <span>{new Date(s.createdAt).toLocaleDateString('ro-RO')}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {typeof s.grade === 'number' && (
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-bold">{s.grade}p</span>
+                      )}
+                      {s.attemptNumber > 1 && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">Înc. {s.attemptNumber}</span>
+                      )}
+                      {s.hintUsed && (
+                        <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded text-[10px] font-bold">💡 hint</span>
+                      )}
+                      {s.solutionViewed && (
+                        <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded text-[10px] font-bold">👁 rezolvare</span>
+                      )}
+                      {s.locked && (
+                        <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">🔒 blocat</span>
+                      )}
                     </div>
                   </Link>
                   {canDelete && (

@@ -53,10 +53,15 @@ export async function GET(req, { params }) {
     select: {
       id: true, problemId: true, status: true, grade: true, feedback: true,
       autoCorrect: true, answer: true, code: true, createdAt: true, gradedAt: true,
+      attemptNumber: true, hintUsed: true, solutionViewed: true, locked: true,
     },
   })
-  const subByProblem = {}
-  for (const s of subs) if (!subByProblem[s.problemId]) subByProblem[s.problemId] = s
+  // grupează după problemId — păstrăm toate submisiile pentru calcul de încercări
+  const subsByProblem = {}
+  for (const s of subs) {
+    if (!subsByProblem[s.problemId]) subsByProblem[s.problemId] = []
+    subsByProblem[s.problemId].push(s)
+  }
 
   const progress = await prisma.lessonProgress.findUnique({
     where: { studentId_lessonId: { studentId: student.id, lessonId: lesson.id } },
@@ -67,17 +72,30 @@ export async function GET(req, { params }) {
     where: { studentId_moduleId: { studentId: student.id, moduleId: lesson.module.id } },
   })
 
+  const hintsUsed = Array.isArray(progress?.hintsUsed) ? progress.hintsUsed : []
+
   return NextResponse.json({
     student,
     lesson: {
       id: lesson.id, title: lesson.title, theory: lesson.theory, videoUrl: lesson.videoUrl,
       module: lesson.module, isFree: lesson.isFree,
-      problems: lesson.problems.map(p => ({
-        ...p,
-        submission: subByProblem[p.id] || null,
-      })),
+      problems: lesson.problems.map(p => {
+        const all = subsByProblem[p.id] || []
+        const latest = all[0] || null // ordinea desc → primul e cel mai recent
+        const allLockedOrCorrect = all.some(s => s.locked || (s.status === 'GRADED' && (s.grade ?? 0) >= 60 && s.autoCorrect !== false))
+        const solutionViewed = all.some(s => s.solutionViewed)
+        return {
+          ...p,
+          submission: latest,
+          attemptsCount: all.length,
+          hintUsed: hintsUsed.includes(p.id) || all.some(s => s.hintUsed),
+          locked: allLockedOrCorrect,
+          solutionViewed,
+        }
+      }),
     },
     progress,
+    hintsUsed,
     advanceGranted: !!advance,
   })
 }

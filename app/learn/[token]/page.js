@@ -8,6 +8,7 @@ import {
   PuzzlePieceIcon, ClockIcon, LockClosedIcon, BookOpenIcon,
   RocketLaunchIcon, ChevronRightIcon, SparklesIcon,
   CodeBracketIcon, FireIcon, StarIcon, TrophyIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
@@ -44,7 +45,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -69,13 +70,18 @@ async function DashboardContent({ token }) {
     }),
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'PENDING' } }),
     prisma.problemSubmission.findMany({
-      where: { studentId: student.id, status: 'GRADED', grade: { gte: 60 } },
-      select: { grade: true, problem: { select: { points: true } } },
+      where: { studentId: student.id, status: 'GRADED' },
+      select: { problemId: true, grade: true, problem: { select: { points: true } } },
     }),
     prisma.bonusPoint.findMany({
       where: { studentId: student.id },
       orderBy: { createdAt: 'desc' },
       include: { addedBy: { select: { name: true } } },
+    }),
+    prisma.notification.findMany({
+      where: { studentId: student.id, type: 'REVISION_REQUEST', read: false },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
     }),
   ])
 
@@ -99,8 +105,17 @@ async function DashboardContent({ token }) {
   const completedLessons = progresses.filter(p => p.completedAt).length
   const globalPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
-  // XP & Level
-  const submissionXP = xpSubs.reduce((s, sub) => s + Math.round((sub.problem?.points ?? 10) * (sub.grade / 100)), 0)
+  // XP & Level — păstrează doar cel mai bun grade per (studentId, problemId)
+  const bestPerProblem = new Map()
+  for (const sub of xpSubs) {
+    const cur = bestPerProblem.get(sub.problemId)
+    if (!cur || (sub.grade ?? 0) > cur.grade) {
+      bestPerProblem.set(sub.problemId, { grade: sub.grade ?? 0, points: sub.problem?.points ?? 10 })
+    }
+  }
+  const submissionXP = [...bestPerProblem.values()].reduce(
+    (s, b) => s + Math.round(b.points * (b.grade / 100)), 0
+  )
   const bonusXP = recentBonusPoints.reduce((s, bp) => s + bp.points, 0)
   // totalXP needs ALL bonus points, not just recent — refetch all
   const allBonusXP = await prisma.bonusPoint.aggregate({ where: { studentId: student.id }, _sum: { points: true } })
@@ -259,6 +274,14 @@ async function DashboardContent({ token }) {
             <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
           </Link>
 
+          {/* Profil / Cabinet link */}
+          <Link href={`/learn/${token}/profil`}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white transition">
+            <UserCircleIcon className="w-4 h-4 shrink-0 text-emerald-300" />
+            <span className="flex-1">Cabinetul meu</span>
+            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
+          </Link>
+
           {/* Module nav links */}
           <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold px-1 mb-2">Module</p>
@@ -329,6 +352,17 @@ async function DashboardContent({ token }) {
                 <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
               </Link>
             </div>
+
+            {/* Cabinet link (mobile) */}
+            <Link href={`/learn/${token}/profil`}
+              className="mt-2 bg-white/10 hover:bg-white/20 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95">
+              <UserCircleIcon className="w-5 h-5 text-emerald-300 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-white/60">Cabinetul meu</div>
+                <div className="text-sm font-extrabold leading-tight">Cursuri, plăți, istoric</div>
+              </div>
+              <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
+            </Link>
           </div>
 
           {pendingSubs > 0 && (
@@ -337,6 +371,43 @@ async function DashboardContent({ token }) {
               <p className="text-sm text-amber-900">
                 Ai <strong>{pendingSubs}</strong> {pendingSubs === 1 ? 'problema in asteptare' : 'probleme in asteptare'} la profesor.
               </p>
+            </div>
+          )}
+
+          {/* Revision request notifications */}
+          {revisionNotifs.length > 0 && (
+            <div className="bg-gradient-to-br from-rose-50 to-pink-50 border-2 border-rose-200 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">📝</span>
+                <h3 className="font-bold text-rose-900 text-sm">
+                  {revisionNotifs.length === 1 ? 'Cerere de refacere' : `${revisionNotifs.length} cereri de refacere`}
+                </h3>
+              </div>
+              <div className="space-y-1.5">
+                {revisionNotifs.map(n => {
+                  const lessonId = n.data?.lessonId
+                  const moduleSlug = n.data?.moduleSlug
+                  const lessonTitle = n.data?.lessonTitle
+                  const href = lessonId ? `/learn/${token}/lesson/${lessonId}` : `/learn/${token}`
+                  return (
+                    <Link
+                      key={n.id}
+                      href={href}
+                      className="flex items-start gap-2 bg-white hover:bg-rose-50 transition rounded-xl p-2.5 ring-1 ring-rose-100"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-rose-900 truncate">{n.title}</div>
+                        {lessonTitle && (
+                          <div className="text-xs text-rose-600 mt-0.5">📘 {lessonTitle}</div>
+                        )}
+                        <div className="text-xs text-rose-700/80 line-clamp-2 mt-0.5">{n.message}</div>
+                      </div>
+                      <ChevronRightIcon className="w-4 h-4 text-rose-400 shrink-0 mt-1" />
+                    </Link>
+                  )
+                })}
+              </div>
+              <p className="text-[10px] text-rose-600/80">Notificarea dispare automat când reiei problema.</p>
             </div>
           )}
 

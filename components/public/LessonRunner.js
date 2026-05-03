@@ -9,8 +9,10 @@ import {
   PaperAirplaneIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon,
   ChevronLeftIcon, ChevronRightIcon, TrophyIcon, RocketLaunchIcon,
   AcademicCapIcon, SparklesIcon, HomeIcon, Bars3Icon, XMarkIcon, LockClosedIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
+import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',
@@ -74,9 +76,18 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [step, setStep] = useState(progress.theoryCompleted ? 'problems' : 'theory')
   const [idx, setIdx] = useState(progress.currentProblemIndex || 0)
   const [submissions, setSubmissions] = useState(problems.map(p => p.submission))
+  // Per-problem state, indexed by problem position
+  const [attemptsCount, setAttemptsCount] = useState(problems.map(p => p.attemptsCount || 0))
+  const [hintsUsed, setHintsUsed] = useState(problems.map(p => !!p.hintUsed))
+  const [locks, setLocks] = useState(problems.map(p => !!p.locked))
+  const [solutionViewed, setSolutionViewed] = useState(problems.map(p => !!p.solutionViewed))
+  const [solutionData, setSolutionData] = useState({}) // { problemId: { correctAnswer, explanation } }
   const [answer, setAnswer] = useState('')
   const [code, setCode] = useState('')
   const [showHint, setShowHint] = useState(false)
+  const [hintLoading, setHintLoading] = useState(false)
+  const [solutionLoading, setSolutionLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [time, setTime] = useState(0)
   const [finishing, setFinishing] = useState(false)
@@ -100,8 +111,21 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   const cur = problems[idx]
   const curSub = submissions[idx]
-  const allDone = submissions.every(s => s != null)
-  const doneCount = submissions.filter(s => s != null).length
+  const curAttempts = attemptsCount[idx] || 0
+  const curHintUsed = hintsUsed[idx]
+  const curLocked = locks[idx]
+  const curSolutionViewed = solutionViewed[idx]
+  const curMaxAttempts = cur ? getMaxAttempts(cur) : 3
+  // O problemă e „terminată" dacă: e rezolvată corect, blocată cu 0p, sau profesorul a notat-o
+  const isProblemDone = (i) => {
+    const s = submissions[i]
+    if (!s) return false
+    if (locks[i]) return true
+    if (s.status === 'GRADED' && (s.grade ?? 0) >= 60) return true
+    return false
+  }
+  const allDone = problems.every((_, i) => isProblemDone(i))
+  const doneCount = problems.filter((_, i) => isProblemDone(i)).length
   const lessonPct = problems.length > 0 ? Math.round((doneCount / problems.length) * 100) : 0
 
   const completeTheory = async () => {
@@ -113,7 +137,61 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     setStep('problems')
   }
 
+  const useHint = async () => {
+    if (!cur?.hint || curHintUsed || curLocked) return
+    setHintLoading(true)
+    try {
+      const r = await fetch(`/api/public/learn/${token}/hint`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId: cur.id, lessonId: lesson.id }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Eroare')
+      const nh = [...hintsUsed]; nh[idx] = true; setHintsUsed(nh)
+      setShowHint(true)
+      toast('Hint folosit — −10p din scorul final', { icon: '💡' })
+    } catch (e) { toast.error(e.message) } finally { setHintLoading(false) }
+  }
+
+  const viewSolution = async () => {
+    if (curLocked) {
+      // arată soluția fără call API dacă e deja în solutionData
+      if (solutionData[cur.id]) return
+    }
+    if (!confirm('Apăsând „Vezi rezolvarea" pierzi toate punctele pentru această problemă (0p) și nu o mai poți reîncerca decât resetând lecția. Continui?')) return
+    setSolutionLoading(true)
+    try {
+      const r = await fetch(`/api/public/learn/${token}/solution`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId: cur.id, lessonId: lesson.id }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Eroare')
+      setSolutionData(prev => ({ ...prev, [cur.id]: { correctAnswer: d.correctAnswer, explanation: d.explanation } }))
+      const nl = [...locks]; nl[idx] = true; setLocks(nl)
+      const nv = [...solutionViewed]; nv[idx] = true; setSolutionViewed(nv)
+      // marchează submission cu status GRADED 0p
+      const next = [...submissions]
+      next[idx] = { ...(next[idx] || {}), status: 'GRADED', grade: 0, autoCorrect: false, locked: true, solutionViewed: true }
+      setSubmissions(next)
+      toast('Rezolvarea e afișată', { icon: '📖' })
+    } catch (e) { toast.error(e.message) } finally { setSolutionLoading(false) }
+  }
+
+  const resetLesson = async () => {
+    if (!confirm('Resetezi lecția? Toate răspunsurile, hint-urile și progresul problemelor vor fi șterse. Vei putea reîncepe de la zero pentru punctaj maxim.')) return
+    setResetting(true)
+    try {
+      const r = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset`, { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Eroare')
+      toast.success('Lecția a fost resetată')
+      router.refresh()
+    } catch (e) { toast.error(e.message); setResetting(false) }
+  }
+
   const submit = async () => {
+    if (curLocked) return toast.error('Problemă blocată — resetează lecția pentru a încerca din nou')
     if (cur.type === 'CODING' || cur.type === 'INPUT_OUTPUT') {
       if (!code.trim() && !answer.trim()) return toast.error('Introdu un raspuns')
     } else if (!answer.trim()) return toast.error('Introdu un raspuns')
@@ -126,12 +204,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
       const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
+      const na = [...attemptsCount]; na[idx] = (na[idx] || 0) + 1; setAttemptsCount(na)
+      if (d.locked) {
+        const nl = [...locks]; nl[idx] = true; setLocks(nl)
+      }
       if (cur.type === 'CODING') {
         toast('Trimis — asteapta verificarea profesorului', { icon: '👨‍🏫' })
       } else if (d.autoCorrect === true) {
-        toast.success('Corect! Bravo!')
+        toast.success(`Corect! +${d.submission.grade}p`)
+      } else if (d.locked) {
+        toast.error(`Greșit — încercări epuizate. 0p. Resetează lecția pentru a reîncerca.`)
       } else {
-        toast.error('Gresit — incearca din nou sau treci mai departe')
+        const nextGrade = applyHintPenalty(gradeForAttempt(d.attemptNumber + 1, d.maxAttempts), curHintUsed || d.hintUsed)
+        toast.error(`Greșit. Următoarea încercare valorează maxim ${nextGrade}p.`)
       }
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
@@ -220,8 +305,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
             {problems.map((p, i) => {
               const s = submissions[i]
               const isOk = s?.status === 'GRADED' && (s.grade ?? 0) >= 60
+              const isLocked = locks[i] && (s?.grade ?? 0) === 0
               const isRev = s?.status === 'NEEDS_REVISION'
-              const isPending = s && !isOk && !isRev
+              const isPending = s && !isOk && !isRev && !isLocked && s.status === 'PENDING'
               const isActive = i === idx
               return (
                 <button key={p.id} onClick={() => { setIdx(i); setMobileSidebarOpen(false) }}
@@ -229,11 +315,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
                     isActive ? 'bg-white text-blue-800'
                     : isOk ? 'bg-emerald-500 text-white'
+                    : isLocked ? 'bg-rose-600 text-white'
                     : isRev ? 'bg-rose-500 text-white'
                     : isPending ? 'bg-amber-500 text-white'
                     : 'bg-white/15 text-white/70'
                   }`}>
-                    {isOk ? <CheckSolid className="w-3.5 h-3.5" /> : i + 1}
+                    {isOk ? <CheckSolid className="w-3.5 h-3.5" /> : isLocked ? <LockClosedIcon className="w-3.5 h-3.5" /> : i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-white/80 truncate font-medium">{p.title}</div>
@@ -448,18 +535,20 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                   {problems.map((p, i) => {
                     const s = submissions[i]
                     const isOk = s?.status === 'GRADED' && (s.grade ?? 0) >= 60
+                    const isLocked = locks[i] && (s?.grade ?? 0) === 0
                     const isRev = s?.status === 'NEEDS_REVISION'
-                    const isPending = s && !isOk && !isRev
+                    const isPending = s && !isOk && !isRev && !isLocked && s.status === 'PENDING'
                     const cls = i === idx
                       ? 'bg-blue-800 text-white ring-2 ring-blue-300'
                       : isOk ? 'bg-emerald-100 text-emerald-700'
+                      : isLocked ? 'bg-rose-200 text-rose-800'
                       : isRev ? 'bg-rose-100 text-rose-700'
                       : isPending ? 'bg-amber-100 text-amber-700'
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                     return (
                       <button key={p.id} onClick={() => setIdx(i)}
                         className={`min-w-[38px] h-9 rounded-lg text-sm font-bold transition flex items-center justify-center ${cls}`}>
-                        {isOk ? <CheckSolid className="w-4 h-4" /> : i + 1}
+                        {isOk ? <CheckSolid className="w-4 h-4" /> : isLocked ? <LockClosedIcon className="w-3.5 h-3.5" /> : i + 1}
                       </button>
                     )
                   })}
@@ -472,28 +561,57 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                       <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Problema {idx + 1} din {problems.length}</div>
                       <h2 className="text-lg font-extrabold text-slate-900 mt-0.5">{cur.title}</h2>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${DIFF_COLOR[cur.difficulty]}`}>{DIFF_LABEL[cur.difficulty]}</span>
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-700">
                         <StarIcon className="w-3 h-3 text-amber-400" /> {cur.points} pct
                       </span>
+                      {!curLocked && curAttempts > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                          Încercare {curAttempts + 1}/{curMaxAttempts}
+                        </span>
+                      )}
+                      {curHintUsed && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                          <LightBulbIcon className="w-3 h-3" /> Hint −10p
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="p-5 sm:p-6 space-y-4">
                     <div className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{cur.description}</div>
 
-                    {curSub ? (
-                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : curSub.status === 'GRADED' && curSub.autoCorrect === false ? 'bg-rose-50 border-rose-200' : curSub.status === 'NEEDS_REVISION' ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
+                    {/* Soluția — afișată dacă elevul a apăsat „Vezi rezolvarea" */}
+                    {curSolutionViewed && solutionData[cur.id] && (
+                      <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-indigo-900 font-bold">
+                          <EyeIcon className="w-5 h-5" /> Rezolvare
+                        </div>
+                        {solutionData[cur.id].correctAnswer && (
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider font-bold text-indigo-700 mb-1">Răspuns corect</div>
+                            <code className="block bg-white px-3 py-2 rounded-lg text-sm font-mono text-slate-800 border border-indigo-100">{solutionData[cur.id].correctAnswer}</code>
+                          </div>
+                        )}
+                        {solutionData[cur.id].explanation && (
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider font-bold text-indigo-700 mb-1">Explicație</div>
+                            <div className="text-sm text-slate-700 whitespace-pre-wrap">{solutionData[cur.id].explanation}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {curSub && curLocked ? (
+                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
                         <div className="flex items-center gap-2 font-bold flex-wrap">
                           {curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? (
-                            <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Notat — bravo!</span></>
-                          ) : curSub.status === 'GRADED' && curSub.autoCorrect === false ? (
-                            <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Răspuns greșit — 0 puncte</span></>
-                          ) : curSub.status === 'NEEDS_REVISION' ? (
-                            <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Necesita refacere</span></>
+                            <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Rezolvat — bravo!</span></>
+                          ) : curSolutionViewed ? (
+                            <><EyeIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Rezolvare văzută — 0p</span></>
                           ) : (
-                            <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">In asteptarea profesorului</span></>
+                            <><LockClosedIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Încercări epuizate — 0p</span></>
                           )}
                           {typeof curSub.grade === 'number' && (
                             <span className="ml-auto text-sm">Nota: <strong className="text-lg">{curSub.grade}/100</strong></span>
@@ -505,18 +623,67 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             {curSub.feedback}
                           </div>
                         )}
-                        <div className="mt-2 text-xs text-slate-500">
-                          Raspunsul tau: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
-                        </div>
-                        {(curSub.status === 'NEEDS_REVISION' || (curSub.status === 'GRADED' && curSub.autoCorrect === false)) && (
-                          <button onClick={() => { const next = [...submissions]; next[idx] = null; setSubmissions(next) }}
-                            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700">
-                            <ArrowPathIcon className="w-4 h-4" /> Încearcă din nou
-                          </button>
+                        {curSub.answer && (
+                          <div className="mt-2 text-xs text-slate-500">
+                            Răspunsul tău: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
+                          </div>
                         )}
+                        {(curSub.grade ?? 0) === 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {!curSolutionViewed && (
+                              <button onClick={viewSolution} disabled={solutionLoading}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60">
+                                <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea'}
+                              </button>
+                            )}
+                            <button onClick={resetLesson} disabled={resetting}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 disabled:opacity-60">
+                              <ArrowPathIcon className="w-4 h-4" /> {resetting ? 'Se resetează...' : 'Resetează lecția'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : curSub && curSub.status === 'PENDING' ? (
+                      <div className="rounded-xl p-4 border-2 bg-amber-50 border-amber-200">
+                        <div className="flex items-center gap-2 font-bold text-amber-800">
+                          <ClockIcon className="w-5 h-5" /> În așteptarea profesorului
+                        </div>
+                        {curSub.code && (
+                          <div className="mt-2 text-xs text-slate-600">
+                            Cod trimis. Profesorul va nota lucrarea.
+                          </div>
+                        )}
+                      </div>
+                    ) : curSub && curSub.status === 'NEEDS_REVISION' ? (
+                      <div className="rounded-xl p-4 border-2 bg-rose-50 border-rose-200">
+                        <div className="flex items-center gap-2 font-bold text-rose-800 mb-2">
+                          <ExclamationTriangleIcon className="w-5 h-5" /> Profesorul cere refacere
+                        </div>
+                        {curSub.feedback && (
+                          <div className="mt-2 p-3 bg-white/60 rounded-lg text-sm text-slate-800">
+                            <div className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Feedback profesor</div>
+                            {curSub.feedback}
+                          </div>
+                        )}
+                        <button onClick={() => { const next = [...submissions]; next[idx] = null; setSubmissions(next) }}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700">
+                          <ArrowPathIcon className="w-4 h-4" /> Refă problema
+                        </button>
                       </div>
                     ) : (
                       <>
+                        {/* Feedback de la încercarea anterioară greșită */}
+                        {curAttempts > 0 && curSub && curSub.status === 'GRADED' && curSub.autoCorrect === false && !curLocked && (
+                          <div className="rounded-xl p-3 bg-rose-50 border-2 border-rose-200 text-sm">
+                            <div className="font-bold text-rose-800 flex items-center gap-2">
+                              <ExclamationTriangleIcon className="w-4 h-4" /> Răspuns greșit la încercarea {curAttempts}
+                            </div>
+                            <div className="text-xs text-rose-700 mt-1">
+                              Mai ai {curMaxAttempts - curAttempts} {curMaxAttempts - curAttempts === 1 ? 'încercare' : 'încercări'}. Următoarea valorează maxim {applyHintPenalty(gradeForAttempt(curAttempts + 1, curMaxAttempts), curHintUsed)}p.
+                            </div>
+                          </div>
+                        )}
+
                         {cur.type === 'MULTIPLE_CHOICE' && (
                           <div className="space-y-2">
                             {cur.options?.map((opt, i) => (
@@ -547,10 +714,22 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         )}
 
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {cur.hint && (
+                          {cur.hint && curAttempts >= 1 && !curHintUsed && (
+                            <button onClick={useHint} disabled={hintLoading}
+                              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold disabled:opacity-60">
+                              <LightBulbIcon className="w-4 h-4" /> {hintLoading ? '...' : 'Folosește hint (−10p)'}
+                            </button>
+                          )}
+                          {cur.hint && curHintUsed && (
                             <button onClick={() => setShowHint(!showHint)}
                               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
-                              <LightBulbIcon className="w-4 h-4" /> {showHint ? 'Ascunde hint' : 'Hint'}
+                              <LightBulbIcon className="w-4 h-4" /> {showHint ? 'Ascunde hint' : 'Afișează hint'}
+                            </button>
+                          )}
+                          {curAttempts >= 2 && cur.type !== 'CODING' && (
+                            <button onClick={viewSolution} disabled={solutionLoading}
+                              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-indigo-300 text-indigo-700 rounded-xl hover:bg-indigo-50 font-semibold disabled:opacity-60">
+                              <EyeIcon className="w-4 h-4" /> {solutionLoading ? '...' : 'Vezi rezolvarea (0p)'}
                             </button>
                           )}
                           <button onClick={submit} disabled={submitting}
@@ -559,7 +738,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             {submitting ? 'Se trimite...' : 'Trimite raspunsul'}
                           </button>
                         </div>
-                        {showHint && cur.hint && (
+                        {showHint && cur.hint && curHintUsed && (
                           <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-sm text-amber-900 flex gap-2">
                             <LightBulbIcon className="w-5 h-5 shrink-0 mt-0.5" />
                             <div>{cur.hint}</div>

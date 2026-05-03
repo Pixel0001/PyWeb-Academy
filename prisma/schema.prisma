@@ -640,6 +640,7 @@ enum NotificationType {
   MISSED_SESSION         // Lecție ratată
   LATE_SESSION           // Lecție nepornită (2+ ore întârziere)
   CANCELLED_SESSION      // Lecție anulată de profesor
+  REVISION_REQUEST       // Profesorul a cerut refacerea unei probleme
 }
 
 // ==================== PAYMENTS ====================
@@ -1001,6 +1002,7 @@ model LessonProgress {
   lessonId            String    @db.ObjectId
   theoryCompleted     Boolean   @default(false)
   currentProblemIndex Int       @default(0)
+  hintsUsed           String[]  @default([]) // problemId-uri pentru care s-a apăsat hint
   completedAt         DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -1032,6 +1034,12 @@ model ProblemSubmission {
   source      String?          // "lesson" | "random"
   difficulty  String?          // pentru random
   timeSpent   Int              @default(0)
+
+  // Sistem de încercări/hint/rezolvare
+  attemptNumber  Int     @default(1) // a câta încercare la această problemă
+  hintUsed       Boolean @default(false) // hint a fost văzut înainte de submit
+  solutionViewed Boolean @default(false) // elevul a apăsat „Vezi rezolvarea" (forțează 0p)
+  locked         Boolean @default(false) // problemă blocată — nu se mai poate reîncerca
 
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt

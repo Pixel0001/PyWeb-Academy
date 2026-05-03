@@ -91,9 +91,26 @@ async function LessonContent({ token, lessonId }) {
     )
   }
 
-  const subByProblem = {}
-  for (const s of subs) if (!subByProblem[s.problemId]) subByProblem[s.problemId] = s
-  const problemsWithSub = lesson.problems.map(p => ({ ...p, submission: subByProblem[p.id] || null }))
+  const subsByProblem = {}
+  for (const s of subs) {
+    if (!subsByProblem[s.problemId]) subsByProblem[s.problemId] = []
+    subsByProblem[s.problemId].push(s)
+  }
+  const hintsUsed = Array.isArray(progress?.hintsUsed) ? progress.hintsUsed : []
+  const problemsWithSub = lesson.problems.map(p => {
+    const all = subsByProblem[p.id] || []
+    const latest = all[0] || null
+    const allLockedOrCorrect = all.some(s => s.locked || (s.status === 'GRADED' && (s.grade ?? 0) >= 60 && s.autoCorrect !== false))
+    const solutionViewed = all.some(s => s.solutionViewed)
+    return {
+      ...p,
+      submission: latest,
+      attemptsCount: all.length,
+      hintUsed: hintsUsed.includes(p.id) || all.some(s => s.hintUsed),
+      locked: allLockedOrCorrect,
+      solutionViewed,
+    }
+  })
   const progressByLesson = Object.fromEntries(allProgresses.map(p => [p.lessonId, p]))
 
   return (

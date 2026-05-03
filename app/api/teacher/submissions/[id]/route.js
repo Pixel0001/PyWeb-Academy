@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 
 // GET single submission cu detalii complete
 // PATCH { grade, feedback, status: 'GRADED'|'NEEDS_REVISION' } - notează
@@ -45,21 +46,78 @@ export async function PATCH(req, { params }) {
   const body = await req.json()
   const { grade, feedback, status } = body
 
-  const sub = await prisma.problemSubmission.findUnique({ where: { id } })
+  const sub = await prisma.problemSubmission.findUnique({
+    where: { id },
+    include: {
+      problem: { select: { id: true, title: true, type: true, options: true } },
+      lesson: { select: { id: true, title: true, module: { select: { slug: true, title: true } } } },
+    },
+  })
   if (!sub) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!(await ensureAccess(session, sub.studentId))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const newStatus = status && ['PENDING', 'GRADED', 'NEEDS_REVISION'].includes(status) ? status : 'GRADED'
+
   const data = {
     gradedById: session.user.id,
     gradedAt: new Date(),
-    status: status && ['PENDING', 'GRADED', 'NEEDS_REVISION'].includes(status) ? status : 'GRADED',
+    status: newStatus,
   }
-  if (grade !== null && grade !== undefined) data.grade = Math.max(0, Math.min(100, Number(grade)))
+
+  if (grade !== null && grade !== undefined) {
+    let g = Math.max(0, Math.min(100, Number(grade)))
+    // Aplică punctajul degresiv pentru lecție: max admis = gradeForAttempt(attemptNumber, maxAttempts) - hint
+    if (sub.lessonId) {
+      const max = applyHintPenalty(
+        gradeForAttempt(sub.attemptNumber || 1, getMaxAttempts(sub.problem)),
+        !!sub.hintUsed
+      )
+      g = Math.min(g, max)
+    }
+    data.grade = g
+    // dacă scorul e ≥60 sau dacă s-a atins ultima încercare → blochează
+    if (sub.lessonId) {
+      if (g >= 60) data.locked = true
+      else if ((sub.attemptNumber || 1) >= getMaxAttempts(sub.problem)) data.locked = true
+    }
+  }
   if (typeof feedback === 'string') data.feedback = feedback
 
   const updated = await prisma.problemSubmission.update({ where: { id }, data })
+
+  // La NEEDS_REVISION: marchează submisia ca neblocată (poate refacă) și creează notificare persistentă
+  if (newStatus === 'NEEDS_REVISION') {
+    await prisma.problemSubmission.update({ where: { id }, data: { locked: false } })
+    try {
+      await prisma.notification.create({
+        data: {
+          type: 'REVISION_REQUEST',
+          title: `📝 Refă problema: ${sub.problem?.title || 'problemă'}`,
+          message: feedback
+            ? `Profesorul a cerut refacerea problemei. Feedback: ${feedback}`
+            : `Profesorul a cerut refacerea problemei "${sub.problem?.title || ''}". Reia problema când ești gata.`,
+          link: sub.lesson?.module?.slug
+            ? `/learn/lesson/${sub.lessonId}`
+            : null,
+          recipientId: null,
+          studentId: sub.studentId,
+          read: false,
+          data: {
+            submissionId: sub.id,
+            problemId: sub.problemId,
+            lessonId: sub.lessonId,
+            moduleSlug: sub.lesson?.module?.slug || null,
+            lessonTitle: sub.lesson?.title || null,
+          },
+        },
+      })
+    } catch (e) {
+      console.error('Failed to create REVISION_REQUEST notification:', e)
+    }
+  }
+
   return NextResponse.json({ submission: updated })
 }
 
