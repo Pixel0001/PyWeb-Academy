@@ -771,6 +771,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                 {aiFeedback[p.id] && (
                                   <AiFeedback
                                     data={aiFeedback[p.id]}
+                                    token={token}
                                     onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[p.id]; return c })}
                                   />
                                 )}

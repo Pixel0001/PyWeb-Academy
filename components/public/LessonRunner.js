@@ -823,6 +823,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             {aiFeedback[cur.id] && (
                               <AiFeedback
                                 data={aiFeedback[cur.id]}
+                                token={token}
                                 onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
                               />
                             )}

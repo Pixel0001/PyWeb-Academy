@@ -300,6 +300,14 @@ async function DashboardContent({ token }) {
             <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
           </Link>
 
+          {/* AI Stats link */}
+          <Link href={`/learn/${token}/ai-stats`}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white transition">
+            <SparklesIcon className="w-4 h-4 shrink-0 text-indigo-300" />
+            <span className="flex-1">Mr. PyWeb AI</span>
+            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
+          </Link>
+
           {/* Profil / Cabinet link */}
           <Link href={`/learn/${token}/profil`}
             className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white transition">

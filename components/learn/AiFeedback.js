@@ -12,7 +12,7 @@ import MrPyWebAvatar from './MrPyWebAvatar'
  *     - aiPenaltyApplied: number
  *     - usage: { used, limit, remaining }
  */
-export default function AiFeedback({ data, onClose, onRetry }) {
+export default function AiFeedback({ data, onClose, onRetry, token }) {
   const [showDetails, setShowDetails] = useState(false)
   if (!data) return null
 
@@ -118,18 +118,40 @@ export default function AiFeedback({ data, onClose, onRetry }) {
       )}
 
       {/* Footer — quota + acțiuni */}
-      <div className="bg-gray-50 border-t border-gray-200 px-4 py-2 flex items-center justify-between text-xs">
-        <div className="text-gray-600">
-          Verificări AI rămase azi: <span className="font-bold text-gray-900">{usage?.remaining ?? '—'}/{usage?.limit ?? '—'}</span>
+      <div className="bg-gray-50 border-t border-gray-200 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-600">
+            Verificări AI rămase azi:{' '}
+            <span className={`font-bold ${(usage?.remaining ?? 1) === 0 ? 'text-red-600' : (usage?.remaining ?? 1) <= 5 ? 'text-amber-600' : 'text-gray-900'}`}>
+              {usage?.remaining ?? '—'}/{usage?.limit ?? '—'}
+            </span>
+          </div>
+          {onRetry && !passed && (
+            <button
+              onClick={onRetry}
+              className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs"
+            >
+              Mai încercă
+            </button>
+          )}
         </div>
-        {onRetry && !passed && (
-          <button
-            onClick={onRetry}
-            className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-          >
-            Mai încearcă
-          </button>
-        )}
+        {/* Cooldown warning + link detalii */}
+        <div className="flex items-center justify-between mt-1.5">
+          {(usage?.remaining ?? 1) === 0 && (
+            <span className="text-[10px] text-red-500 font-semibold">⏳ Limită atinsă — reapăre mâine</span>
+          )}
+          {(usage?.remaining ?? 1) <= 5 && (usage?.remaining ?? 1) > 0 && (
+            <span className="text-[10px] text-amber-600">⚠️ Mai ai doar {usage.remaining} verificări azi</span>
+          )}
+          {token && (
+            <Link
+              href={`/learn/${token}/ai-stats`}
+              className="ml-auto text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline font-semibold"
+            >
+              Vezi detalii →
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   )
