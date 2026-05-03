@@ -287,6 +287,15 @@ async function DashboardContent({ token }) {
             <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
           </Link>
 
+          {/* Deconectare */}
+          <Link href="/learn"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/5 hover:bg-rose-500/20 text-white/50 hover:text-rose-300 transition">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span className="flex-1">Deconectează-te</span>
+          </Link>
+
           {/* Module nav links */}
           <div>
             <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold px-1 mb-2">Module</p>
@@ -367,6 +376,18 @@ async function DashboardContent({ token }) {
                 <div className="text-sm font-extrabold leading-tight">Cursuri, plăți, istoric</div>
               </div>
               <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
+            </Link>
+
+            {/* Deconectare (mobile) */}
+            <Link href="/learn"
+              className="mt-1 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95 text-white/40 hover:text-rose-300 hover:bg-rose-500/10">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-white/40">Cont</div>
+                <div className="text-sm font-extrabold leading-tight">Deconectează-te</div>
+              </div>
             </Link>
           </div>
 
