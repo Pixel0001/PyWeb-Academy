@@ -226,8 +226,30 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     } catch (e) { toast.error(e.message); setResetting(false) }
   }
 
+  const [resettingProblem, setResettingProblem] = useState(false)
+  const resetProblem = async (problemId) => {
+    setResettingProblem(true)
+    try {
+      const r = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Eroare')
+      // Reset local state pentru problema curentă
+      const next = [...submissions]; next[idx] = null; setSubmissions(next)
+      const na = [...attemptsCount]; na[idx] = 0; setAttemptsCount(na)
+      const nl = [...locks]; nl[idx] = false; setLocks(nl)
+      setAnswer(''); setCode(cur?.starterCode || '')
+      setAiFeedback(prev => { const c = { ...prev }; delete c[problemId]; return c })
+      setSolutionData(prev => { const c = { ...prev }; delete c[problemId]; return c })
+      toast.success('Problema a fost resetată — poți reîncerca!')
+    } catch (e) { toast.error(e.message) } finally { setResettingProblem(false) }
+  }
+
   const submit = async () => {
-    if (curLocked) return toast.error('Problemă blocată — resetează lecția pentru a încerca din nou')
+    if (curLocked) return toast.error('Problemă blocată — apasă „Reîncearcă problema” pentru a încerca din nou')
     if (cur.type === 'CODING' || cur.type === 'INPUT_OUTPUT') {
       if (!code.trim() && !answer.trim()) return toast.error('Introdu un raspuns')
     } else if (!answer.trim()) return toast.error('Introdu un raspuns')
@@ -713,17 +735,38 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           </div>
                         )}
                         {(curSub.grade ?? 0) < 60 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {!curSolutionViewed && (
-                              <button onClick={viewSolution} disabled={solutionLoading}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60">
-                                <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea'}
+                          <div className="mt-3 space-y-2">
+                            {/* Acțiuni primare */}
+                            <div className="flex flex-wrap gap-2">
+                              {/* Reîncearcă problema dacă n-a văzut soluția */}
+                              {!curSolutionViewed && (
+                                <button onClick={() => resetProblem(cur.id)} disabled={resettingProblem}
+                                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition active:scale-95">
+                                  <ArrowPathIcon className="w-4 h-4" /> {resettingProblem ? 'Se resetează...' : 'Reîncearcă problema'}
+                                </button>
+                              )}
+                              {/* Continuă la următoarea problemă */}
+                              {idx < problems.length - 1 && (
+                                <button onClick={nextProblem}
+                                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
+                                  Continuă <ChevronRightIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {/* Vezi rezolvarea */}
+                              {!curSolutionViewed && (
+                                <button onClick={viewSolution} disabled={solutionLoading}
+                                  className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
+                                  <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea (0p)'}
+                                </button>
+                              )}
+                            </div>
+                            {/* Reset lecție completă — opțiune secundară */}
+                            <div className="pt-1">
+                              <button onClick={resetLesson} disabled={resetting}
+                                className="text-xs text-slate-400 hover:text-rose-600 underline underline-offset-2 transition">
+                                {resetting ? 'Se resetează...' : 'Reseteză întreaga lecție (pierd tot progresul)'}
                               </button>
-                            )}
-                            <button onClick={resetLesson} disabled={resetting}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 disabled:opacity-60">
-                              <ArrowPathIcon className="w-4 h-4" /> {resetting ? 'Se resetează...' : 'Resetează lecția'}
-                            </button>
+                            </div>
                           </div>
                         )}
                       </div>
