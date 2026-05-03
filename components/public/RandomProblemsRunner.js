@@ -430,7 +430,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
               }
             </div>
             {problems.length > 0 && (
-              <div className="text-white/50 text-xs">{doneCount}/{problems.length} rezolvate · {DIFF_CONFIG[difficulty]?.label}</div>
+              <div className="text-white/50 text-xs flex items-center gap-1.5 flex-wrap">
+                <span>{doneCount}/{problems.length} rezolvate · {DIFF_CONFIG[difficulty]?.label}</span>
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${onlyCompleted ? 'bg-emerald-500/20 text-emerald-200' : 'bg-white/10 text-white/70'}`}>
+                  <AcademicCapIcon className="w-3 h-3" />
+                  {onlyCompleted ? 'doar lecții făcute' : 'toate lecțiile'}
+                </span>
+              </div>
             )}
           </div>
           {problems.length > 0 && (
@@ -498,6 +504,18 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                         </button>
                       )
                     })}
+                  </div>
+
+                  {/* Sursă: doar lecții făcute / din toate */}
+                  <div className="mb-6 inline-flex bg-slate-100 rounded-2xl p-1 border border-slate-200">
+                    <button onClick={() => setOnlyCompleted(true)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${onlyCompleted ? 'bg-emerald-500 text-white shadow' : 'text-slate-600 hover:text-slate-800'}`}>
+                      <AcademicCapIcon className="w-4 h-4" /> Doar din lecțiile făcute
+                    </button>
+                    <button onClick={() => setOnlyCompleted(false)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${!onlyCompleted ? 'bg-blue-800 text-white shadow' : 'text-slate-600 hover:text-slate-800'}`}>
+                      <Squares2X2Icon className="w-4 h-4" /> Din toate
+                    </button>
                   </div>
 
                   <button onClick={fetchProblems} disabled={loading}
