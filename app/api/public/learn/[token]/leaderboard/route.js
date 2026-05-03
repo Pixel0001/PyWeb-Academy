@@ -14,6 +14,7 @@ export async function GET(req, { params }) {
 
   const [allStudents, allSubmissions, allBonusPoints] = await Promise.all([
     prisma.student.findMany({
+      where: { accessToken: { not: null } },
       select: { id: true, fullName: true },
     }),
     prisma.problemSubmission.findMany({

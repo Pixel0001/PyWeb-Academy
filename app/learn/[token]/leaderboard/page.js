@@ -38,7 +38,7 @@ export default async function LeaderboardPage({ params }) {
   if (!me || me.active === false) notFound()
 
   const [allStudents, allSubmissions, allBonusPoints] = await Promise.all([
-    prisma.student.findMany({ select: { id: true, fullName: true } }),
+    prisma.student.findMany({ where: { accessToken: { not: null } }, select: { id: true, fullName: true } }),
     prisma.problemSubmission.findMany({
       where: { status: 'GRADED', grade: { gte: 60 } },
       select: { studentId: true, grade: true, problem: { select: { points: true } } },
