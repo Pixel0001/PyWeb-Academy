@@ -74,8 +74,18 @@ export async function GET(req, { params }) {
 
   const hintsUsed = Array.isArray(progress?.hintsUsed) ? progress.hintsUsed : []
 
+  // AI access flag (paywall): super students, abonament activ sau lecție free trial
+  const aiAllowed = access.isSuper || access.subscriptionActive || lesson.isFree
+
   return NextResponse.json({
     student,
+    aiAllowed,
+    subscription: {
+      isSuper: access.isSuper,
+      active: access.subscriptionActive,
+      daysLeft: access.daysLeft,
+      expiresAt: access.expiresAt,
+    },
     lesson: {
       id: lesson.id, title: lesson.title, theory: lesson.theory, videoUrl: lesson.videoUrl,
       module: lesson.module, isFree: lesson.isFree,

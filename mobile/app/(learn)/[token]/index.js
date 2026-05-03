@@ -145,21 +145,36 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Leaderboard CTA */}
-        <Link href={`/(learn)/${token}/leaderboard`} asChild>
-          <Pressable className="mt-3 bg-white/10 rounded-2xl p-3 flex-row items-center gap-3 active:bg-white/20">
-            <View className="w-9 h-9 bg-accent-400 rounded-xl items-center justify-center">
-              <Ionicons name="trophy" size={18} color="#1e3a8a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-white font-extrabold text-sm">Clasament</Text>
-              <Text className="text-white/60 text-xs">
-                {rank > 0 ? `Locul #${rank} din ${stats.total}` : 'Vezi topul elevilor'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
-          </Pressable>
-        </Link>
+        {/* Leaderboard + AI CTAs */}
+        <View className="flex-row gap-2 mt-3">
+          <Link href={`/(learn)/${token}/leaderboard`} asChild>
+            <Pressable className="flex-1 bg-white/10 rounded-2xl p-3 flex-row items-center gap-2 active:bg-white/20">
+              <View className="w-9 h-9 bg-accent-400 rounded-xl items-center justify-center">
+                <Ionicons name="trophy" size={18} color="#1e3a8a" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-white font-extrabold text-sm">Clasament</Text>
+                <Text className="text-white/60 text-[10px]" numberOfLines={1}>
+                  {rank > 0 ? `Locul #${rank}` : 'Vezi top'}
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
+
+          <Link href={`/(learn)/${token}/ai-stats`} asChild>
+            <Pressable className="flex-1 bg-white/10 rounded-2xl p-3 flex-row items-center gap-2 active:bg-white/20">
+              <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: '#a78bfa' }}>
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-white font-extrabold text-sm">Mr. PyWeb</Text>
+                <Text className="text-white/60 text-[10px]" numberOfLines={1}>
+                  Statistici AI
+                </Text>
+              </View>
+            </Pressable>
+          </Link>
+        </View>
       </View>
 
       {/* Modules list */}
