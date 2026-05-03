@@ -299,15 +299,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
           </div>
         </div>
 
-        {/* Count — modern buttons, no broken range */}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
-            Număr probleme
-          </label>
-          <CountPicker value={count} onChange={setCount} />
-        </div>
-
-        {/* Source filter */}
+        {/* Source filter — sub dificultate */}
         <div>
           <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
             Sursă probleme
@@ -318,12 +310,20 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
             }`}>
             <AcademicCapIcon className="w-4 h-4 shrink-0" />
             <span className="text-left flex-1">
-              {onlyCompleted ? 'Doar din lecțiile mele făcute' : 'Din toate lecțiile'}
+              {onlyCompleted ? 'Doar din lecțiile făcute' : 'Din toate lecțiile'}
             </span>
-            <span className={`w-8 h-4 rounded-full relative transition ${onlyCompleted ? 'bg-emerald-400' : 'bg-white/20'}`}>
-              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition ${onlyCompleted ? 'left-4' : 'left-0.5'}`} />
+            <span className={`w-8 h-4 rounded-full relative flex-shrink-0 transition-colors ${onlyCompleted ? 'bg-emerald-400' : 'bg-white/20'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${onlyCompleted ? 'left-4' : 'left-0.5'}`} />
             </span>
           </button>
+        </div>
+
+        {/* Count — modern buttons, no broken range */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
+            Număr probleme
+          </label>
+          <CountPicker value={count} onChange={setCount} />
         </div>
 
         {/* Generate */}
