@@ -5,6 +5,8 @@ import { htmlModule } from './html.mjs'
 import { cssModule } from './css.mjs'
 import { pythonMetodicaPatch } from './python-metodica.mjs'
 import { javascriptMetodicaPatch } from './javascript-metodica.mjs'
+import { pythonMetodicaExtraPatch } from './python-metodica-extra.mjs'
+import { javascriptMetodicaExtraPatch } from './javascript-metodica-extra.mjs'
 
 // Aplică un patch (din metodici) peste un modul:
 //  - appendTheory[slug]   → concatenează la final de theory
@@ -31,7 +33,7 @@ function applyPatch(mod, patch) {
   return { ...mod, lessons }
 }
 
-const enrichedPython = applyPatch(pythonModule, pythonMetodicaPatch)
-const enrichedJavascript = applyPatch(javascriptModule, javascriptMetodicaPatch)
+const enrichedPython = applyPatch(applyPatch(pythonModule, pythonMetodicaPatch), pythonMetodicaExtraPatch)
+const enrichedJavascript = applyPatch(applyPatch(javascriptModule, javascriptMetodicaPatch), javascriptMetodicaExtraPatch)
 
 export const allModules = [enrichedPython, enrichedJavascript, htmlModule, cssModule]
