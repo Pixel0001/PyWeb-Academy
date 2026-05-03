@@ -6,8 +6,9 @@ import { notFound } from 'next/navigation'
 import {
   ArrowLeftIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon,
   CurrencyDollarIcon, CalendarDaysIcon, CheckCircleIcon, XCircleIcon,
-  ClockIcon, CreditCardIcon, ChartBarIcon,
+  ClockIcon, CreditCardIcon, ChartBarIcon, MapPinIcon, LockClosedIcon,
 } from '@heroicons/react/24/outline'
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -201,12 +202,16 @@ export default async function StudentProfilePage({ params }) {
                           <div className="text-xs text-slate-500 mt-0.5">Profesor: {gs.group.teacher.name}</div>
                         )}
                         {gs.group?.scheduleDays?.length > 0 && (
-                          <div className="text-xs text-slate-500">
-                            📅 {gs.group.scheduleDays.join(', ')} {gs.group.scheduleTime && `· ${gs.group.scheduleTime}`}
+                          <div className="text-xs text-slate-500 flex items-center gap-1">
+                            <CalendarDaysIcon className="w-3 h-3 shrink-0" />
+                            {gs.group.scheduleDays.join(', ')} {gs.group.scheduleTime && `· ${gs.group.scheduleTime}`}
                           </div>
                         )}
                         {gs.group?.branch?.name && (
-                          <div className="text-xs text-slate-500">📍 {gs.group.branch.name}</div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1">
+                            <MapPinIcon className="w-3 h-3 shrink-0" />
+                            {gs.group.branch.name}
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1.5">
@@ -235,7 +240,7 @@ export default async function StudentProfilePage({ params }) {
             </h3>
             {payments.length > 0 && (
               <div className="text-sm text-slate-600">
-                Total achitat: <span className="font-bold text-emerald-700">{totalPaid.toFixed(2)} RON</span>
+                Total achitat: <span className="font-bold text-emerald-700">{totalPaid.toFixed(2)} MDL</span>
               </div>
             )}
           </div>
@@ -261,7 +266,7 @@ export default async function StudentProfilePage({ params }) {
                         <div className="font-medium">{p.groupStudent?.group?.course?.title || p.courseTitleSnapshot || '—'}</div>
                         <div className="text-xs text-slate-500">{p.groupStudent?.group?.name || p.groupNameSnapshot || ''}</div>
                       </td>
-                      <td className="px-2 py-2 text-right font-bold text-emerald-700 whitespace-nowrap">{(p.amount || 0).toFixed(2)} RON</td>
+                      <td className="px-2 py-2 text-right font-bold text-emerald-700 whitespace-nowrap">{(p.amount || 0).toFixed(2)} MDL</td>
                       <td className="px-2 py-2 text-center text-slate-700">{p.lessonsAdded ?? '—'}</td>
                       <td className="px-2 py-2 text-slate-500 text-xs">{p.paymentMethod || '—'}</td>
                     </tr>
@@ -281,15 +286,18 @@ export default async function StudentProfilePage({ params }) {
             <div className={`rounded-xl p-3.5 mb-3 ${learningExpired ? 'bg-rose-50 ring-1 ring-rose-200' : 'bg-emerald-50 ring-1 ring-emerald-200'}`}>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className={`text-sm font-bold ${learningExpired ? 'text-rose-900' : 'text-emerald-900'}`}>
-                    {learningExpired ? '🔒 Expirat' : '✅ Activ'}
+                  <div className={`text-sm font-bold flex items-center gap-1.5 ${learningExpired ? 'text-rose-900' : 'text-emerald-900'}`}>
+                    {learningExpired
+                      ? <><LockClosedIcon className="w-4 h-4" /> Expirat</>
+                      : <><CheckCircleSolid className="w-4 h-4" /> Activ</>
+                    }
                   </div>
                   <div className="text-xs text-slate-600 mt-0.5">
                     Expiră: {fmtDate(latestLearningPayment.expiresAt)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold">{(latestLearningPayment.amount || 0).toFixed(2)} RON</div>
+                  <div className="font-bold">{(latestLearningPayment.amount || 0).toFixed(2)} MDL</div>
                   <div className="text-[10px] text-slate-500">{fmtDate(latestLearningPayment.paymentDate)}</div>
                 </div>
               </div>
@@ -304,7 +312,7 @@ export default async function StudentProfilePage({ params }) {
                 {learningPayments.slice(1).map(lp => (
                   <li key={lp.id} className="flex items-center justify-between text-xs text-slate-600 border-b border-slate-100 pb-1.5 last:border-0">
                     <span>{fmtDate(lp.paymentDate)} → {fmtDate(lp.expiresAt)}</span>
-                    <span className="font-bold">{(lp.amount || 0).toFixed(2)} RON</span>
+                    <span className="font-bold">{(lp.amount || 0).toFixed(2)} MDL</span>
                   </li>
                 ))}
               </ul>
