@@ -62,13 +62,20 @@ async function seedModule(modData) {
       select: { id: true },
     })
 
-    // 3) Șterge problemele existente atașate lecției și recreează
-    //    (idempotent — orice rulare nouă reflectă datele din seed)
-    await prisma.problem.deleteMany({ where: { lessonId: lesson.id } })
-
+    // 3) Upsert ADITIV pe (lessonId, title) — NU mai ștergem nimic.
+    //    Astfel problemele adăugate manual prin admin UI sunt păstrate;
+    //    problemele cu același titlu sunt actualizate; cele lipsă sunt create.
     if (lessonData.problems?.length) {
-      await prisma.problem.createMany({
-        data: lessonData.problems.map((p, idx) => ({
+      // Pre-fetch problemele existente pentru a determina dacă facem create vs update
+      const existing = await prisma.problem.findMany({
+        where: { lessonId: lesson.id },
+        select: { id: true, title: true },
+      })
+      const existingByTitle = new Map(existing.map((e) => [e.title, e.id]))
+
+      for (let idx = 0; idx < lessonData.problems.length; idx++) {
+        const p = lessonData.problems[idx]
+        const data = {
           title: p.title,
           description: p.description,
           difficulty: p.difficulty || 'EASY',
@@ -86,8 +93,14 @@ async function seedModule(modData) {
           lessonId: lesson.id,
           lessonOrder: idx + 1,
           active: true,
-        })),
-      })
+        }
+        const existingId = existingByTitle.get(p.title)
+        if (existingId) {
+          await prisma.problem.update({ where: { id: existingId }, data })
+        } else {
+          await prisma.problem.create({ data })
+        }
+      }
       totalProblems += lessonData.problems.length
     }
 
