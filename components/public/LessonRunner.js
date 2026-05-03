@@ -249,11 +249,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         }
         const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
         const na = [...attemptsCount]; na[idx] = (na[idx] || 0) + 1; setAttemptsCount(na)
-        const nl = [...locks]; nl[idx] = true; setLocks(nl)
+        const nl = [...locks]; nl[idx] = !!d.submission.locked; setLocks(nl)
         setAiFeedback(prev => ({ ...prev, [cur.id]: d }))
-        const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
-        if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
+        const finalGrade = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0)
+        const passed = finalGrade >= 60
+        const earnedXP = Math.round((cur.points ?? 10) * finalGrade / 100)
+        if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} XP 🌟`)
         else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} XP. Vezi feedback-ul AI.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
       } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
       return
@@ -683,17 +686,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     )}
 
                     {curSub && curLocked ? (
-                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : (curSub.grade ?? 0) > 0 ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
                         <div className="flex items-center gap-2 font-bold flex-wrap">
                           {curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? (
                             <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Rezolvat — bravo!</span></>
                           ) : curSolutionViewed ? (
                             <><EyeIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Rezolvare văzută — 0p</span></>
+                          ) : (curSub.grade ?? 0) > 0 ? (
+                            <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Parțial corect — {Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}p</span></>
                           ) : (
                             <><LockClosedIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Încercări epuizate — 0p</span></>
                           )}
                           {typeof curSub.grade === 'number' && (
-                            <span className="ml-auto text-sm">Nota: <strong className="text-lg">{curSub.grade}/100</strong></span>
+                            <span className="ml-auto text-sm">Nota: <strong className="text-lg">{Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}/{cur.points ?? 10}</strong> <span className="text-slate-400 text-xs">({curSub.grade}%)</span></span>
                           )}
                         </div>
                         {curSub.feedback && (
@@ -707,7 +712,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             Răspunsul tău: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
                           </div>
                         )}
-                        {(curSub.grade ?? 0) === 0 && (
+                        {(curSub.grade ?? 0) < 60 && (
                           <div className="mt-3 flex flex-wrap gap-2">
                             {!curSolutionViewed && (
                               <button onClick={viewSolution} disabled={solutionLoading}
@@ -833,8 +838,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         <div className="flex flex-wrap gap-2 pt-1">
                           {cur.hint && curAttempts >= 1 && !curHintUsed && (
                             <button onClick={useHint} disabled={hintLoading}
-                              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold disabled:opacity-60">
-                              <LightBulbIcon className="w-4 h-4" /> {hintLoading ? '...' : `Folosește hint (−${Math.round((cur.points ?? 10) * 10 / 100)} XP)`}
+                              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-400 text-amber-800 bg-amber-50 rounded-xl hover:bg-amber-100 font-semibold disabled:opacity-60 animate-pulse">
+                              <LightBulbIcon className="w-4 h-4" /> {hintLoading ? '...' : `💡 Vezi indiciu (−${Math.round((cur.points ?? 10) * 10 / 100)} XP)`}
                             </button>
                           )}
                           {cur.hint && curHintUsed && (

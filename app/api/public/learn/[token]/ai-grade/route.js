@@ -126,7 +126,12 @@ export async function POST(req, { params }) {
   })
 
   // 7. Salvează ca ProblemSubmission
+  // 2 încercări: la prima (sub 60) NU blocăm, la a doua sau dacă a trecut → blocăm
   const attemptNumber = prevSubs.length + 1
+  const MAX_AI_ATTEMPTS = 2
+  const passed = finalGrade >= 60
+  const isLastAttempt = attemptNumber >= MAX_AI_ATTEMPTS
+  const shouldLock = passed || isLastAttempt || aiDetect.isAi
   const sub = await prisma.problemSubmission.create({
     data: {
       studentId: student.id,
@@ -136,12 +141,12 @@ export async function POST(req, { params }) {
       code,
       source,
       difficulty: problem.difficulty,
-      autoCorrect: finalGrade >= 60,
+      autoCorrect: passed,
       status: 'GRADED',
       grade: finalGrade,
       gradedAt: new Date(),
       attemptNumber,
-      locked: true, // codul evaluat de AI = final (profesorul poate face override)
+      locked: shouldLock, // prima încercare ratată = nu blocăm, mai poate încerca
       aiGraded: true,
       aiReasoning: aiGrade.reasoning,
       aiRubric: aiGrade.rubric,

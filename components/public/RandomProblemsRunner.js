@@ -161,11 +161,14 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         }
         setSubmissions(s => ({ ...s, [p.id]: d.submission }))
         setAttemptsCount(a => ({ ...a, [p.id]: (a[p.id] || 0) + 1 }))
-        setLocked(l => ({ ...l, [p.id]: true }))
+        setLocked(l => ({ ...l, [p.id]: !!d.submission.locked }))
         setAiFeedback(prev => ({ ...prev, [p.id]: d }))
-        const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
-        if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
+        const finalGrade = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0)
+        const passed = finalGrade >= 60
+        const earnedXP = Math.round((p.points ?? 10) * finalGrade / 100)
+        if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} pct 🌟`)
         else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} pct. Vezi feedback.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
       } catch (e) { toast.error(e.message) } finally {
         setSubmitting(s => ({ ...s, [p.id]: false }))
@@ -680,7 +683,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               ) : isPending ? (
                                 <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Trimis profesorului</span></>
                               ) : isLocked ? (
-                                <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">{sol ? 'Soluție afișată — 0 puncte' : 'Încercări epuizate — 0 puncte'}</span></>
+                                sol ? (
+                                  <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Soluție afișată — 0 puncte</span></>
+                                ) : (sub.grade ?? 0) > 0 ? (
+                                  <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Parțial corect — {Math.round((p.points ?? 10) * (sub.grade ?? 0) / 100)} pct</span></>
+                                ) : (
+                                  <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Încercări epuizate — 0 puncte</span></>
+                                )
                               ) : (
                                 <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Răspuns greșit — mai poți încerca</span></>
                               )}
