@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
+import CodeRunner from '@/components/learn/CodeRunner'
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',
@@ -752,10 +753,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         )}
                         {cur.type === 'CODING' && (
                           <div>
-                            <textarea value={code} onChange={e => setCode(e.target.value)} rows={12}
-                              className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 focus:border-blue-500 outline-none"
-                              placeholder={cur.starterCode || `# scrie codul tau (${cur.language || 'python'})`} />
-                            <p className="text-xs text-slate-400 mt-1.5">Codul va fi trimis profesorului pentru verificare.</p>
+                            <CodeRunner
+                              code={code}
+                              setCode={setCode}
+                              language={cur.language || 'python'}
+                              starter={cur.starterCode || ''}
+                              rows={12}
+                            />
+                            <p className="text-xs text-slate-400 mt-1.5">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" pentru notă.</p>
                           </div>
                         )}
 

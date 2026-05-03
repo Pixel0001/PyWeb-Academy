@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
+import CodeRunner from '@/components/learn/CodeRunner'
 
 const DIFF_CONFIG = {
   EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
@@ -702,9 +703,13 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               </div>
                             )}
                             {p.type === 'CODING' && (
-                              <textarea value={answers[p.id] ?? p.starterCode ?? ''}
-                                onChange={e => setAnswers(a => ({ ...a, [p.id]: e.target.value }))} rows={8}
-                                className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 outline-none focus:border-blue-500 resize-y" />
+                              <CodeRunner
+                                code={answers[p.id] ?? p.starterCode ?? ''}
+                                setCode={(v) => setAnswers(a => ({ ...a, [p.id]: typeof v === 'function' ? v(a[p.id]) : v }))}
+                                language={p.language || 'python'}
+                                starter={p.starterCode || ''}
+                                rows={10}
+                              />
                             )}
                             {(p.type === 'SHORT_ANSWER' || p.type === 'INPUT_OUTPUT') && (
                               <input value={answers[p.id] || ''}
