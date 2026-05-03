@@ -15,6 +15,7 @@ import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
 import AiChat from '@/components/learn/AiChat'
+import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
 const DIFF_CONFIG = {
   EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
@@ -165,7 +166,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
         if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
         else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
-        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '🐍' })
+        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
       } catch (e) { toast.error(e.message) } finally {
         setSubmitting(s => ({ ...s, [p.id]: false }))
       }
@@ -749,9 +750,11 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                   <button
                                     type="button"
                                     onClick={() => setChatOpen(s => ({ ...s, [p.id]: true }))}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-200"
+                                    className="group relative inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition active:scale-95 self-start"
                                   >
-                                    🐍 Întreabă pe Mr. PyWeb
+                                    <SparklesIcon className="w-5 h-5" />
+                                    <span>Cere ajutor de la AI</span>
+                                    <span className="px-1.5 py-0.5 bg-amber-400 text-amber-900 text-[10px] font-black rounded shadow-sm">AI</span>
                                   </button>
                                 )}
                                 {chatOpen[p.id] && (
@@ -761,6 +764,9 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                     getCode={() => answers[p.id] || ''}
                                     onClose={() => setChatOpen(s => ({ ...s, [p.id]: false }))}
                                   />
+                                )}
+                                {submitting[p.id] && !aiFeedback[p.id] && (
+                                  <AiGradingLoader />
                                 )}
                                 {aiFeedback[p.id] && (
                                   <AiFeedback

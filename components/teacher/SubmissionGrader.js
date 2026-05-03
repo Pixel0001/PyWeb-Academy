@@ -68,7 +68,20 @@ export default function SubmissionGrader({ submission, lessonStats, existingAdva
       {submission.aiGraded && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-5">
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center text-xl shrink-0">🐍</div>
+            <div className="w-10 h-10 rounded-xl bg-white border-2 border-blue-300 flex items-center justify-center shrink-0 p-0.5">
+              <svg viewBox="0 0 40 40" className="w-9 h-9" aria-hidden="true">
+                <defs>
+                  <linearGradient id="grdr-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/></linearGradient>
+                </defs>
+                <rect width="40" height="40" rx="11" fill="url(#grdr-bg)"/>
+                <line x1="20" y1="5.5" x2="20" y2="11" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
+                <circle cx="20" cy="4.5" r="1.8" fill="#fbbf24"/>
+                <rect x="8" y="11" width="24" height="20" rx="6" fill="#fff"/>
+                <circle cx="15" cy="19.5" r="2.2" fill="#4f46e5"/>
+                <circle cx="25" cy="19.5" r="2.2" fill="#4f46e5"/>
+                <path d="M14 25 Q20 28.5 26 25" stroke="#4f46e5" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              </svg>
+            </div>
             <div className="flex-1">
               <div className="font-bold text-blue-900">Notat de Mr. PyWeb (AI)</div>
               <div className="text-xs text-blue-700">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import MrPyWebAvatar from './MrPyWebAvatar'
 
 /**
  * Chat cu Mr. PyWeb pentru clarificări la o problemă.
@@ -75,9 +76,14 @@ export default function AiChat({ token, problemId, lessonId, getCode, onClose })
     <div className="rounded-2xl border-2 border-indigo-200 bg-white shadow-lg overflow-hidden flex flex-col h-[480px] max-h-[80vh]">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-lg shadow">🐍</div>
+        <div className="w-9 h-9 rounded-lg bg-white/95 flex items-center justify-center shadow p-0.5">
+          <MrPyWebAvatar size={32} />
+        </div>
         <div className="flex-1">
-          <div className="text-white font-bold text-sm">Întreabă pe Mr. PyWeb</div>
+          <div className="text-white font-bold text-sm flex items-center gap-1.5">
+            Mr. PyWeb
+            <span className="px-1.5 py-0.5 bg-amber-400 text-amber-900 text-[9px] font-black rounded">AI</span>
+          </div>
           <div className="text-indigo-100 text-[11px]">Îți dă indicii — niciodată soluția!</div>
         </div>
         {onClose && (
@@ -91,7 +97,7 @@ export default function AiChat({ token, problemId, lessonId, getCode, onClose })
           <div className="text-center text-xs text-slate-400 py-8">Se încarcă...</div>
         ) : messages.length === 0 ? (
           <div className="text-center text-sm text-slate-500 py-8 px-4">
-            <div className="text-3xl mb-2">👋</div>
+            <div className="flex justify-center mb-2"><MrPyWebAvatar size={48} animated /></div>
             <div className="font-semibold text-slate-700">Bună! Eu sunt Mr. PyWeb.</div>
             <div className="text-xs mt-1">Întreabă-mă orice despre această problemă — îți dau indicii fără să-ți spun direct soluția.</div>
           </div>
@@ -100,7 +106,9 @@ export default function AiChat({ token, problemId, lessonId, getCode, onClose })
         )}
         {loading && (
           <div className="flex items-end gap-2">
-            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-sm">🐍</div>
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center p-0.5">
+              <MrPyWebAvatar size={26} animated />
+            </div>
             <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-slate-500">
               <span className="inline-flex gap-1">
                 <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -146,8 +154,8 @@ function Bubble({ msg }) {
   const isUser = msg.role === 'user'
   return (
     <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <div className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-sm ${isUser ? 'bg-blue-100' : 'bg-indigo-100'}`}>
-        {isUser ? '🧑' : '🐍'}
+      <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${isUser ? 'bg-blue-100 text-sm' : 'bg-indigo-100 p-0.5'}`}>
+        {isUser ? '🧑' : <MrPyWebAvatar size={26} />}
       </div>
       <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
         isUser

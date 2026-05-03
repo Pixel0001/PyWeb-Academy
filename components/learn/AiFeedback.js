@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import MrPyWebAvatar from './MrPyWebAvatar'
 
 /**
  * Afișare feedback AI „Mr. PyWeb" pentru o problemă CODING.
@@ -31,8 +32,8 @@ export default function AiFeedback({ data, onClose, onRetry }) {
     <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-lg overflow-hidden">
       {/* Header — Mr. PyWeb */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shadow-md">
-          🐍
+        <div className="w-10 h-10 rounded-xl bg-white/95 flex items-center justify-center shadow-md p-0.5">
+          <MrPyWebAvatar size={36} />
         </div>
         <div className="flex-1">
           <div className="text-white font-bold text-sm">Mr. PyWeb</div>

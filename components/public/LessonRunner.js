@@ -16,6 +16,7 @@ import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
 import AiChat from '@/components/learn/AiChat'
+import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',
@@ -253,7 +254,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
         if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
         else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
-        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '🐍' })
+        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
       } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
       return
     }
@@ -798,9 +799,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 <button
                                   type="button"
                                   onClick={() => setChatOpen(s => ({ ...s, [cur.id]: true }))}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg border border-indigo-200"
+                                  className="group relative inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition active:scale-95"
                                 >
-                                  🐍 Întreabă pe Mr. PyWeb
+                                  <SparklesIcon className="w-5 h-5" />
+                                  <span>Cere ajutor de la AI</span>
+                                  <span className="px-1.5 py-0.5 bg-amber-400 text-amber-900 text-[10px] font-black rounded shadow-sm">AI</span>
+                                  <span className="absolute inset-0 rounded-xl ring-2 ring-purple-400 ring-opacity-0 group-hover:ring-opacity-50 transition" />
                                 </button>
                               )}
                             </div>
@@ -812,6 +816,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 getCode={() => code}
                                 onClose={() => setChatOpen(s => ({ ...s, [cur.id]: false }))}
                               />
+                            )}
+                            {submitting && cur.type === 'CODING' && !aiFeedback[cur.id] && (
+                              <AiGradingLoader />
                             )}
                             {aiFeedback[cur.id] && (
                               <AiFeedback
