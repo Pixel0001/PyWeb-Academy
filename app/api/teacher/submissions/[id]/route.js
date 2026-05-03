@@ -68,8 +68,9 @@ export async function PATCH(req, { params }) {
 
   if (grade !== null && grade !== undefined) {
     let g = Math.max(0, Math.min(100, Number(grade)))
-    // Aplică punctajul degresiv pentru lecție: max admis = gradeForAttempt(attemptNumber, maxAttempts) - hint
-    if (sub.lessonId) {
+    // Aplică punctajul degresiv DOAR pentru probleme auto-corectabile dintr-o lecție.
+    // Pentru CODING profesorul notează manual orice valoare 0-100 — nu se aplică decay-ul de încercare.
+    if (sub.lessonId && sub.problem?.type !== 'CODING') {
       const max = applyHintPenalty(
         gradeForAttempt(sub.problem, sub.attemptNumber || 1),
         !!sub.hintUsed
@@ -77,10 +78,16 @@ export async function PATCH(req, { params }) {
       g = Math.min(g, max)
     }
     data.grade = g
-    // dacă scorul e ≥60 sau dacă s-a atins ultima încercare → blochează
+    // Blochează problema în lecție când e notată complet (≥60) sau s-a atins ultima încercare.
+    // Pentru CODING — orice notă din partea profesorului blochează problema (e finală).
     if (sub.lessonId) {
-      if (g >= 60) data.locked = true
-      else if ((sub.attemptNumber || 1) >= getMaxAttempts(sub.problem)) data.locked = true
+      if (sub.problem?.type === 'CODING') {
+        data.locked = true
+      } else if (g >= 60) {
+        data.locked = true
+      } else if ((sub.attemptNumber || 1) >= getMaxAttempts(sub.problem)) {
+        data.locked = true
+      }
     }
   }
   if (typeof feedback === 'string') data.feedback = feedback
