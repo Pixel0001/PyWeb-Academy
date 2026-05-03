@@ -30,6 +30,7 @@ export async function GET(req, { params }) {
   let difficulty = searchParams.get('difficulty') || 'RANDOM'
   const count = Math.min(10, Math.max(1, parseInt(searchParams.get('count') || '5', 10)))
   const moduleId = searchParams.get('moduleId') || undefined
+  const onlyCompleted = searchParams.get('onlyCompleted') !== 'false' // default true
 
   // Sugestie auto-progresie
   const recent = await prisma.problemSubmission.findMany({
@@ -45,8 +46,31 @@ export async function GET(req, { params }) {
 
   if (difficulty === 'RANDOM') difficulty = ['EASY', 'MEDIUM', 'HARD'][Math.floor(Math.random() * 3)]
 
+  // Lecțiile completate de elev (theory done sau lesson finished)
+  let completedLessonIds = null
+  if (onlyCompleted) {
+    const progresses = await prisma.lessonProgress.findMany({
+      where: {
+        studentId: student.id,
+        OR: [{ completedAt: { not: null } }, { theoryCompleted: true }],
+      },
+      select: { lessonId: true },
+    })
+    completedLessonIds = progresses.map(p => p.lessonId)
+    if (completedLessonIds.length === 0) {
+      return NextResponse.json({
+        student,
+        problems: [],
+        suggestion,
+        empty: true,
+        emptyReason: 'NO_COMPLETED_LESSONS',
+      })
+    }
+  }
+
   const where = { active: true }
   if (difficulty !== 'ANY') where.difficulty = difficulty
+  if (completedLessonIds) where.lessonId = { in: completedLessonIds }
   if (moduleId) where.lesson = { moduleId }
 
   // Evită problemele deja submise recent (ultimele 30 zile)

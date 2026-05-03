@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -8,9 +8,10 @@ import {
   PaperAirplaneIcon, CheckCircleIcon, ClockIcon, LightBulbIcon,
   PuzzlePieceIcon, SparklesIcon, BoltIcon, ChevronUpIcon, ChevronDownIcon,
   XMarkIcon, ExclamationTriangleIcon, CodeBracketIcon, GlobeAltIcon,
-  SwatchIcon, Squares2X2Icon, CubeTransparentIcon,
+  SwatchIcon, Squares2X2Icon, CubeTransparentIcon, EyeIcon, AcademicCapIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
+import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 
 const DIFF_CONFIG = {
   EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
@@ -29,12 +30,29 @@ const LANG_ICONS = {
 function CountPicker({ value, onChange }) {
   const min = 1, max = 10
   const trackRef = useRef(null)
+  const [dragging, setDragging] = useState(false)
 
   const compute = (clientX) => {
-    const r = trackRef.current.getBoundingClientRect()
+    const r = trackRef.current?.getBoundingClientRect()
+    if (!r) return value
     const pct = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
     return Math.round(pct * (max - min) + min)
   }
+
+  useEffect(() => {
+    if (!dragging) return
+    const onMove = (e) => onChange(compute(e.clientX))
+    const onUp = () => setDragging(false)
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragging])
 
   const pct = ((value - min) / (max - min)) * 100
 
@@ -48,15 +66,14 @@ function CountPicker({ value, onChange }) {
       <div
         ref={trackRef}
         className="relative h-8 flex items-center cursor-pointer select-none"
-        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); onChange(compute(e.clientX)) }}
-        onPointerMove={(e) => { if (e.buttons > 0) onChange(compute(e.clientX)) }}
+        style={{ touchAction: 'none' }}
+        onPointerDown={(e) => { e.preventDefault(); setDragging(true); onChange(compute(e.clientX)) }}
       >
         <div className="absolute inset-x-0 h-2 rounded-full bg-white/15" />
         <div
           className="absolute left-0 h-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 pointer-events-none"
           style={{ width: `${pct}%` }}
         />
-        {/* thumb: left=${pct}% + translateX(-${pct}%) perfectly centers it */}
         <div
           className="absolute w-5 h-5 rounded-full bg-white shadow-lg border-2 border-amber-400 pointer-events-none"
           style={{ left: `${pct}%`, transform: `translateX(-${pct}%)` }}
@@ -70,12 +87,24 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
   const [difficulty, setDifficulty] = useState('RANDOM')
   const [moduleId, setModuleId]     = useState('')
   const [count, setCount]           = useState(5)
+  const [onlyCompleted, setOnlyCompleted] = useState(true)
   const [problems, setProblems]     = useState([])
   const [suggestion, setSuggestion] = useState(null)
+  const [emptyReason, setEmptyReason] = useState(null)
   const [loading, setLoading]       = useState(false)
+  // submissions[pid] = ultima submisie (pentru afișare)
   const [submissions, setSubmissions] = useState({})
+  // attemptsCount[pid] = câte încercări trimise
+  const [attemptsCount, setAttemptsCount] = useState({})
+  // hintUsed[pid] = bool
+  const [hintUsed, setHintUsed] = useState({})
+  // locked[pid] = bool (corect, sau a văzut soluția, sau atinse max attempts)
+  const [locked, setLocked] = useState({})
+  // solutions[pid] = { correctAnswer, explanation }
+  const [solutions, setSolutions] = useState({})
   const [answers, setAnswers]       = useState({})
   const [expanded, setExpanded]     = useState({})
+  const [submitting, setSubmitting] = useState({})
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const fetchProblems = async () => {
@@ -84,43 +113,99 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
     try {
       const p = new URLSearchParams({ difficulty, count: String(count) })
       if (moduleId) p.set('moduleId', moduleId)
+      if (!onlyCompleted) p.set('onlyCompleted', 'false')
       const r = await fetch(`/api/public/learn/${token}/random?${p}`)
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
       setProblems(d.problems || [])
       setSuggestion(d.suggestion || null)
+      setEmptyReason(d.empty ? d.emptyReason || 'EMPTY' : null)
       setSubmissions({})
+      setAttemptsCount({})
+      setHintUsed({})
+      setLocked({})
+      setSolutions({})
       setAnswers({})
       setExpanded(Object.fromEntries((d.problems || []).map(p => [p.id, true])))
     } catch (e) { toast.error(e.message) } finally { setLoading(false) }
   }
 
   const submit = async (p) => {
-    const ans = answers[p.id]?.trim()
-    if (!ans) return toast.error('Introdu un răspuns')
+    if (locked[p.id]) return
+    if (submitting[p.id]) return
+    const ans = (answers[p.id] ?? '').trim()
+    if (!ans && p.type !== 'CODING') return toast.error('Introdu un răspuns')
+    setSubmitting(s => ({ ...s, [p.id]: true }))
     try {
       const r = await fetch(`/api/public/learn/${token}/submit`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           problemId: p.id, source: 'random',
           answer: p.type !== 'CODING' ? ans : null,
-          code: p.type === 'CODING' ? ans : null,
+          code: p.type === 'CODING' ? (answers[p.id] ?? '') : null,
+          hintUsed: !!hintUsed[p.id],
         }),
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'Eroare')
       setSubmissions(s => ({ ...s, [p.id]: d.submission }))
+      setAttemptsCount(a => ({ ...a, [p.id]: d.attemptNumber || (a[p.id] || 0) + 1 }))
+      if (d.locked) setLocked(l => ({ ...l, [p.id]: true }))
       if (p.type === 'CODING') {
-        toast('Trimis profesorului', { icon: '�' })
+        toast('Trimis profesorului', { icon: '📨' })
+        setLocked(l => ({ ...l, [p.id]: true }))
       } else if (d.autoCorrect === true) {
-        toast.success('Corect! Bravo!')
+        const g = d.submission?.grade ?? 0
+        toast.success(`Corect! +${g} pct`)
       } else {
-        toast.error('Greșit — încearcă altă problemă')
+        const max = d.maxAttempts ?? getMaxAttempts(p)
+        const next = d.attemptNumber ?? 0
+        if (d.locked || next >= max) {
+          toast.error('Greșit — încercări epuizate (0 pct)')
+        } else {
+          const nextGrade = applyHintPenalty(gradeForAttempt(p, next + 1), !!hintUsed[p.id])
+          toast.error(`Greșit — încercarea următoare valorează ${nextGrade} pct`)
+        }
       }
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setSubmitting(s => ({ ...s, [p.id]: false }))
+    }
+  }
+
+  const useHintFor = (p) => {
+    if (hintUsed[p.id] || locked[p.id]) return
+    setHintUsed(h => ({ ...h, [p.id]: true }))
+    toast('Indiciu activat — −10 pct la nota finală', { icon: '💡' })
+  }
+
+  const viewSolution = async (p) => {
+    if (locked[p.id] || solutions[p.id]) return
+    if (!confirm('Vezi rezolvarea? Vei primi 0 puncte și problema se închide.')) return
+    try {
+      const r = await fetch(`/api/public/learn/${token}/solution`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId: p.id, source: 'random' }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Eroare')
+      setSolutions(s => ({ ...s, [p.id]: { correctAnswer: d.correctAnswer, explanation: d.explanation } }))
+      setLocked(l => ({ ...l, [p.id]: true }))
+      // marchează ca submisie 0p ca să iasă din "needs work"
+      setSubmissions(s => ({ ...s, [p.id]: { ...(s[p.id] || {}), status: 'GRADED', grade: 0, autoCorrect: false, solutionViewed: true } }))
     } catch (e) { toast.error(e.message) }
   }
 
-  const doneCount = problems.filter(p => submissions[p.id]).length
+  // "done" = corect SAU blocat (epuizat / soluție văzută / coding trimis)
+  const isDone = (p) => {
+    const sub = submissions[p.id]
+    if (locked[p.id]) return true
+    if (sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60) return true
+    return false
+  }
+  const doneCount = problems.filter(isDone).length
+  const allDone = problems.length > 0 && doneCount === problems.length
   const selectedModule = modules.find(m => m.id === moduleId)
   const langCfg = selectedModule ? LANG_ICONS[selectedModule.language?.toLowerCase()] : null
 
@@ -222,6 +307,25 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
           <CountPicker value={count} onChange={setCount} />
         </div>
 
+        {/* Source filter */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-2">
+            Sursă probleme
+          </label>
+          <button onClick={() => setOnlyCompleted(v => !v)}
+            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              onlyCompleted ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-400/40' : 'bg-white/10 text-white/60 hover:bg-white/20 border border-white/10'
+            }`}>
+            <AcademicCapIcon className="w-4 h-4 shrink-0" />
+            <span className="text-left flex-1">
+              {onlyCompleted ? 'Doar din lecțiile mele făcute' : 'Din toate lecțiile'}
+            </span>
+            <span className={`w-8 h-4 rounded-full relative transition ${onlyCompleted ? 'bg-emerald-400' : 'bg-white/20'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition ${onlyCompleted ? 'left-4' : 'left-0.5'}`} />
+            </span>
+          </button>
+        </div>
+
         {/* Generate */}
         <button onClick={fetchProblems} disabled={loading}
           className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-blue-900 rounded-2xl font-extrabold text-sm transition disabled:opacity-60 shadow-xl shadow-amber-500/30 active:scale-95">
@@ -257,14 +361,16 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
             <div className="space-y-1">
               {problems.map((p, i) => {
                 const sub = submissions[p.id]
-                const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60
-                const isPending = sub && !isOk
+                const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60 && sub.autoCorrect !== false
+                const isLockedItem = !!locked[p.id]
+                const isPending = sub && !isOk && !isLockedItem
                 const cfg = DIFF_CONFIG[p.difficulty] || DIFF_CONFIG.EASY
                 return (
                   <a key={p.id} href={`#problem-${p.id}`}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 transition">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
                       isOk ? 'bg-emerald-500 text-white'
+                      : isLockedItem ? 'bg-rose-500 text-white'
                       : isPending ? 'bg-amber-500 text-white'
                       : 'bg-white/15 text-white/70'
                     }`}>
@@ -346,59 +452,103 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         <div className="flex-1 overflow-y-auto">
           {problems.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-full p-8 text-center">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/30">
-                <FireIcon className="w-12 h-12 text-white" />
+              <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-2xl ${emptyReason === 'NO_COMPLETED_LESSONS' ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30' : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-500/30'}`}>
+                {emptyReason === 'NO_COMPLETED_LESSONS'
+                  ? <AcademicCapIcon className="w-12 h-12 text-white" />
+                  : <FireIcon className="w-12 h-12 text-white" />
+                }
               </div>
-              <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Gata de antrenament?</h2>
-              <p className="text-slate-500 text-base max-w-sm mb-8">
-                Alege modulul și dificultatea, sau lasă-le aleatoriu și apasă Generate.
-              </p>
-
-              {/* Quick module chips on empty state */}
-              <div className="flex flex-wrap gap-2 justify-center mb-6">
-                <button onClick={() => setModuleId('')}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${!moduleId ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
-                  <Squares2X2Icon className="w-4 h-4" /> Toate
-                </button>
-                {modules.map(m => {
-                  const cfg = LANG_ICONS[m.language?.toLowerCase()] || { Icon: CubeTransparentIcon }
-                  const active = moduleId === m.id
-                  return (
-                    <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${active ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
-                      <cfg.Icon className="w-4 h-4" /> {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
+              {emptyReason === 'NO_COMPLETED_LESSONS' ? (
+                <>
+                  <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Încă n-ai terminat nicio lecție</h2>
+                  <p className="text-slate-500 text-base max-w-sm mb-6">
+                    Antrenamentul aleatoriu îți generează doar probleme din lecțiile pe care le-ai parcurs. Începe cu o lecție și revino aici!
+                  </p>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <Link href={`/learn/${token}`}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-2xl font-extrabold shadow-xl shadow-blue-900/30 hover:-translate-y-0.5 transition active:scale-95">
+                      <ChevronLeftIcon className="w-5 h-5" /> La lecții
+                    </Link>
+                    <button onClick={() => { setOnlyCompleted(false); setEmptyReason(null) }}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-amber-300 transition">
+                      Vreau totuși din toate
                     </button>
-                  )
-                })}
-              </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Gata de antrenament?</h2>
+                  <p className="text-slate-500 text-base max-w-sm mb-8">
+                    Alege modulul și dificultatea, sau lasă-le aleatoriu și apasă Generate.
+                  </p>
 
-              <button onClick={fetchProblems} disabled={loading}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-blue-900/30 hover:-translate-y-0.5 hover:shadow-2xl transition disabled:opacity-60 active:scale-95">
-                <BoltIcon className="w-6 h-6" />
-                {loading ? 'Se încarcă...' : `Generează ${count} probleme`}
-              </button>
-              <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition">
-                <AdjustmentsHorizontalIcon className="w-4 h-4" /> Mai multe filtre
-              </button>
+                  {/* Quick module chips on empty state */}
+                  <div className="flex flex-wrap gap-2 justify-center mb-6">
+                    <button onClick={() => setModuleId('')}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${!moduleId ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
+                      <Squares2X2Icon className="w-4 h-4" /> Toate
+                    </button>
+                    {modules.map(m => {
+                      const cfg = LANG_ICONS[m.language?.toLowerCase()] || { Icon: CubeTransparentIcon }
+                      const active = moduleId === m.id
+                      return (
+                        <button key={m.id} onClick={() => setModuleId(active ? '' : m.id)}
+                          className={`px-4 py-2 rounded-xl text-sm font-bold transition inline-flex items-center gap-2 ${active ? 'bg-blue-800 text-white shadow-lg' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-blue-300'}`}>
+                          <cfg.Icon className="w-4 h-4" /> {m.title.replace(' Fundamentals', '').replace(' Basics', '')}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <button onClick={fetchProblems} disabled={loading}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-2xl font-extrabold text-lg shadow-xl shadow-blue-900/30 hover:-translate-y-0.5 hover:shadow-2xl transition disabled:opacity-60 active:scale-95">
+                    <BoltIcon className="w-6 h-6" />
+                    {loading ? 'Se încarcă...' : `Generează ${count} probleme`}
+                  </button>
+                  <button onClick={() => setMobileSidebarOpen(true)} className="lg:hidden mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition">
+                    <AdjustmentsHorizontalIcon className="w-4 h-4" /> Mai multe filtre
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
               {problems.map((p, i) => {
                 const sub = submissions[p.id]
-                const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60
-                const isPending = sub && !isOk
+                const isOk = sub?.status === 'GRADED' && (sub.grade ?? 0) >= 60 && sub.autoCorrect !== false
+                const isLocked = !!locked[p.id]
+                const isPending = sub && p.type === 'CODING' && !isLocked
                 const cfg = DIFF_CONFIG[p.difficulty] || DIFF_CONFIG.EASY
                 const isExpanded = expanded[p.id] !== false
+                const attempts = attemptsCount[p.id] || 0
+                const max = getMaxAttempts(p)
+                const usedHint = !!hintUsed[p.id]
+                const sol = solutions[p.id]
+                const canSubmit = !isLocked && p.type !== 'CODING' || (p.type === 'CODING' && !isLocked && !sub)
+                const nextGrade = applyHintPenalty(gradeForAttempt(p, attempts + 1), usedHint)
+                const lastWrong = sub && sub.autoCorrect === false && !isLocked
+                const cardRing = isOk
+                  ? 'ring-emerald-200'
+                  : isLocked && !isOk
+                    ? 'ring-rose-200'
+                    : lastWrong
+                      ? 'ring-amber-200'
+                      : isPending
+                        ? 'ring-amber-200'
+                        : 'ring-slate-200'
 
                 return (
                   <div key={p.id} id={`problem-${p.id}`}
-                    className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${isOk ? 'ring-emerald-200' : isPending ? 'ring-amber-200' : 'ring-slate-200'}`}>
+                    className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${cardRing}`}>
 
-                    <div className={`h-1.5 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : 'from-blue-700 to-blue-500'}`} />
+                    <div className={`h-1.5 bg-gradient-to-r ${isOk ? 'from-emerald-400 to-teal-400' : isLocked ? 'from-rose-400 to-rose-500' : 'from-blue-700 to-blue-500'}`} />
                     <div className="px-5 py-4 flex items-center gap-3 cursor-pointer select-none"
                       onClick={() => setExpanded(e => ({ ...e, [p.id]: !isExpanded }))}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
-                        isOk ? 'bg-emerald-500 text-white' : isPending ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700'
+                        isOk ? 'bg-emerald-500 text-white'
+                        : isLocked ? 'bg-rose-500 text-white'
+                        : isPending ? 'bg-amber-500 text-white'
+                        : 'bg-slate-100 text-slate-700'
                       }`}>
                         {isOk ? <CheckSolid className="w-5 h-5" /> : i + 1}
                       </div>
@@ -406,11 +556,25 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-extrabold text-slate-900">{p.title}</span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+                          {usedHint && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 inline-flex items-center gap-1">
+                              <LightBulbIcon className="w-3 h-3" /> Indiciu
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400 flex-wrap">
                           <StarIcon className="w-3 h-3 text-amber-400" /> {p.points} pct
-                          {isOk && <span className="text-emerald-600 font-semibold">· Rezolvat ✓</span>}
-                          {isPending && p.type === 'CODING' && <span className="text-amber-600 font-semibold">· La profesor</span>}                                  {!isOk && !isPending && sub?.autoCorrect === false && <span className="text-rose-600 font-semibold">· Greșit — 0 pct</span>}                        </div>
+                          {attempts > 0 && !isOk && (
+                            <span className="text-slate-500">· Încercarea {Math.min(attempts, max)}/{max}</span>
+                          )}
+                          {isOk && <span className="text-emerald-600 font-semibold">· {sub?.grade ?? 0}/100 ✓</span>}
+                          {isPending && <span className="text-amber-600 font-semibold">· La profesor</span>}
+                          {isLocked && !isOk && (
+                            <span className="text-rose-600 font-semibold">
+                              · {sol ? 'Soluție văzută' : 'Epuizate'} — 0 pct
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDownIcon className="w-4 h-4 text-slate-400 shrink-0" />}
                     </div>
@@ -419,24 +583,48 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                       <div className="px-5 pb-5 space-y-4 border-t border-slate-100 pt-4">
                         <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{p.description}</p>
 
-                        {sub ? (
-                          <div className={`rounded-2xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : sub.autoCorrect === false ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
-                            <div className="flex items-center gap-2 font-bold text-sm">
-                              {isOk
-                                ? <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Răspuns corect — bravo!</span></>
-                                : sub.autoCorrect === false
-                                  ? <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Răspuns greșit — 0 puncte</span></>
-                                  : <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Trimis profesorului</span></>
-                              }
-                              {typeof sub.grade === 'number' && (
+                        {/* Status banner pentru ultima submisie */}
+                        {sub && (
+                          <div className={`rounded-2xl p-4 border-2 ${isOk ? 'bg-emerald-50 border-emerald-200' : isLocked ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <div className="flex items-center gap-2 font-bold text-sm flex-wrap">
+                              {isOk ? (
+                                <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Răspuns corect — bravo!</span></>
+                              ) : isPending ? (
+                                <><ClockIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Trimis profesorului</span></>
+                              ) : isLocked ? (
+                                <><ExclamationTriangleIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">{sol ? 'Soluție afișată — 0 puncte' : 'Încercări epuizate — 0 puncte'}</span></>
+                              ) : (
+                                <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Răspuns greșit — mai poți încerca</span></>
+                              )}
+                              {typeof sub.grade === 'number' && (isOk || isLocked) && (
                                 <span className="ml-auto text-slate-700">Nota: <strong>{sub.grade}/100</strong></span>
                               )}
                             </div>
-                            {sub.feedback && (
-                              <div className="mt-2 text-xs text-slate-700 bg-white/60 rounded-lg p-2">{sub.feedback}</div>
+                            {!isOk && !isLocked && !isPending && attempts < max && (
+                              <div className="mt-2 text-xs text-amber-900">
+                                Următoarea încercare valorează <strong>{nextGrade} pct</strong>
+                                {usedHint ? ' (cu penalizare indiciu)' : ''}.
+                              </div>
+                            )}
+                            {sol && (
+                              <div className="mt-3 space-y-2 text-sm">
+                                <div className="bg-white/70 rounded-lg p-2">
+                                  <div className="text-[10px] font-bold uppercase text-rose-700 mb-1">Răspuns corect</div>
+                                  <div className="font-mono text-rose-900 break-words">{String(sol.correctAnswer ?? '—')}</div>
+                                </div>
+                                {sol.explanation && (
+                                  <div className="bg-white/70 rounded-lg p-2">
+                                    <div className="text-[10px] font-bold uppercase text-rose-700 mb-1">Explicație</div>
+                                    <div className="text-rose-900 whitespace-pre-wrap">{sol.explanation}</div>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-                        ) : (
+                        )}
+
+                        {/* Inputs (vizibile cât timp nu e blocată și nu e CODING trimis) */}
+                        {!isLocked && !(p.type === 'CODING' && sub) && (
                           <>
                             {p.type === 'MULTIPLE_CHOICE' && (
                               <div className="space-y-2">
@@ -463,18 +651,38 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                 className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition"
                                 placeholder="Răspunsul tău..." />
                             )}
+
+                            {/* Indiciu */}
                             {p.hint && (
-                              <details className="group">
-                                <summary className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-semibold cursor-pointer hover:text-amber-700 select-none">
-                                  <LightBulbIcon className="w-4 h-4" /> Indiciu
-                                </summary>
-                                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">{p.hint}</div>
-                              </details>
+                              <div>
+                                {usedHint ? (
+                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+                                    <LightBulbIcon className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                    <div><strong>Indiciu:</strong> {p.hint}</div>
+                                  </div>
+                                ) : (
+                                  <button type="button" onClick={() => useHintFor(p)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition">
+                                    <LightBulbIcon className="w-4 h-4" /> Vezi indiciu (−10 pct)
+                                  </button>
+                                )}
+                              </div>
                             )}
-                            <button onClick={() => submit(p)}
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition">
-                              <PaperAirplaneIcon className="w-4 h-4" /> Trimite răspunsul
-                            </button>
+
+                            {/* Acțiuni */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button onClick={() => submit(p)} disabled={!!submitting[p.id]}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold text-sm shadow hover:shadow-md active:scale-95 transition disabled:opacity-60">
+                                <PaperAirplaneIcon className="w-4 h-4" />
+                                {submitting[p.id] ? 'Se trimite...' : (lastWrong ? `Reîncearcă (${nextGrade} pct)` : 'Trimite răspunsul')}
+                              </button>
+                              {p.type !== 'CODING' && attempts >= 2 && (
+                                <button type="button" onClick={() => viewSolution(p)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition">
+                                  <EyeIcon className="w-4 h-4" /> Vezi rezolvarea (0 pct)
+                                </button>
+                              )}
+                            </div>
                           </>
                         )}
                       </div>
@@ -483,14 +691,17 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                 )
               })}
 
-              {doneCount === problems.length && problems.length > 0 && (
+              {allDone && (
                 <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-200 p-6 text-center">
                   <CheckSolid className="w-14 h-14 text-emerald-500 mx-auto mb-3" />
                   <h3 className="text-xl font-extrabold text-emerald-900 mb-1">Sesiune completă!</h3>
-                  <p className="text-emerald-700 text-sm mb-4">Ai rezolvat toate {problems.length} problemele. Mai vrei?</p>
-                  <button onClick={fetchProblems}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition">
-                    <ArrowPathIcon className="w-5 h-5" /> Generează altele
+                  <p className="text-emerald-700 text-sm mb-4">
+                    Ai parcurs toate {problems.length} problemele. Vrei o serie nouă?
+                  </p>
+                  <button onClick={fetchProblems} disabled={loading}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition disabled:opacity-60">
+                    <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                    {loading ? 'Se generează...' : 'Regenerează probleme'}
                   </button>
                 </div>
               )}

@@ -17,7 +17,7 @@ export async function POST(req, { params }) {
   if (student.active === false) return NextResponse.json({ error: 'Cont dezactivat' }, { status: 403 })
 
   const body = await req.json()
-  const { problemId, lessonId, answer, code, source = 'lesson', timeSpent = 0 } = body
+  const { problemId, lessonId, answer, code, source = 'lesson', timeSpent = 0, hintUsed: bodyHintUsed = false } = body
   if (!problemId) return NextResponse.json({ error: 'problemId obligatoriu' }, { status: 400 })
 
   const problem = await prisma.problem.findUnique({
@@ -45,6 +45,7 @@ export async function POST(req, { params }) {
       studentId: student.id,
       problemId,
       lessonId: lessonId || null,
+      ...(source === 'random' ? { source: 'random' } : {}),
     },
     orderBy: { createdAt: 'asc' },
     select: { id: true, locked: true, status: true, grade: true, hintUsed: true, attemptNumber: true, autoCorrect: true },
@@ -52,27 +53,32 @@ export async function POST(req, { params }) {
 
   if (prevSubs.some(s => s.locked)) {
     return NextResponse.json({
-      error: 'Problemă blocată. Resetează lecția pentru a încerca din nou.',
+      error: source === 'random'
+        ? 'Problemă blocată — generează altele.'
+        : 'Problemă blocată. Resetează lecția pentru a încerca din nou.',
       locked: true,
     }, { status: 403 })
   }
 
-  const alreadyCorrect = prevSubs.some(s => s.status === 'GRADED' && (s.grade ?? 0) >= 60 && s.autoCorrect !== false)
-  if (alreadyCorrect) {
-    return NextResponse.json({
-      error: 'Problemă deja rezolvată corect.',
-      locked: true,
-    }, { status: 403 })
+  // Pentru lecții — blocăm rejucarea după ce e corectă; pentru random — permit retry
+  if (source !== 'random') {
+    const alreadyCorrect = prevSubs.some(s => s.status === 'GRADED' && (s.grade ?? 0) >= 60 && s.autoCorrect !== false)
+    if (alreadyCorrect) {
+      return NextResponse.json({
+        error: 'Problemă deja rezolvată corect.',
+        locked: true,
+      }, { status: 403 })
+    }
   }
 
   // Hint folosit pentru această problemă în această lecție
-  let hintUsed = false
+  let hintUsed = !!bodyHintUsed
   if (lessonId) {
     const progress = await prisma.lessonProgress.findUnique({
       where: { studentId_lessonId: { studentId: student.id, lessonId } },
       select: { hintsUsed: true },
     })
-    hintUsed = Array.isArray(progress?.hintsUsed) && progress.hintsUsed.includes(problemId)
+    if (Array.isArray(progress?.hintsUsed) && progress.hintsUsed.includes(problemId)) hintUsed = true
   }
   if (prevSubs.some(s => s.hintUsed)) hintUsed = true
 

@@ -14,9 +14,12 @@ export async function POST(req, { params }) {
   if (!student) return NextResponse.json({ error: 'Token invalid' }, { status: 404 })
   if (student.active === false) return NextResponse.json({ error: 'Cont dezactivat' }, { status: 403 })
 
-  const { problemId, lessonId } = await req.json()
-  if (!problemId || !lessonId) {
-    return NextResponse.json({ error: 'problemId și lessonId obligatorii' }, { status: 400 })
+  const { problemId, lessonId, source = 'lesson' } = await req.json()
+  if (!problemId) {
+    return NextResponse.json({ error: 'problemId obligatoriu' }, { status: 400 })
+  }
+  if (source !== 'random' && !lessonId) {
+    return NextResponse.json({ error: 'lessonId obligatoriu' }, { status: 400 })
   }
 
   const problem = await prisma.problem.findUnique({
@@ -26,7 +29,12 @@ export async function POST(req, { params }) {
   if (!problem) return NextResponse.json({ error: 'Problemă inexistentă' }, { status: 404 })
 
   const prevSubs = await prisma.problemSubmission.findMany({
-    where: { studentId: student.id, problemId, lessonId },
+    where: {
+      studentId: student.id,
+      problemId,
+      lessonId: lessonId || null,
+      ...(source === 'random' ? { source: 'random' } : {}),
+    },
     orderBy: { createdAt: 'asc' },
     select: { id: true, locked: true, status: true, grade: true, autoCorrect: true },
   })
@@ -50,10 +58,10 @@ export async function POST(req, { params }) {
     data: {
       studentId: student.id,
       problemId,
-      lessonId,
+      lessonId: lessonId || null,
       answer: null,
       code: null,
-      source: 'lesson',
+      source,
       difficulty: problem.difficulty,
       autoCorrect: false,
       status: 'GRADED',
