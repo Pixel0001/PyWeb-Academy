@@ -13,6 +13,11 @@ import { pythonEnrichedPart2 } from './python-enriched-part2.mjs'
 import { jsEnriched } from './javascript-enriched.mjs'
 import { htmlEnriched } from './html-enriched.mjs'
 import { cssEnriched } from './css-enriched.mjs'
+// Quiz packs — completează fiecare lecție la min 10 probleme
+import { pythonQuizPack } from './python-quiz-pack.mjs'
+import { javascriptQuizPack } from './javascript-quiz-pack.mjs'
+import { htmlQuizPack } from './html-quiz-pack.mjs'
+import { cssQuizPack } from './css-quiz-pack.mjs'
 
 // Convertește un dicționar enriched ({ slug: { theory, problems } })
 // într-un patch ({ replaceTheory, appendProblems }).
@@ -64,16 +69,16 @@ const enrichedPython = applyPatch(
     ),
     pythonMetodicaExtraPatch
   ),
-  null
+  pythonQuizPack
 )
 const enrichedJavascript = applyPatch(
   applyPatch(
     applyPatch(applyPatch(javascriptModule, enrichedToPatch(jsEnriched)), javascriptMetodicaPatch),
     javascriptMetodicaExtraPatch
   ),
-  null
+  javascriptQuizPack
 )
-const enrichedHtml = applyPatch(htmlModule, enrichedToPatch(htmlEnriched))
-const enrichedCss = applyPatch(cssModule, enrichedToPatch(cssEnriched))
+const enrichedHtml = applyPatch(applyPatch(htmlModule, enrichedToPatch(htmlEnriched)), htmlQuizPack)
+const enrichedCss = applyPatch(applyPatch(cssModule, enrichedToPatch(cssEnriched)), cssQuizPack)
 
 export const allModules = [enrichedPython, enrichedJavascript, enrichedHtml, enrichedCss]
