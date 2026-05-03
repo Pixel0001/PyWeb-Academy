@@ -14,6 +14,7 @@ import {
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
+import AiFeedback from '@/components/learn/AiFeedback'
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',
@@ -101,6 +102,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [solutionLoading, setSolutionLoading] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
+  const [lastOutput, setLastOutput] = useState('')
   const [time, setTime] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -225,6 +228,34 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     if (cur.type === 'CODING' || cur.type === 'INPUT_OUTPUT') {
       if (!code.trim() && !answer.trim()) return toast.error('Introdu un raspuns')
     } else if (!answer.trim()) return toast.error('Introdu un raspuns')
+
+    // Pentru CODING — trimite la AI grader (Mr. PyWeb)
+    if (cur.type === 'CODING') {
+      if (!code.trim()) return toast.error('Scrie cod înainte de trimitere')
+      setSubmitting(true)
+      try {
+        const r = await fetch(`/api/public/learn/${token}/ai-grade`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId: cur.id, lessonId: lesson.id, source: 'lesson', code, output: lastOutput }),
+        })
+        const d = await r.json()
+        if (!r.ok) {
+          if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
+          else throw new Error(d.error || 'Eroare AI')
+          return
+        }
+        const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
+        const na = [...attemptsCount]; na[idx] = (na[idx] || 0) + 1; setAttemptsCount(na)
+        const nl = [...locks]; nl[idx] = true; setLocks(nl)
+        setAiFeedback(prev => ({ ...prev, [cur.id]: d }))
+        const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
+        if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
+        else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '🐍' })
+      } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
+      return
+    }
+
     setSubmitting(true)
     try {
       const r = await fetch(`/api/public/learn/${token}/submit`, {
@@ -238,9 +269,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       if (d.locked) {
         const nl = [...locks]; nl[idx] = true; setLocks(nl)
       }
-      if (cur.type === 'CODING') {
-        toast('Trimis — asteapta verificarea profesorului', { icon: '👨\u200d🏫' })
-      } else if (d.autoCorrect === true) {
+      if (d.autoCorrect === true) {
         const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
         toast.success(`Corect! +${earnedXP} XP`)
       } else if (d.locked) {
@@ -752,15 +781,22 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             placeholder="Output asteptat..." />
                         )}
                         {cur.type === 'CODING' && (
-                          <div>
+                          <div className="space-y-3">
                             <CodeRunner
                               code={code}
                               setCode={setCode}
                               language={cur.language || 'python'}
                               starter={cur.starterCode || ''}
                               rows={12}
+                              onOutput={setLastOutput}
                             />
-                            <p className="text-xs text-slate-400 mt-1.5">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" pentru notă.</p>
+                            <p className="text-xs text-slate-400 mt-1.5">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite" — Mr. PyWeb te va nota cu AI.</p>
+                            {aiFeedback[cur.id] && (
+                              <AiFeedback
+                                data={aiFeedback[cur.id]}
+                                onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                              />
+                            )}
                           </div>
                         )}
 

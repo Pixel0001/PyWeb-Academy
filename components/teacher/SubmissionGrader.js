@@ -65,6 +65,51 @@ export default function SubmissionGrader({ submission, lessonStats, existingAdva
 
   return (
     <div className="space-y-4">
+      {submission.aiGraded && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center text-xl shrink-0">🐍</div>
+            <div className="flex-1">
+              <div className="font-bold text-blue-900">Notat de Mr. PyWeb (AI)</div>
+              <div className="text-xs text-blue-700">
+                Notă AI: <span className="font-bold">{submission.grade}/100</span>
+                {submission.teacherOverride && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold">OVERRIDE</span>}
+              </div>
+            </div>
+          </div>
+          {submission.aiSuspectedAi && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 text-sm">
+              <div className="font-bold text-red-800">⚠️ Cod suspect generat de AI</div>
+              <div className="text-red-700 text-xs mt-1">Scor încredere: {submission.aiSuspicionScore ?? '?'}/100 — penalizare deja aplicată</div>
+            </div>
+          )}
+          {submission.aiReasoning && (
+            <div className="bg-white rounded-lg border border-blue-100 p-3 text-sm text-gray-800 whitespace-pre-wrap mb-2">
+              {submission.aiReasoning}
+            </div>
+          )}
+          {submission.aiRubric && (
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="font-bold text-lg">{submission.aiRubric.correctness ?? '—'}</div>
+                <div className="text-gray-500">Corectitudine</div>
+              </div>
+              <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="font-bold text-lg">{submission.aiRubric.style ?? '—'}</div>
+                <div className="text-gray-500">Stil</div>
+              </div>
+              <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="font-bold text-lg">{submission.aiRubric.efficiency ?? '—'}</div>
+                <div className="text-gray-500">Eficiență</div>
+              </div>
+            </div>
+          )}
+          <div className="text-[11px] text-blue-600 mt-3">
+            💡 Poți suprascrie nota AI mai jos — modificarea va fi marcată ca „override profesor".
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="font-semibold mb-3 flex items-center gap-2"><AcademicCapIcon className="w-5 h-5 text-gray-500" /> Notează & feedback</h3>
         <div className="grid sm:grid-cols-3 gap-3 mb-3">

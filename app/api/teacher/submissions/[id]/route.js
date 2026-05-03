@@ -66,6 +66,11 @@ export async function PATCH(req, { params }) {
     status: newStatus,
   }
 
+  // Dacă submisia a fost notată de AI și profesorul intervine acum → marchează override
+  if (sub.aiGraded) {
+    data.teacherOverride = true
+  }
+
   if (grade !== null && grade !== undefined) {
     let g = Math.max(0, Math.min(100, Number(grade)))
     // Aplică punctajul degresiv DOAR pentru probleme auto-corectabile dintr-o lecție.

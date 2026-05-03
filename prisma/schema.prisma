@@ -1073,6 +1073,16 @@ model ProblemSubmission {
   solutionViewed Boolean @default(false) // elevul a apăsat „Vezi rezolvarea" (forțează 0p)
   locked         Boolean @default(false) // problemă blocată — nu se mai poate reîncerca
 
+  // AI grading (pentru CODING) — profesorul virtual „Mr. PyWeb"
+  aiGraded         Boolean  @default(false)
+  aiReasoning      String?  // explicație pedagogică pentru elev (markdown)
+  aiRubric         Json?    // {correctness, style, efficiency} cu scoruri 0-100
+  aiSuspectedAi    Boolean  @default(false)
+  aiSuspicionScore Int?     // 0-100, cât de probabil e că a folosit AI
+  aiTokensIn       Int?     // pentru tracking cost
+  aiTokensOut      Int?
+  teacherOverride  Boolean  @default(false) // profesorul a suprascris nota AI
+
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -1090,6 +1100,27 @@ enum SubmissionStatus {
   PENDING        // așteaptă feedback profesor
   GRADED         // notată (trecută)
   NEEDS_REVISION // profesorul cere refacere
+}
+
+// ==================== AI USAGE TRACKING ====================
+// Tracking pentru rate limit + cost al apelurilor către OpenAI (Mr. PyWeb)
+
+model AiUsage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String?  @db.ObjectId
+  ip          String?  // pentru rate-limit dacă nu e student logat
+  endpoint    String   // "grade-code" | "explain" | "detect-ai" | etc.
+  tokensIn    Int      @default(0)
+  tokensOut   Int      @default(0)
+  costUsd     Float    @default(0) // cost estimat pentru această cerere
+  success     Boolean  @default(true)
+  errorMsg    String?
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
+  @@map("ai_usage")
 }
 
 // ==================== LEARNING APP PAYMENTS ====================

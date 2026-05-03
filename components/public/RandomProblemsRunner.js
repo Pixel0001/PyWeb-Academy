@@ -13,6 +13,7 @@ import {
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
+import AiFeedback from '@/components/learn/AiFeedback'
 
 const DIFF_CONFIG = {
   EASY:   { label: 'Ușor',    bar: 'bg-emerald-400', badge: 'bg-emerald-100 text-emerald-700', active: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' },
@@ -106,6 +107,8 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
   const [answers, setAnswers]       = useState({})
   const [expanded, setExpanded]     = useState({})
   const [submitting, setSubmitting] = useState({})
+  const [aiFeedback, setAiFeedback] = useState({}) // { problemId: AI grade payload }
+  const [lastOutput, setLastOutput] = useState({}) // { problemId: stdout }
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const fetchProblems = async () => {
@@ -136,6 +139,37 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
     if (submitting[p.id]) return
     const ans = (answers[p.id] ?? '').trim()
     if (!ans && p.type !== 'CODING') return toast.error('Introdu un răspuns')
+
+    // CODING → AI grader (Mr. PyWeb)
+    if (p.type === 'CODING') {
+      const code = answers[p.id] ?? ''
+      if (!code.trim()) return toast.error('Scrie cod înainte de trimitere')
+      setSubmitting(s => ({ ...s, [p.id]: true }))
+      try {
+        const r = await fetch(`/api/public/learn/${token}/ai-grade`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId: p.id, source: 'random', code, output: lastOutput[p.id] || '' }),
+        })
+        const d = await r.json()
+        if (!r.ok) {
+          if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
+          else throw new Error(d.error || 'Eroare AI')
+          return
+        }
+        setSubmissions(s => ({ ...s, [p.id]: d.submission }))
+        setAttemptsCount(a => ({ ...a, [p.id]: (a[p.id] || 0) + 1 }))
+        setLocked(l => ({ ...l, [p.id]: true }))
+        setAiFeedback(prev => ({ ...prev, [p.id]: d }))
+        const passed = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0) >= 60
+        if (passed) toast.success('Mr. PyWeb spune: bravo! 🌟')
+        else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '🐍' })
+      } catch (e) { toast.error(e.message) } finally {
+        setSubmitting(s => ({ ...s, [p.id]: false }))
+      }
+      return
+    }
+
     setSubmitting(s => ({ ...s, [p.id]: true }))
     try {
       const r = await fetch(`/api/public/learn/${token}/submit`, {
@@ -152,10 +186,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
       setSubmissions(s => ({ ...s, [p.id]: d.submission }))
       setAttemptsCount(a => ({ ...a, [p.id]: d.attemptNumber || (a[p.id] || 0) + 1 }))
       if (d.locked) setLocked(l => ({ ...l, [p.id]: true }))
-      if (p.type === 'CODING') {
-        toast('Trimis profesorului', { icon: '📨' })
-        setLocked(l => ({ ...l, [p.id]: true }))
-      } else if (d.autoCorrect === true) {
+      if (d.autoCorrect === true) {
         const pct = d.submission?.grade ?? 0
         const earned = Math.round((p.points ?? 10) * pct / 100)
         toast.success(`Corect! +${earned} pct (${pct}%)`)
@@ -703,13 +734,22 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                               </div>
                             )}
                             {p.type === 'CODING' && (
-                              <CodeRunner
-                                code={answers[p.id] ?? p.starterCode ?? ''}
-                                setCode={(v) => setAnswers(a => ({ ...a, [p.id]: typeof v === 'function' ? v(a[p.id]) : v }))}
-                                language={p.language || 'python'}
-                                starter={p.starterCode || ''}
-                                rows={10}
-                              />
+                              <div className="space-y-3">
+                                <CodeRunner
+                                  code={answers[p.id] ?? p.starterCode ?? ''}
+                                  setCode={(v) => setAnswers(a => ({ ...a, [p.id]: typeof v === 'function' ? v(a[p.id]) : v }))}
+                                  language={p.language || 'python'}
+                                  starter={p.starterCode || ''}
+                                  rows={10}
+                                  onOutput={(out) => setLastOutput(o => ({ ...o, [p.id]: out }))}
+                                />
+                                {aiFeedback[p.id] && (
+                                  <AiFeedback
+                                    data={aiFeedback[p.id]}
+                                    onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[p.id]; return c })}
+                                  />
+                                )}
+                              </div>
                             )}
                             {(p.type === 'SHORT_ANSWER' || p.type === 'INPUT_OUTPUT') && (
                               <input value={answers[p.id] || ''}
