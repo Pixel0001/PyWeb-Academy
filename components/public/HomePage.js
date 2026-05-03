@@ -780,7 +780,70 @@ export default function HomePage({ courses = [], reviews = [] }) {
         </div>
       </section>
 
-      {/* ── 5. FINAL CTA ────────────────────────────────────────────────────── */}
+      {/* ── 5. APP SECTION ─────────────────────────────────────────────────── */}
+      <section id="aplicatie" style={{ padding: isMobile ? '3.5rem 1rem' : '5rem 1.5rem', backgroundColor: 'var(--bg-page)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <p className="section-label" style={{ marginBottom: '0.5rem' }}>Platformă de învățare</p>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 800, color: 'var(--text-heading)', marginBottom: '0.75rem' }}>
+              Elevii noștri au propria aplicație
+            </h2>
+            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
+              Fiecare elev înscris primește acces la platforma PyWeb — unde poate recapitula lecții, rezolva exerciții și urmări progresul în timp real.
+            </p>
+          </div>
+
+          {/* Features grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+            {[
+              { emoji: '📚', title: 'Lecții interactive', desc: 'Teorie + exerciții practice pentru fiecare lecție. Progresul se salvează automat.' },
+              { emoji: '🎯', title: 'Probleme aleatorii', desc: 'Antrenament personalizat cu probleme generate din lecțiile parcurse, cu sistem de punctaj.' },
+              { emoji: '🏆', title: 'XP & Leaderboard', desc: 'Câștigă XP la fiecare problemă rezolvată și urcă în clasamentul grupei.' },
+              { emoji: '💡', title: 'Indicii & soluții', desc: 'Dacă ești blocat, ceri un indiciu sau ceri să vezi rezolvarea — cu scădere de puncte.' },
+              { emoji: '📊', title: 'Progres vizual', desc: 'Urmărești exact ce ai terminat și ce mai ai de făcut din fiecare modul.' },
+              { emoji: '🔔', title: 'Notificări', desc: 'Primești notificări de la profesor despre teme, feedback și sesiuni recuperare.' },
+            ].map(f => (
+              <div key={f.title} style={{
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '1rem',
+                padding: '1.5rem',
+                display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>{f.emoji}</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--text-heading)' }}>{f.title}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+              Accesul la aplicație este inclus gratuit pentru toți elevii înscriși.
+            </p>
+            <a href="#contact" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              backgroundColor: 'var(--color-primary)', color: '#fff',
+              fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem',
+              padding: '0.8rem 2rem', borderRadius: '0.75rem',
+              textDecoration: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              transition: 'var(--transition)',
+            }}
+              onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)' }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)' }}
+            >
+              Înscrie-te și primești acces →
+            </a>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── 6. FINAL CTA ────────────────────────────────────────────────────── */}
       <section style={{ padding: '5rem 1.5rem', backgroundColor: 'var(--color-primary)', textAlign: 'center' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div className="badge" style={{ marginBottom: '1.5rem', backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#bfdbfe', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>

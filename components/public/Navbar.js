@@ -7,6 +7,7 @@ import Image from 'next/image'
 const navLinks = [
   { label: 'Cursuri', href: '/#cursuri' },
   { label: 'Cum funcționează', href: '/#cum-functioneaza' },
+  { label: 'Aplicație', href: '/#aplicatie' },
   { label: 'Blog', href: '/blog' },
   { label: 'Recenzii', href: '/#recenzii' },
   { label: 'Contact', href: '/#contact' },
