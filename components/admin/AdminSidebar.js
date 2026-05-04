@@ -205,7 +205,7 @@ export default function AdminSidebar({ user }) {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto scrollbar-sidebar bg-white border-r border-gray-200 px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 bg-white border-r border-gray-200 px-6 pb-4">
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center">
             <Link href="/admin" className="flex items-center gap-3">
@@ -220,10 +220,10 @@ export default function AdminSidebar({ user }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
+          <nav className="flex flex-1 flex-col min-h-0">
+            <ul role="list" className="flex flex-1 flex-col gap-y-7 min-h-0">
+              <li className="flex-1 overflow-y-auto scrollbar-sidebar min-h-0 -mx-2 px-2">
+                <ul role="list" className="space-y-1">
                   {filteredNavigation.map((item) => {
                     const isActive = pathname === item.href || 
                       (item.href !== '/admin' && item.href !== '/admin/security' && pathname.startsWith(item.href))

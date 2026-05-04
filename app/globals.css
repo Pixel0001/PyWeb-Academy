@@ -246,20 +246,20 @@ h1, h2, h3, h4, h5, h6 {
 /* Sidebar variant — even more subtle */
 .scrollbar-sidebar {
   scrollbar-width: thin;
-  scrollbar-color: #e2e8f0 transparent;
+  scrollbar-color: #c7d2fe transparent;
 }
 .scrollbar-sidebar::-webkit-scrollbar {
-  width: 3px;
+  width: 5px;
 }
 .scrollbar-sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
 .scrollbar-sidebar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+  background: #c7d2fe;
   border-radius: 9999px;
 }
 .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  background: #a5b4fc;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
