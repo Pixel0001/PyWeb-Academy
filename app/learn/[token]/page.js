@@ -393,16 +393,25 @@ async function DashboardContent({ token }) {
               </Link>
             </div>
 
-            {/* Cabinet link (mobile) */}
-            <Link href={`/learn/${token}/profil`}
-              className="mt-2 bg-white/10 hover:bg-white/20 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95">
-              <UserCircleIcon className="w-5 h-5 text-emerald-300 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold uppercase tracking-wider text-white/60">Cabinetul meu</div>
-                <div className="text-sm font-extrabold leading-tight">Cursuri, plăți, istoric</div>
-              </div>
-              <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
-            </Link>
+            {/* Cabinet + Mr. PyWeb row (mobile) */}
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Link href={`/learn/${token}/profil`}
+                className="bg-white/10 hover:bg-white/20 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95">
+                <UserCircleIcon className="w-5 h-5 text-emerald-300 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-white/60">Cabinetul meu</div>
+                  <div className="text-sm font-extrabold leading-tight">Cursuri, plăți, istoric</div>
+                </div>
+              </Link>
+              <Link href={`/learn/${token}/ai-stats`}
+                className="bg-indigo-500/20 hover:bg-indigo-500/30 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95 border border-indigo-400/20">
+                <SparklesIcon className="w-5 h-5 text-indigo-300 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-indigo-300/80">Mr. PyWeb AI</div>
+                  <div className="text-sm font-extrabold leading-tight text-white">Încercări rămase</div>
+                </div>
+              </Link>
+            </div>
 
             {/* Deconectare (mobile) */}
             <LogoutButton className="w-full mt-1 rounded-xl p-2.5 flex items-center gap-2 transition active:scale-95 text-white/40 hover:text-rose-300 hover:bg-rose-500/10">

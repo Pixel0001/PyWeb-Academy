@@ -204,85 +204,79 @@ export default function AdminSidebar({ user }) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 bg-white border-r border-gray-200 px-6 pb-4">
-          {/* Logo */}
-          <div className="flex h-16 shrink-0 items-center">
-            <Link href="/admin" className="flex items-center gap-3">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col bg-white border-r border-gray-200">
+        {/* Logo — fixed height, never shrinks */}
+        <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-100">
+          <Link href="/admin" className="flex items-center gap-3">
+            <Image
+              src="/PyWeb Academy logo.png"
+              alt="PyWeb Academy"
+              width={140}
+              height={46}
+              className="object-contain"
+            />
+          </Link>
+        </div>
+
+        {/* Navigation — fills remaining space and scrolls */}
+        <nav className="flex-1 overflow-y-auto scrollbar-sidebar px-4 py-3">
+          <ul role="list" className="space-y-1">
+            {filteredNavigation.map((item) => {
+              const isActive = pathname === item.href ||
+                (item.href !== '/admin' && item.href !== '/admin/security' && pathname.startsWith(item.href))
+              const isLoading = isPending && pendingHref === item.href
+
+              return (
+                <li key={item.name}>
+                  <button
+                    onClick={() => handleNavigation(item.href)}
+                    disabled={isLoading}
+                    className={`
+                      w-full group flex gap-x-3 rounded-lg p-3 text-sm font-medium leading-6 transition-all
+                      ${isActive
+                        ? 'bg-indigo-50 text-indigo-600'
+                        : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+                      }
+                      ${isLoading ? 'opacity-70' : ''}
+                    `}
+                  >
+                    <span className={isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}>
+                      {isLoading ? <LoadingSpinner className="w-5 h-5" /> : icons[item.icon]}
+                    </span>
+                    {item.name}
+                    {isLoading && (
+                      <LoadingSpinner className="w-4 h-4 ml-auto" />
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* User Info — fixed at bottom, never shrinks */}
+        <div className="shrink-0 border-t border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-x-4 text-sm font-medium text-gray-900">
+            {user?.image ? (
               <Image
-                src="/PyWeb Academy logo.png"
-                alt="PyWeb Academy"
-                width={140}
-                height={46}
-                className="object-contain"
+                src={user.image}
+                alt={user.name || 'User'}
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover"
               />
-            </Link>
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
+                <span className="text-white font-medium">
+                  {user?.name?.charAt(0) || user?.email?.charAt(0) || 'A'}
+                </span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="truncate">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.role}</p>
+            </div>
           </div>
-
-          {/* Navigation */}
-          <nav className="flex flex-1 flex-col min-h-0">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7 min-h-0">
-              <li className="flex-1 overflow-y-auto scrollbar-sidebar min-h-0 -mx-2 px-2">
-                <ul role="list" className="space-y-1">
-                  {filteredNavigation.map((item) => {
-                    const isActive = pathname === item.href || 
-                      (item.href !== '/admin' && item.href !== '/admin/security' && pathname.startsWith(item.href))
-                    const isLoading = isPending && pendingHref === item.href
-                    
-                    return (
-                      <li key={item.name}>
-                        <button
-                          onClick={() => handleNavigation(item.href)}
-                          disabled={isLoading}
-                          className={`
-                            w-full group flex gap-x-3 rounded-lg p-3 text-sm font-medium leading-6 transition-all
-                            ${isActive
-                              ? 'bg-indigo-50 text-indigo-600'
-                              : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-                            }
-                            ${isLoading ? 'opacity-70' : ''}
-                          `}
-                        >
-                          <span className={isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}>
-                            {isLoading ? <LoadingSpinner className="w-5 h-5" /> : icons[item.icon]}
-                          </span>
-                          {item.name}
-                          {isLoading && (
-                            <LoadingSpinner className="w-4 h-4 ml-auto" />
-                          )}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </li>
-
-              {/* User Info */}
-              <li className="mt-auto">
-                <div className="flex items-center gap-x-4 px-2 py-3 text-sm font-medium text-gray-900">
-                  {user?.image ? (
-                    <Image
-                      src={user.image}
-                      alt={user.name || 'User'}
-                      width={40}
-                      height={40}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white font-medium">
-                        {user?.name?.charAt(0) || user?.email?.charAt(0) || 'A'}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate">{user?.name || 'Admin'}</p>
-                    <p className="text-xs text-gray-500 truncate">{user?.role}</p>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
 
