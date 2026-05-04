@@ -16,10 +16,11 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: '#1e3a8a',
   viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 }
 
 export default function LearnLayout({ children }) {

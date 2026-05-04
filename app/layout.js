@@ -114,6 +114,19 @@ export const metadata = {
   category: "education",
 };
 
+// Viewport — disable user-zoom (stops iOS input auto-zoom on answer fields)
+// and enable viewport-fit:cover so env(safe-area-inset-*) returns real values
+// inside the iPhone PWA (notch / status bar / home indicator).
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#1e3a8a',
+  interactiveWidget: 'resizes-content',
+};
+
 // Script to apply theme before page renders to prevent flash
 const themeScript = `
   (function() {
@@ -139,7 +152,16 @@ export default function RootLayout({ children }) {
           <ThemeProvider>
             {children}
           </ThemeProvider>
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            containerStyle={{
+              top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+              right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+            }}
+            toastOptions={{
+              style: { fontSize: '14px', maxWidth: '92vw' },
+            }}
+          />
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

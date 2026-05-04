@@ -114,7 +114,10 @@ export default async function AiStatsPage({ params }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-sm border-b border-white/10 flex items-center gap-3 px-4 py-3">
+      <div
+        className="sticky top-0 z-20 bg-slate-900/90 backdrop-blur-sm border-b border-white/10 flex items-center gap-3 px-4 pb-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      >
         <Link href={`/learn/${token}`} className="p-2 hover:bg-white/10 rounded-xl transition">
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
