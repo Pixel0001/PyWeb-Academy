@@ -1,63 +1,89 @@
 'use client'
 
-// Block-based theory editor with live preview.
-// Convertește între markdown (stocat în lesson.theory) și blocuri pentru UI ușor de editat.
-// Tipuri de blocuri: heading, paragraph, code, list, callout, image, video, divider.
+// Block-based theory editor — drag & drop, live preview, type switcher.
+// Stochează ca markdown string (lesson.theory) — complet backward-compatible.
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Bars3Icon, TrashIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon,
+  Bars3Icon, TrashIcon, PlusIcon,
   CodeBracketIcon, PhotoIcon, ListBulletIcon, ChatBubbleBottomCenterTextIcon,
   H1Icon, H2Icon, H3Icon, DocumentTextIcon, FilmIcon, MinusIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 
-// ── PARSE markdown → blocks ──
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOCK TYPES metadata
+// ─────────────────────────────────────────────────────────────────────────────
+const BLOCK_OPTIONS = [
+  { type: 'paragraph',  label: 'Paragraf',     icon: DocumentTextIcon,              color: 'slate'  },
+  { type: 'heading',    label: 'Titlu',         icon: H2Icon,                        color: 'indigo' },
+  { type: 'code',       label: 'Cod',           icon: CodeBracketIcon,               color: 'gray'   },
+  { type: 'list',       label: 'Listă',          icon: ListBulletIcon,                color: 'emerald'},
+  { type: 'callout',    label: 'Notă',          icon: ChatBubbleBottomCenterTextIcon,color: 'amber'  },
+  { type: 'image',      label: 'Imagine',       icon: PhotoIcon,                     color: 'pink'   },
+  { type: 'video',      label: 'Video YouTube', icon: FilmIcon,                      color: 'red'    },
+  { type: 'divider',    label: 'Separator',     icon: MinusIcon,                     color: 'slate'  },
+]
+
+const rid = () => Math.random().toString(36).slice(2, 10)
+
+const DEFAULTS = {
+  heading:   () => ({ id: rid(), type: 'heading',   level: 2, text: '' }),
+  paragraph: () => ({ id: rid(), type: 'paragraph', text: '' }),
+  code:      () => ({ id: rid(), type: 'code',      language: 'python', code: '' }),
+  list:      () => ({ id: rid(), type: 'list',      ordered: false, items: [''] }),
+  callout:   () => ({ id: rid(), type: 'callout',   text: '' }),
+  image:     () => ({ id: rid(), type: 'image',     alt: '', url: '' }),
+  video:     () => ({ id: rid(), type: 'video',     url: '' }),
+  divider:   () => ({ id: rid(), type: 'divider' }),
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERT block to new type — preserve content where possible
+// ─────────────────────────────────────────────────────────────────────────────
+function convertBlock(block, newType) {
+  const base = DEFAULTS[newType]()
+  const txt = block.text || block.code || (block.items || []).join('\n') || ''
+  switch (newType) {
+    case 'heading':   return { ...base, text: txt }
+    case 'paragraph': return { ...base, text: txt }
+    case 'callout':   return { ...base, text: txt }
+    case 'code':      return { ...base, code: txt, language: block.language || 'python' }
+    case 'list':      return { ...base, items: txt ? txt.split('\n').filter(Boolean) : [''] }
+    case 'image':     return { ...base, url: block.url || '', alt: block.alt || '' }
+    case 'video':     return { ...base, url: block.url || '' }
+    default:          return base
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARSE markdown → blocks
+// ─────────────────────────────────────────────────────────────────────────────
 function parseToBlocks(text) {
   if (!text || !text.trim()) return []
   const lines = text.split('\n')
   const blocks = []
-  let i = 0
-  let para = []
+  let i = 0, para = []
   const flushPara = () => {
-    if (para.length === 0) return
     const joined = para.join('\n').trim()
     if (joined) blocks.push({ id: rid(), type: 'paragraph', text: joined })
     para = []
   }
   while (i < lines.length) {
     const ln = lines[i]
-    // code fence
     if (ln.startsWith('```')) {
       flushPara()
       const lang = ln.slice(3).trim() || 'python'
-      const buf = []
-      i++
+      const buf = []; i++
       while (i < lines.length && !lines[i].startsWith('```')) { buf.push(lines[i]); i++ }
       blocks.push({ id: rid(), type: 'code', language: lang, code: buf.join('\n') })
-      i++
-      continue
+      i++; continue
     }
-    // youtube
     const yt = ln.match(/^@\[youtube\]\(([^)]+)\)\s*$/i)
-    if (yt) {
-      flushPara()
-      blocks.push({ id: rid(), type: 'video', url: yt[1].trim() })
-      i++; continue
-    }
-    // image standalone
+    if (yt) { flushPara(); blocks.push({ id: rid(), type: 'video', url: yt[1].trim() }); i++; continue }
     const img = ln.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/)
-    if (img) {
-      flushPara()
-      blocks.push({ id: rid(), type: 'image', alt: img[1], url: img[2] })
-      i++; continue
-    }
-    // divider
-    if (/^---+\s*$/.test(ln)) {
-      flushPara()
-      blocks.push({ id: rid(), type: 'divider' })
-      i++; continue
-    }
-    // callout
+    if (img) { flushPara(); blocks.push({ id: rid(), type: 'image', alt: img[1], url: img[2] }); i++; continue }
+    if (/^---+\s*$/.test(ln)) { flushPara(); blocks.push({ id: rid(), type: 'divider' }); i++; continue }
     if (ln.startsWith('> ')) {
       flushPara()
       const buf = [ln.slice(2)]
@@ -65,77 +91,48 @@ function parseToBlocks(text) {
       blocks.push({ id: rid(), type: 'callout', text: buf.join('\n') })
       i++; continue
     }
-    // list
-    if (/^[-*]\s+/.test(ln) || /^\d+\.\s+/.test(ln)) {
+    const ulM = ln.match(/^[-*]\s+(.+)$/)
+    const olM = ln.match(/^\d+\.\s+(.+)$/)
+    if (ulM || olM) {
       flushPara()
-      const ordered = /^\d+\.\s+/.test(ln)
-      const items = []
+      const ordered = !!olM; const items = []
       while (i < lines.length && (ordered ? /^\d+\.\s+/.test(lines[i]) : /^[-*]\s+/.test(lines[i]))) {
-        items.push(lines[i].replace(/^([-*]|\d+\.)\s+/, ''))
-        i++
+        items.push(lines[i].replace(/^([-*]|\d+\.)\s+/, '')); i++
       }
-      blocks.push({ id: rid(), type: 'list', ordered, items })
-      continue
+      blocks.push({ id: rid(), type: 'list', ordered, items }); continue
     }
-    // headings
     if (ln.startsWith('### ')) { flushPara(); blocks.push({ id: rid(), type: 'heading', level: 3, text: ln.slice(4) }); i++; continue }
-    if (ln.startsWith('## ')) { flushPara(); blocks.push({ id: rid(), type: 'heading', level: 2, text: ln.slice(3) }); i++; continue }
-    if (ln.startsWith('# ')) { flushPara(); blocks.push({ id: rid(), type: 'heading', level: 1, text: ln.slice(2) }); i++; continue }
-    // empty line = paragraph break
-    if (ln.trim() === '') {
-      flushPara()
-      i++; continue
-    }
-    para.push(ln)
-    i++
+    if (ln.startsWith('## '))  { flushPara(); blocks.push({ id: rid(), type: 'heading', level: 2, text: ln.slice(3) }); i++; continue }
+    if (ln.startsWith('# '))   { flushPara(); blocks.push({ id: rid(), type: 'heading', level: 1, text: ln.slice(2) }); i++; continue }
+    if (ln.trim() === '') { flushPara(); i++; continue }
+    para.push(ln); i++
   }
   flushPara()
   return blocks
 }
 
-// ── SERIALIZE blocks → markdown ──
+// ─────────────────────────────────────────────────────────────────────────────
+// SERIALIZE blocks → markdown
+// ─────────────────────────────────────────────────────────────────────────────
 function blocksToMarkdown(blocks) {
   return blocks.map(b => {
     switch (b.type) {
-      case 'heading': return `${'#'.repeat(b.level)} ${b.text || ''}`
+      case 'heading':   return '#'.repeat(b.level) + ' ' + (b.text || '')
       case 'paragraph': return b.text || ''
-      case 'code': return '```' + (b.language || '') + '\n' + (b.code || '') + '\n```'
-      case 'list':
-        return (b.items || []).map((it, i) => b.ordered ? `${i + 1}. ${it}` : `- ${it}`).join('\n')
-      case 'callout': return (b.text || '').split('\n').map(l => '> ' + l).join('\n')
-      case 'image': return `![${b.alt || ''}](${b.url || ''})`
-      case 'video': return `@[youtube](${b.url || ''})`
-      case 'divider': return '---'
-      default: return ''
+      case 'code':      return '```' + (b.language || '') + '\n' + (b.code || '') + '\n```'
+      case 'list':      return (b.items || []).map((it, i) => b.ordered ? `${i + 1}. ${it}` : `- ${it}`).join('\n')
+      case 'callout':   return (b.text || '').split('\n').map(l => '> ' + l).join('\n')
+      case 'image':     return `![${b.alt || ''}](${b.url || ''})`
+      case 'video':     return `@[youtube](${b.url || ''})`
+      case 'divider':   return '---'
+      default:          return ''
     }
   }).join('\n\n')
 }
 
-const rid = () => Math.random().toString(36).slice(2, 10)
-
-const DEFAULTS = {
-  heading: () => ({ id: rid(), type: 'heading', level: 2, text: '' }),
-  paragraph: () => ({ id: rid(), type: 'paragraph', text: '' }),
-  code: () => ({ id: rid(), type: 'code', language: 'python', code: '' }),
-  list: () => ({ id: rid(), type: 'list', ordered: false, items: [''] }),
-  callout: () => ({ id: rid(), type: 'callout', text: '' }),
-  image: () => ({ id: rid(), type: 'image', alt: '', url: '' }),
-  video: () => ({ id: rid(), type: 'video', url: '' }),
-  divider: () => ({ id: rid(), type: 'divider' }),
-}
-
-const BLOCK_OPTIONS = [
-  { type: 'heading', label: 'Titlu', icon: H2Icon, color: 'indigo' },
-  { type: 'paragraph', label: 'Paragraf', icon: DocumentTextIcon, color: 'slate' },
-  { type: 'code', label: 'Cod', icon: CodeBracketIcon, color: 'gray' },
-  { type: 'list', label: 'Listă', icon: ListBulletIcon, color: 'emerald' },
-  { type: 'callout', label: 'Notă', icon: ChatBubbleBottomCenterTextIcon, color: 'amber' },
-  { type: 'image', label: 'Imagine', icon: PhotoIcon, color: 'pink' },
-  { type: 'video', label: 'Video YouTube', icon: FilmIcon, color: 'red' },
-  { type: 'divider', label: 'Separator', icon: MinusIcon, color: 'slate' },
-]
-
-// ── Inline format helper for preview (simple html) ──
+// ─────────────────────────────────────────────────────────────────────────────
+// INLINE format helper (preview HTML)
+// ─────────────────────────────────────────────────────────────────────────────
 function inlineFmt(s) {
   if (!s) return ''
   return s
@@ -147,19 +144,23 @@ function inlineFmt(s) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
 }
 
-// ── Preview renderer ──
-function PreviewBlock({ b }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// PREVIEW BLOCK — jak vede elevul
+// ─────────────────────────────────────────────────────────────────────────────
+function PreviewBlock({ b, highlight }) {
+  const cls = highlight ? 'ring-2 ring-indigo-400 ring-offset-1 rounded-xl' : ''
+  const wrap = (node) => <div className={cls}>{node}</div>
   switch (b.type) {
     case 'heading':
-      if (b.level === 1) return <h1 className="text-2xl font-bold mt-4 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h1>
-      if (b.level === 3) return <h3 className="text-base font-semibold mt-3 mb-1 text-slate-800">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h3>
-      return <h2 className="text-xl font-bold mt-3 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h2>
+      if (b.level === 1) return wrap(<h1 className="text-2xl font-bold mt-4 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h1>)
+      if (b.level === 3) return wrap(<h3 className="text-base font-semibold mt-3 mb-1 text-slate-800">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h3>)
+      return wrap(<h2 className="text-xl font-bold mt-3 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h2>)
     case 'paragraph':
-      return b.text
+      return wrap(b.text
         ? <p className="text-slate-700 leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: inlineFmt(b.text).replace(/\n/g, '<br/>') }} />
-        : <p className="text-slate-300 italic my-2">(paragraf gol)</p>
+        : <p className="text-slate-300 italic my-2">(paragraf gol)</p>)
     case 'code':
-      return (
+      return wrap(
         <div className="my-3">
           {b.language && <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">{b.language}</div>}
           <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-xs font-mono">{b.code || <span className="text-slate-500"># cod gol</span>}</pre>
@@ -167,68 +168,139 @@ function PreviewBlock({ b }) {
       )
     case 'list': {
       const Tag = b.ordered ? 'ol' : 'ul'
-      const cls = b.ordered ? 'list-decimal list-inside space-y-1 my-2 text-slate-700' : 'list-disc list-inside space-y-1 my-2 text-slate-700'
-      return (
-        <Tag className={cls}>
-          {(b.items || []).map((it, i) => (
-            <li key={i} dangerouslySetInnerHTML={{ __html: inlineFmt(it) || '<em class="text-slate-300">(item gol)</em>' }} />
-          ))}
-        </Tag>
-      )
+      const lCls = b.ordered ? 'list-decimal list-inside space-y-1 my-2 text-slate-700' : 'list-disc list-inside space-y-1 my-2 text-slate-700'
+      return wrap(<Tag className={lCls}>{(b.items || []).map((it, i) => <li key={i} dangerouslySetInnerHTML={{ __html: inlineFmt(it) || '<em class="text-slate-300">(item gol)</em>' }} />)}</Tag>)
     }
     case 'callout':
-      return (
+      return wrap(
         <div className="my-3 border-l-4 border-amber-400 bg-amber-50 px-4 py-3 rounded-r-xl">
-          {(b.text || '').split('\n').map((l, k) => (
-            <p key={k} className="text-amber-900 text-sm" dangerouslySetInnerHTML={{ __html: inlineFmt(l) || '<em class="text-amber-300">(notă goală)</em>' }} />
-          ))}
+          {(b.text || '').split('\n').map((l, k) => <p key={k} className="text-amber-900 text-sm" dangerouslySetInnerHTML={{ __html: inlineFmt(l) || '<em class="text-amber-300">(notă goală)</em>' }} />)}
         </div>
       )
     case 'image':
-      return b.url
+      return wrap(b.url
         ? <img src={b.url} alt={b.alt || ''} className="my-3 rounded-xl max-w-full h-auto shadow" />
-        : <div className="my-3 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">📷 Imagine fără URL</div>
+        : <div className="my-3 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">📷 Imagine fără URL</div>)
     case 'video': {
       const raw = (b.url || '').trim()
       let id = raw
       const m = raw.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/)
       if (m) id = m[1]
-      return id
+      return wrap(id
         ? <div className="aspect-video my-3 rounded-xl overflow-hidden bg-black"><iframe src={`https://www.youtube.com/embed/${id}`} className="w-full h-full" allowFullScreen /></div>
-        : <div className="my-3 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">🎬 Video fără URL</div>
+        : <div className="my-3 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">🎬 Video fără URL</div>)
     }
-    case 'divider':
-      return <hr className="my-5 border-t-2 border-slate-200" />
+    case 'divider': return wrap(<hr className="my-5 border-t-2 border-slate-200" />)
     default: return null
   }
 }
 
-// ── Block editor card ──
-function BlockEditor({ block, idx, total, disabled, onChange, onMove, onRemove }) {
-  const update = (patch) => onChange({ ...block, ...patch })
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPE SWITCHER MENU
+// ─────────────────────────────────────────────────────────────────────────────
+function TypeMenu({ block, onConvert, disabled }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
   const meta = BLOCK_OPTIONS.find(o => o.type === block.type)
   const Icon = meta?.icon || DocumentTextIcon
 
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   return (
-    <div className="bg-white border-2 border-slate-200 rounded-xl group hover:border-indigo-300 transition">
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(o => !o)}
+        title="Schimbă tipul blocului"
+        className="flex items-center gap-1 px-2 py-0.5 rounded hover:bg-white/60 transition text-slate-600 hover:text-indigo-700 disabled:opacity-40"
+      >
+        <Icon className="w-3.5 h-3.5" />
+        <span className="text-[10px] font-bold uppercase tracking-wider">{meta?.label || block.type}</span>
+        <ChevronDownIcon className="w-3 h-3" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl w-44 py-1 overflow-hidden">
+          {BLOCK_OPTIONS.map(o => {
+            const OIcon = o.icon
+            const isCurrent = o.type === block.type
+            return (
+              <button
+                key={o.type}
+                type="button"
+                onClick={() => { onConvert(o.type); setOpen(false) }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition ${
+                  isCurrent
+                    ? 'bg-indigo-50 text-indigo-700 font-bold'
+                    : 'text-slate-700 hover:bg-slate-50 font-medium'
+                }`}
+              >
+                <OIcon className="w-3.5 h-3.5 shrink-0" />
+                {o.label}
+                {isCurrent && <span className="ml-auto text-[9px] bg-indigo-200 text-indigo-800 px-1 rounded">activ</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOCK EDITOR CARD — drag & drop aware
+// ─────────────────────────────────────────────────────────────────────────────
+function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert,
+                       isDragging, isDragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
+  const update = (patch) => onChange({ ...block, ...patch })
+
+  return (
+    <div
+      draggable={!disabled}
+      onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(idx) }}
+      onDragEnd={onDragEnd}
+      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver(idx) }}
+      onDrop={e => { e.preventDefault(); onDrop(idx) }}
+      className={`relative bg-white border-2 rounded-xl transition-all select-none
+        ${isDragOver ? 'border-indigo-400 shadow-lg shadow-indigo-100 scale-[1.01]' : 'border-slate-200 hover:border-indigo-200'}
+        ${isDragging ? 'opacity-40 scale-[0.98] border-dashed' : ''}
+      `}
+    >
+      {/* Drop indicator line above */}
+      {isDragOver && (
+        <div className="absolute -top-1.5 left-4 right-4 h-1 bg-indigo-500 rounded-full z-10 pointer-events-none" />
+      )}
+
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-        <Bars3Icon className="w-4 h-4 text-slate-400 cursor-grab" />
-        <Icon className="w-4 h-4 text-indigo-600" />
-        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{meta?.label || block.type}</span>
-        <span className="text-[10px] text-slate-400 ml-1">#{idx + 1}</span>
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" disabled={disabled || idx === 0} onClick={() => onMove(idx, -1)}
-            className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-30">
-            <ArrowUpIcon className="w-3.5 h-3.5" />
-          </button>
-          <button type="button" disabled={disabled || idx === total - 1} onClick={() => onMove(idx, 1)}
-            className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-30">
-            <ArrowDownIcon className="w-3.5 h-3.5" />
-          </button>
-          <button type="button" disabled={disabled} onClick={() => onRemove(idx)}
-            className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30">
-            <TrashIcon className="w-3.5 h-3.5" />
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+        {/* Drag handle */}
+        <div
+          className={`cursor-grab active:cursor-grabbing p-0.5 text-slate-400 hover:text-slate-600 ${disabled ? 'opacity-30' : ''}`}
+          title="Trage pentru reordonare"
+        >
+          <Bars3Icon className="w-4 h-4" />
+        </div>
+
+        {/* Type switcher */}
+        <TypeMenu block={block} onConvert={(t) => onConvert(idx, t)} disabled={disabled} />
+
+        <span className="text-[10px] text-slate-400 ml-0.5">#{idx + 1}</span>
+
+        {/* Delete */}
+        <div className="ml-auto">
+          <button
+            type="button" disabled={disabled}
+            onClick={() => onRemove(idx)}
+            className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 transition"
+            title="Șterge blocul"
+          >
+            <TrashIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -254,12 +326,19 @@ function BlockEditor({ block, idx, total, disabled, onChange, onMove, onRemove }
         )}
 
         {block.type === 'paragraph' && (
-          <textarea
-            value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
-            placeholder="Scrie un paragraf... Acceptă **bold**, *italic*, `cod`, [link](url)"
-            rows={3}
-            className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400 resize-y"
-          />
+          <div className="space-y-2">
+            <textarea
+              value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
+              placeholder="Scrie un paragraf... Acceptă **bold**, *italic*, `cod`, [link](url)"
+              rows={3}
+              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400 resize-y"
+            />
+            {block.text && (
+              <div className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: inlineFmt(block.text).replace(/\n/g, '<br/>') }} />
+            )}
+            <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">[text](url)</code></p>
+          </div>
         )}
 
         {block.type === 'code' && (
@@ -298,18 +377,13 @@ function BlockEditor({ block, idx, total, disabled, onChange, onMove, onRemove }
                 <span className="text-slate-400 text-xs w-6 text-right">{block.ordered ? `${j + 1}.` : '•'}</span>
                 <input
                   value={it} disabled={disabled}
-                  onChange={e => {
-                    const items = [...block.items]
-                    items[j] = e.target.value
-                    update({ items })
-                  }}
+                  onChange={e => { const items = [...block.items]; items[j] = e.target.value; update({ items }) }}
                   placeholder="Item..."
                   className="flex-1 px-2 py-1.5 border rounded text-sm outline-none focus:border-indigo-400"
                 />
-                <button type="button" disabled={disabled || block.items.length === 1} onClick={() => {
-                  const items = block.items.filter((_, k) => k !== j)
-                  update({ items })
-                }} className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30">
+                <button type="button" disabled={disabled || block.items.length === 1}
+                  onClick={() => update({ items: block.items.filter((_, k) => k !== j) })}
+                  className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30">
                   <TrashIcon className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -322,35 +396,39 @@ function BlockEditor({ block, idx, total, disabled, onChange, onMove, onRemove }
         )}
 
         {block.type === 'callout' && (
-          <textarea
-            value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
-            placeholder="💡 O notă, observație, atenționare... (acceptă **bold**, `cod`)"
-            rows={2}
-            className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-amber-400 resize-y bg-amber-50/40"
-          />
+          <div className="space-y-2">
+            <textarea
+              value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
+              placeholder="💡 O notă, observație, atenționare... (acceptă **bold**, `cod`)"
+              rows={2}
+              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-amber-400 resize-y bg-amber-50/40"
+            />
+            {block.text && (
+              <div className="border-l-4 border-amber-400 bg-amber-50 px-3 py-2 rounded-r-lg">
+                {(block.text || '').split('\n').map((l, k) => (
+                  <p key={k} className="text-amber-900 text-sm" dangerouslySetInnerHTML={{ __html: inlineFmt(l) || '&nbsp;' }} />
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code></p>
+          </div>
         )}
 
         {block.type === 'image' && (
           <div className="space-y-2">
-            <input
-              value={block.url || ''} onChange={e => update({ url: e.target.value })} disabled={disabled}
+            <input value={block.url || ''} onChange={e => update({ url: e.target.value })} disabled={disabled}
               placeholder="URL imagine (https://... sau /uploads/...)"
-              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400"
-            />
-            <input
-              value={block.alt || ''} onChange={e => update({ alt: e.target.value })} disabled={disabled}
-              placeholder="Descriere (alt text — pentru SEO și accesibilitate)"
-              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400"
-            />
+              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400" />
+            <input value={block.alt || ''} onChange={e => update({ alt: e.target.value })} disabled={disabled}
+              placeholder="Descriere (alt text — pentru SEO)"
+              className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400" />
           </div>
         )}
 
         {block.type === 'video' && (
-          <input
-            value={block.url || ''} onChange={e => update({ url: e.target.value })} disabled={disabled}
+          <input value={block.url || ''} onChange={e => update({ url: e.target.value })} disabled={disabled}
             placeholder="URL YouTube (https://youtube.com/watch?v=... sau ID direct)"
-            className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-rose-400"
-          />
+            className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-rose-400" />
         )}
 
         {block.type === 'divider' && (
@@ -361,127 +439,183 @@ function BlockEditor({ block, idx, total, disabled, onChange, onMove, onRemove }
   )
 }
 
-// ── Main Editor ──
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN EDITOR
+// ─────────────────────────────────────────────────────────────────────────────
 export default function TheoryEditor({ value, onChange, disabled = false }) {
-  // initialize from markdown only on first mount; after that, blocks are source of truth
   const [blocks, setBlocks] = useState(() => parseToBlocks(value || ''))
   const [view, setView] = useState('split') // 'edit' | 'split' | 'preview' | 'raw'
-  const lastSerialized = useRef(value || '')
+  const [rawText, setRawText] = useState('')
+  const [activeIdx, setActiveIdx] = useState(null) // for preview highlight
+  const [dragIdx, setDragIdx] = useState(null)
+  const [dragOverIdx, setDragOverIdx] = useState(null)
 
-  const md = useMemo(() => {
-    const out = blocksToMarkdown(blocks)
-    if (out !== lastSerialized.current) {
-      lastSerialized.current = out
-      onChange?.(out)
-    }
-    return out
+  const onChangeRef = useRef(onChange)
+  useEffect(() => { onChangeRef.current = onChange }, [onChange])
+
+  // Propagate to parent whenever blocks change
+  useEffect(() => {
+    const md = blocksToMarkdown(blocks)
+    onChangeRef.current?.(md)
   }, [blocks])
 
-  const update = (newBlocks) => setBlocks(newBlocks)
-  const updateBlock = (i, b) => update(blocks.map((x, k) => k === i ? b : x))
-  const removeBlock = (i) => update(blocks.filter((_, k) => k !== i))
-  const moveBlock = (i, dir) => {
-    const j = i + dir
-    if (j < 0 || j >= blocks.length) return
-    const arr = [...blocks]
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-    update(arr)
-  }
+  // Sync rawText when switching to raw view
+  useEffect(() => {
+    if (view === 'raw') setRawText(blocksToMarkdown(blocks))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
+
+  // Scroll to preview block when activeIdx changes
+  const previewRefs = useRef({})
+
+  const update = useCallback((newBlocks) => setBlocks(newBlocks), [])
+  const updateBlock = (i, b) => { setActiveIdx(i); update(blocks.map((x, k) => k === i ? b : x)) }
+  const removeBlock = (i) => { setActiveIdx(null); update(blocks.filter((_, k) => k !== i)) }
   const addBlock = (type) => {
     if (!DEFAULTS[type]) return
-    update([...blocks, DEFAULTS[type]()])
+    const nb = [...blocks, DEFAULTS[type]()]
+    update(nb)
+    setActiveIdx(nb.length - 1)
+    // scroll to bottom in split view
+    setTimeout(() => {
+      const el = previewRefs.current[nb.length - 1]
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 80)
+  }
+  const convertBlock = (i, newType) => {
+    if (blocks[i].type === newType) return
+    update(blocks.map((b, k) => k === i ? convertBlockFn(b, newType) : b))
+  }
+
+  // Drag & Drop handlers
+  const handleDragStart = (idx) => setDragIdx(idx)
+  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null) }
+  const handleDragOver = (idx) => { if (idx !== dragIdx) setDragOverIdx(idx) }
+  const handleDrop = (targetIdx) => {
+    if (dragIdx === null || dragIdx === targetIdx) { handleDragEnd(); return }
+    const arr = [...blocks]
+    const [removed] = arr.splice(dragIdx, 1)
+    const insertAt = dragIdx < targetIdx ? targetIdx - 1 : targetIdx
+    arr.splice(insertAt, 0, removed)
+    update(arr)
+    handleDragEnd()
   }
 
   const replaceFromRaw = (raw) => {
+    setRawText(raw)
     setBlocks(parseToBlocks(raw))
   }
 
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap bg-slate-50 border border-slate-200 rounded-xl p-2">
-        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider mr-1">Vizualizare:</span>
+      <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 border border-slate-200 rounded-xl p-2">
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Vizualizare:</span>
         {[
-          { k: 'edit', l: 'Editor' },
-          { k: 'split', l: 'Editor + Preview' },
-          { k: 'preview', l: 'Doar preview' },
-          { k: 'raw', l: 'Markdown brut' },
+          { k: 'edit',    l: '✏️ Editor' },
+          { k: 'split',   l: '⚡ Editor + Preview' },
+          { k: 'preview', l: '👁️ Preview' },
+          { k: 'raw',     l: '📝 Markdown' },
         ].map(o => (
           <button key={o.k} type="button" onClick={() => setView(o.k)}
-            className={`px-2.5 py-1 rounded text-xs font-bold transition ${view === o.k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${view === o.k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
             {o.l}
           </button>
         ))}
-        <span className="ml-auto text-xs text-slate-500">{blocks.length} {blocks.length === 1 ? 'bloc' : 'blocuri'}</span>
+        <span className="ml-auto text-xs text-slate-400">{blocks.length} {blocks.length === 1 ? 'bloc' : 'blocuri'}</span>
       </div>
 
-      {/* Raw markdown view */}
+      {/* RAW view */}
       {view === 'raw' && (
         <div className="space-y-2">
           <textarea
-            value={md} onChange={e => replaceFromRaw(e.target.value)} disabled={disabled}
-            rows={20}
-            className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-mono text-sm outline-none focus:border-indigo-400"
+            value={rawText} onChange={e => replaceFromRaw(e.target.value)} disabled={disabled}
+            rows={22} spellCheck={false}
+            className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl font-mono text-sm outline-none focus:border-indigo-400 resize-y"
           />
-          <p className="text-xs text-slate-500">⚠️ Editezi direct markdown-ul. Modificările vor fi reparseate în blocuri.</p>
+          <p className="text-xs text-slate-500">⚠️ Editezi direct markdown-ul. La ieșire din mod Markdown, blocurile se actualizează automat.</p>
         </div>
       )}
 
-      {/* Edit / Split */}
+      {/* EDIT / SPLIT */}
       {(view === 'edit' || view === 'split') && (
-        <div className={view === 'split' ? 'grid lg:grid-cols-2 gap-4' : ''}>
+        <div className={view === 'split' ? 'grid lg:grid-cols-2 gap-4 items-start' : ''}>
           {/* Editor column */}
-          <div className="space-y-2">
+          <div className="space-y-2" onDragLeave={() => setDragOverIdx(null)}>
             {blocks.length === 0 ? (
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
                 <DocumentTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-500 mb-3">Lecția nu are conținut. Adaugă primul bloc.</p>
+                <p className="text-sm text-slate-500 mb-1">Lecția nu are conținut.</p>
+                <p className="text-xs text-slate-400">Apasă pe un buton de mai jos pentru a adăuga primul bloc.</p>
               </div>
-            ) : (
-              blocks.map((b, i) => (
-                <BlockEditor
-                  key={b.id}
-                  block={b}
-                  idx={i}
-                  total={blocks.length}
-                  disabled={disabled}
-                  onChange={(nb) => updateBlock(i, nb)}
-                  onMove={moveBlock}
-                  onRemove={removeBlock}
-                />
-              ))
+            ) : blocks.map((b, i) => (
+              <BlockEditor
+                key={b.id}
+                block={b}
+                idx={i}
+                total={blocks.length}
+                disabled={disabled}
+                onChange={(nb) => updateBlock(i, nb)}
+                onRemove={removeBlock}
+                onConvert={convertBlock}
+                isDragging={dragIdx === i}
+                isDragOver={dragOverIdx === i}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              />
+            ))}
+
+            {/* Drop zone at the bottom when dragging */}
+            {dragIdx !== null && (
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOverIdx(blocks.length) }}
+                onDrop={e => { e.preventDefault(); handleDrop(blocks.length) }}
+                className={`h-10 rounded-xl border-2 border-dashed transition ${dragOverIdx === blocks.length ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200'}`}
+              />
             )}
 
-            {/* Add block toolbar */}
-            <div className="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl p-3">
-              <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <PlusIcon className="w-3.5 h-3.5" /> Adaugă bloc
+            {/* Add block palette */}
+            {!disabled && (
+              <div className="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl p-3">
+                <div className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <PlusIcon className="w-3.5 h-3.5" /> Adaugă bloc
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {BLOCK_OPTIONS.map(o => {
+                    const Icon = o.icon
+                    return (
+                      <button key={o.type} type="button" onClick={() => addBlock(o.type)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg text-xs font-medium text-slate-700 transition">
+                        <Icon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate">{o.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {BLOCK_OPTIONS.map(o => {
-                  const Icon = o.icon
-                  return (
-                    <button key={o.type} type="button" disabled={disabled} onClick={() => addBlock(o.type)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg text-xs font-medium text-slate-700 disabled:opacity-50 transition">
-                      <Icon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span className="truncate">{o.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Preview column */}
+          {/* PREVIEW column */}
           {view === 'split' && (
-            <div className="lg:sticky lg:top-4 lg:self-start">
-              <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                👁️ Preview live
-              </div>
-              <div className="bg-white border-2 border-slate-200 rounded-xl p-5 lg:max-h-[80vh] overflow-y-auto">
+            <div className="lg:sticky lg:top-4">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">⚡ Preview live (ca la elev)</div>
+              <div className="bg-white border-2 border-slate-200 rounded-xl p-5 max-h-[75vh] overflow-y-auto">
                 {blocks.length === 0
-                  ? <p className="text-sm text-slate-400 italic text-center py-10">Preview-ul va apărea aici...</p>
-                  : blocks.map(b => <PreviewBlock key={b.id} b={b} />)
+                  ? <p className="text-sm text-slate-400 italic text-center py-10">Preview-ul apare aici...</p>
+                  : blocks.map((b, i) => (
+                    <div
+                      key={b.id}
+                      ref={el => previewRefs.current[i] = el}
+                      onClick={() => setActiveIdx(i === activeIdx ? null : i)}
+                      className="cursor-pointer"
+                      title="Click pentru a selecta blocul"
+                    >
+                      <PreviewBlock b={b} highlight={activeIdx === i} />
+                    </div>
+                  ))
                 }
               </div>
             </div>
@@ -489,11 +623,11 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
         </div>
       )}
 
-      {/* Preview-only */}
+      {/* PREVIEW only */}
       {view === 'preview' && (
         <div className="bg-white border-2 border-slate-200 rounded-xl p-6">
           {blocks.length === 0
-            ? <p className="text-sm text-slate-400 italic text-center py-10">Lecția e goală. Comută la editor pentru a adăuga conținut.</p>
+            ? <p className="text-sm text-slate-400 italic text-center py-10">Lecția e goală.</p>
             : blocks.map(b => <PreviewBlock key={b.id} b={b} />)
           }
         </div>
@@ -501,3 +635,6 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
     </div>
   )
 }
+
+// alias used inside
+const convertBlockFn = convertBlock
