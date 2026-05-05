@@ -552,7 +552,7 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
 
         {/* Preview column — shown in split + preview modes */}
         {tab !== 'edit' && (
-          <div className={tab === 'split' ? 'lg:sticky lg:top-4' : ''}>
+          <div className={tab === 'split' ? 'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:rounded-2xl' : ''}>
             <ProblemStudentPreview form={form} />
           </div>
         )}
