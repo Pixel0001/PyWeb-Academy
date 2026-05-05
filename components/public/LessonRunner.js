@@ -130,9 +130,9 @@ function renderTheory(text) {
       flushList(i)
     }
 
-    if (ln.startsWith('### ')) out.push(<h3 key={i} className="text-base font-semibold mt-4 mb-1 text-slate-800">{ln.slice(4)}</h3>)
-    else if (ln.startsWith('## ')) out.push(<h2 key={i} className="text-xl font-bold mt-5 mb-2 text-slate-900">{ln.slice(3)}</h2>)
-    else if (ln.startsWith('# ')) out.push(<h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-slate-900">{ln.slice(2)}</h1>)
+    if (ln.startsWith('### ')) out.push(<h3 key={i} className="text-base font-semibold mt-4 mb-1 text-slate-800" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(4)) }} />)
+    else if (ln.startsWith('## ')) out.push(<h2 key={i} className="text-xl font-bold mt-5 mb-2 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(3)) }} />)
+    else if (ln.startsWith('# ')) out.push(<h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(2)) }} />)
     else if (ln.trim() === '') out.push(<div key={i} className="h-2" />)
     else {
       out.push(<p key={i} className="text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: inlineFmt(ln) }} />)
