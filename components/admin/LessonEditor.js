@@ -74,7 +74,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
   return (
     <div className="space-y-4">
       {/* Sticky title + save bar */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3 flex-wrap">
+      <div className="sticky top-0 z-20 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
         <input
           value={form.title}
           onChange={e => setForm({ ...form, title: e.target.value })}
@@ -99,14 +99,14 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
               key={t.k}
               type="button"
               onClick={() => setTab(t.k)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition ${
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl font-bold text-sm transition ${
                 active
                   ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-md'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span>{t.label}</span>
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="hidden sm:inline">{t.label}</span>
               {t.count !== null && (
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${active ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'}`}>
                   {t.count}

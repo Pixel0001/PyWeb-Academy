@@ -69,7 +69,7 @@ function EmojiPicker({ onInsert, onClose }) {
   }, [onClose])
 
   return (
-    <div ref={ref} className="absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl w-80 overflow-hidden">
+    <div ref={ref} className="absolute bottom-full right-0 mb-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl w-[min(320px,calc(100vw-1.5rem))] overflow-hidden">
       {/* Main tabs: Emoji / Icons */}
       <div className="flex border-b border-slate-100 bg-slate-50">
         {[['emoji','😊 Emoji'],['icon','🎨 Icons']].map(([k,l]) => (
@@ -345,7 +345,7 @@ function TypeMenu({ block, onConvert, disabled }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOCK EDITOR CARD — drag & drop aware
 // ─────────────────────────────────────────────────────────────────────────────
-function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert,
+function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert, onMove,
                        isDragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
   const update = (patch) => onChange({ ...block, ...patch })
   const dragAllowed = useRef(false)
@@ -424,8 +424,23 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
 
         <span className="text-[10px] text-slate-400 ml-0.5">#{idx + 1}</span>
 
+        {/* Move up/down (useful on touch where drag doesn't work) */}
+        {!disabled && (
+          <div className="flex items-center gap-0.5 ml-auto">
+            <button type="button" onClick={() => onMove(-1)} disabled={idx === 0}
+              title="Mută sus"
+              className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-20 transition text-xs leading-none">
+              ▲
+            </button>
+            <button type="button" onClick={() => onMove(1)} disabled={idx === total - 1}
+              title="Mută jos"
+              className="p-1 text-slate-400 hover:text-indigo-600 disabled:opacity-20 transition text-xs leading-none">
+              ▼
+            </button>
+          </div>
+        )}
         {/* Delete */}
-        <div className="ml-auto">
+        <div className={disabled ? 'ml-auto' : ''}>
           <button
             type="button" disabled={disabled}
             onClick={() => onRemove(idx)}
@@ -590,7 +605,9 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
 // ─────────────────────────────────────────────────────────────────────────────
 export default function TheoryEditor({ value, onChange, disabled = false }) {
   const [blocks, setBlocks] = useState(() => parseToBlocks(value || ''))
-  const [view, setView] = useState('split') // 'edit' | 'split' | 'preview' | 'raw'
+  const [view, setView] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 1024 ? 'edit' : 'split'
+  )
   const [rawText, setRawText] = useState('')
   const [activeIdx, setActiveIdx] = useState(null) // for preview highlight
   const [dragIdx, setDragIdx] = useState(null)
@@ -617,6 +634,12 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
   const update = useCallback((newBlocks) => setBlocks(newBlocks), [])
   const updateBlock = (i, b) => { setActiveIdx(i); update(blocks.map((x, k) => k === i ? b : x)) }
   const removeBlock = (i) => { setActiveIdx(null); update(blocks.filter((_, k) => k !== i)) }
+  const moveBlock = (i, dir) => {
+    const j = i + dir
+    if (j < 0 || j >= blocks.length) return
+    const arr = [...blocks];[arr[i], arr[j]] = [arr[j], arr[i]]
+    update(arr); setActiveIdx(j)
+  }
   const addBlock = (type) => {
     if (!DEFAULTS[type]) return
     const nb = [...blocks, DEFAULTS[type]()]
@@ -666,14 +689,14 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
       <div className="flex items-center gap-1.5 flex-wrap bg-slate-50 border border-slate-200 rounded-xl p-2">
         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Vizualizare:</span>
         {[
-          { k: 'edit',    l: '✏️ Editor' },
-          { k: 'split',   l: '⚡ Editor + Preview' },
-          { k: 'preview', l: '👁️ Preview' },
-          { k: 'raw',     l: '📝 Markdown' },
+          { k: 'edit',    icon: '✏️', label: 'Editor' },
+          { k: 'split',   icon: '⚡', label: 'Split' },
+          { k: 'preview', icon: '👁️', label: 'Preview' },
+          { k: 'raw',     icon: '📝', label: 'Raw' },
         ].map(o => (
           <button key={o.k} type="button" onClick={() => setView(o.k)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${view === o.k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
-            {o.l}
+            className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition ${view === o.k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
+            {o.icon}<span className="hidden sm:inline"> {o.label}</span>
           </button>
         ))}
         <span className="ml-auto text-xs text-slate-400">{blocks.length} {blocks.length === 1 ? 'bloc' : 'blocuri'}</span>
@@ -712,6 +735,7 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
                 onChange={(nb) => updateBlock(i, nb)}
                 onRemove={removeBlock}
                 onConvert={convertBlock}
+                onMove={(dir) => moveBlock(i, dir)}
                 isDragging={dragIdx === i}
                 dragOver={dragOver?.idx === i ? dragOver.pos : null}
                 onDragStart={handleDragStart}
@@ -752,9 +776,9 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
             )}
           </div>
 
-          {/* PREVIEW column */}
+          {/* PREVIEW column — hidden on mobile, visible lg+ */}
           {view === 'split' && (
-            <div className="lg:sticky lg:top-4">
+            <div className="hidden lg:block lg:sticky lg:top-4">
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">⚡ Preview live (ca la elev)</div>
               <div className="bg-white border-2 border-slate-200 rounded-xl p-5 max-h-[75vh] overflow-y-auto">
                 {blocks.length === 0
