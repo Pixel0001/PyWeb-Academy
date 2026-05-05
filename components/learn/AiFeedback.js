@@ -139,28 +139,7 @@ export default function AiFeedback({ data, onClose, onRetry, onContinue, token }
             <ExclamationCircleIcon className="w-4 h-4 shrink-0" /> Mai ai doar {usage.remaining} verificări rămase azi
           </div>
         )}
-        {(onRetry && !passed) || (onContinue && passed) ? (
-          <div className="flex gap-2 pt-0.5">
-            {onRetry && !passed && (
-              <button
-                onClick={onRetry}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-blue-300 hover:border-blue-500 text-blue-700 hover:text-blue-900 rounded-xl font-semibold text-sm transition active:scale-95"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Reîncearcă
-              </button>
-            )}
-            {onContinue && passed && (
-              <button
-                onClick={onContinue}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl font-bold text-sm shadow transition active:scale-95"
-              >
-                <ArrowRightCircleIcon className="w-5 h-5" />
-                Continuă
-              </button>
-            )}
-          </div>
-        ) : null}
+
       </div>
     </div>
   )

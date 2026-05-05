@@ -936,51 +936,60 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     )}
 
                     {curSub && curLocked ? (
-                      <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : (curSub.grade ?? 0) > 0 ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
-                        <div className="flex items-center gap-2 font-bold flex-wrap">
-                          {curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? (
-                            <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Rezolvat — bravo!</span></>
-                          ) : curSolutionViewed ? (
-                            <><EyeIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Rezolvare văzută — 0p</span></>
-                          ) : (curSub.grade ?? 0) > 0 ? (
-                            <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Parțial corect — {Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}p</span></>
-                          ) : (
-                            <><LockClosedIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Încercări epuizate — 0p</span></>
-                          )}
-                          {typeof curSub.grade === 'number' && (
-                            <span className="ml-auto text-sm">Nota: <strong className="text-lg">{Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}/{cur.points ?? 10}</strong> <span className="text-slate-400 text-xs">({curSub.grade}%)</span></span>
-                          )}
-                        </div>
-                        {curSub.feedback && (
-                          <div className="mt-3 p-3 bg-white/60 rounded-lg text-sm text-slate-800">
-                            <div className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Feedback profesor</div>
-                            {curSub.feedback}
+                      <div className="space-y-3">
+                        {/* Dacă avem feedback AI proaspăt → card Mr. PyWeb, altfel cardul clasic */}
+                        {canUseAi && aiFeedback[cur.id] ? (
+                          <AiFeedback
+                            key={`${cur.id}-${curAttempts}`}
+                            data={aiFeedback[cur.id]}
+                            token={token}
+                            onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                          />
+                        ) : (
+                          <div className={`rounded-xl p-4 border-2 ${curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? 'bg-emerald-50 border-emerald-200' : (curSub.grade ?? 0) > 0 ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
+                            <div className="flex items-center gap-2 font-bold flex-wrap">
+                              {curSub.status === 'GRADED' && (curSub.grade ?? 0) >= 60 ? (
+                                <><CheckCircleIcon className="w-5 h-5 text-emerald-600" /><span className="text-emerald-800">Rezolvat — bravo!</span></>
+                              ) : curSolutionViewed ? (
+                                <><EyeIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Rezolvare văzută — 0p</span></>
+                              ) : (curSub.grade ?? 0) > 0 ? (
+                                <><ExclamationTriangleIcon className="w-5 h-5 text-amber-600" /><span className="text-amber-800">Parțial corect — {Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}p</span></>
+                              ) : (
+                                <><LockClosedIcon className="w-5 h-5 text-rose-600" /><span className="text-rose-800">Încercări epuizate — 0p</span></>
+                              )}
+                              {typeof curSub.grade === 'number' && (
+                                <span className="ml-auto text-sm">Nota: <strong className="text-lg">{Math.round((cur.points ?? 10) * (curSub.grade ?? 0) / 100)}/{cur.points ?? 10}</strong> <span className="text-slate-400 text-xs">({curSub.grade}%)</span></span>
+                              )}
+                            </div>
+                            {curSub.feedback && (
+                              <div className="mt-3 p-3 bg-white/60 rounded-lg text-sm text-slate-800">
+                                <div className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Feedback profesor</div>
+                                <Markdown text={curSub.feedback} compact />
+                              </div>
+                            )}
+                            {curSub.answer && (
+                              <div className="mt-2 text-xs text-slate-500">
+                                Răspunsul tău: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
+                              </div>
+                            )}
                           </div>
                         )}
-                        {curSub.answer && (
-                          <div className="mt-2 text-xs text-slate-500">
-                            Răspunsul tău: <code className="bg-white px-1.5 py-0.5 rounded font-mono">{curSub.answer || (curSub.code ? '(cod)' : '(gol)')}</code>
-                          </div>
-                        )}
+                        {/* Butoane acțiuni — în afara cardului AI/feedback */}
                         {(curSub.grade ?? 0) < 60 && (
-                          <div className="mt-3 space-y-2">
-                            {/* Acțiuni primare */}
+                          <div className="space-y-2">
                             <div className="flex flex-wrap gap-2">
-                              {/* Reîncearcă problema dacă n-a văzut soluția */}
                               {!curSolutionViewed && (
                                 <button onClick={() => resetProblem(cur.id)} disabled={resettingProblem}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition active:scale-95">
                                   <ArrowPathIcon className="w-4 h-4" /> {resettingProblem ? 'Se resetează...' : 'Reîncearcă problema'}
                                 </button>
                               )}
-                              {/* Continuă la următoarea problemă */}
                               {idx < problems.length - 1 && (
                                 <button onClick={nextProblem}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                   Continuă <ChevronRightIcon className="w-4 h-4" />
                                 </button>
                               )}
-                              {/* Vezi rezolvarea */}
                               {!curSolutionViewed && (
                                 <button onClick={viewSolution} disabled={solutionLoading}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
@@ -988,7 +997,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 </button>
                               )}
                             </div>
-                            {/* Reset lecție completă — opțiune secundară */}
                             <div className="pt-1">
                               <button onClick={resetLesson} disabled={resetting}
                                 className="text-xs text-slate-400 hover:text-rose-600 underline underline-offset-2 transition">
@@ -1017,7 +1025,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         {curSub.feedback && (
                           <div className="mt-2 p-3 bg-white/60 rounded-lg text-sm text-slate-800">
                             <div className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Feedback profesor</div>
-                            {curSub.feedback}
+                            <Markdown text={curSub.feedback} compact />
                           </div>
                         )}
                         <button onClick={() => { const next = [...submissions]; next[idx] = null; setSubmissions(next) }}
@@ -1122,8 +1130,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 data={aiFeedback[cur.id]}
                                 token={token}
                                 onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
-                                onRetry={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
-                                onContinue={nextProblem}
                               />
                             )}
                           </div>
