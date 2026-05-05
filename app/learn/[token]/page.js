@@ -17,6 +17,7 @@ import { buildLevels, getLevel } from '@/lib/levels'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
+import CooldownTimer from '@/components/public/CooldownTimer'
 import LearnLoading from './loading'
 
 const MODULE_THEMES = [
@@ -101,6 +102,7 @@ async function DashboardContent({ token }) {
   const cooldownRemainingMs = cooldownActive
     ? studentLimits.cooldownMin * 60_000 - (Date.now() - new Date(studentLimits.lastProblemSolvedAt).getTime())
     : 0
+  const cooldownEndsAt = cooldownActive ? Date.now() + cooldownRemainingMs : 0
 
   const accessSet = new Set(accesses.map(a => a.moduleId))
   const advanceSet = new Set(advances.map(a => a.moduleId))
@@ -597,13 +599,6 @@ async function DashboardContent({ token }) {
                               ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
                               : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
 
-                      const cooldownRemSec = Math.ceil(cooldownRemainingMs / 1000)
-                      const cooldownRemH = Math.floor(cooldownRemSec / 3600)
-                      const cooldownRemMOnly = Math.floor((cooldownRemSec % 3600) / 60)
-                      const cooldownFmt = cooldownRemH > 0
-                        ? `${cooldownRemH}h ${cooldownRemMOnly.toString().padStart(2, '0')}min`
-                        : `${cooldownRemMOnly}min`
-
                       const inner = (
                         <>
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
@@ -611,16 +606,16 @@ async function DashboardContent({ token }) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
+                              <span className={`font-semibold text-slate-900 truncate ${onCooldown ? 'text-xs' : 'text-sm'}`}>{l.title}</span>
                               {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
                               {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
-                              {onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase tracking-wider">Cooldown</span>}
                               {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                              <PuzzlePieceIcon className="w-3 h-3" />
-                              {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
-                              {onCooldown && <span className="ml-1 text-slate-400">· {cooldownFmt}</span>}
+                              {onCooldown
+                                ? <CooldownTimer endsAt={cooldownEndsAt} />
+                                : <><PuzzlePieceIcon className="w-3 h-3" />{l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}</>
+                              }
                             </div>
                           </div>
                           {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
