@@ -1308,6 +1308,23 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">
                           Reia greșite ({wrongCount}) <ArrowPathIcon className="w-4 h-4" />
                         </button>
+                      ) : toRevisit.length > 0 ? (
+                        <button onClick={nextProblem}
+                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">
+                          <ArrowPathIcon className="w-4 h-4" /> Reia blocate ({toRevisit.length})
+                        </button>
+                      ) : revisionCount > 0 ? (
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          <button onClick={() => { const i = problems.findIndex((_, i) => submissions[i]?.status === 'NEEDS_REVISION'); if (i !== -1) setIdx(i) }}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-amber-900 rounded-xl text-sm font-bold shadow transition active:scale-95">
+                            <ExclamationTriangleIcon className="w-4 h-4" /> Refă problema ({revisionCount})
+                          </button>
+                          <button onClick={finishLesson} disabled={finishing}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow">
+                            <TrophyIcon className="w-5 h-5" />
+                            {finishing ? 'Se salveaza...' : 'Finalizează oricum'}
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   </div>
