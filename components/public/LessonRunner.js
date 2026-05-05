@@ -26,6 +26,33 @@ const DIFF_COLOR = {
 }
 const DIFF_LABEL = { EASY: 'Usor', MEDIUM: 'Mediu', HARD: 'Greu' }
 
+function CooldownBanner({ until, onExpire }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, until.getTime() - Date.now()))
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const ms = Math.max(0, until.getTime() - Date.now())
+      setRemaining(ms)
+      if (ms === 0) { clearInterval(iv); onExpire() }
+    }, 1000)
+    return () => clearInterval(iv)
+  }, [until, onExpire])
+  const totalSec = Math.ceil(remaining / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  const fmt = h > 0
+    ? `${h}h ${m.toString().padStart(2, '0')}min`
+    : m > 0
+    ? `${m}min ${s.toString().padStart(2, '0')}s`
+    : `${s}s`
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-800 text-sm font-semibold">
+      <ClockIcon className="w-5 h-5 shrink-0 text-amber-500" />
+      <span>Cooldown activ — poți trimite din nou peste <span className="font-mono text-amber-900">{fmt}</span></span>
+    </div>
+  )
+}
+
 function renderTheory(text) {
   if (!text) return null
   // Normalizează blocurile de cod
@@ -238,6 +265,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [solutionLoading, setSolutionLoading] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [cooldownUntil, setCooldownUntil] = useState(null) // Date when cooldown expires
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
   const [savedCodes, setSavedCodes] = useState({}) // { problemId: code } — păstrează codul la schimbarea problemei
   const [lastOutput, setLastOutput] = useState('')
@@ -512,6 +540,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
           if (r.status === 429 && d.cooldown) {
             const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
             toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+            setCooldownUntil(new Date(Date.now() + d.remainingMs))
           } else if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
           else throw new Error(d.error || 'Eroare AI')
           return
@@ -551,6 +580,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         if (r.status === 429 && d.cooldown) {
           const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
           toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          setCooldownUntil(new Date(Date.now() + d.remainingMs))
           setSubmitting(false)
           return
         }
@@ -1275,6 +1305,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               </>
                             )}
                           </div>
+                        )}
+
+                        {/* Cooldown timer banner */}
+                        {cooldownUntil && Date.now() < cooldownUntil.getTime() && (
+                          <CooldownBanner until={cooldownUntil} onExpire={() => setCooldownUntil(null)} />
                         )}
 
                         <div className="flex flex-wrap gap-2 pt-1">
