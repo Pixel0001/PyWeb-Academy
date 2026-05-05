@@ -4,6 +4,90 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
+// ── Markdown preview helpers (aceleași ca în TheoryEditor) ───────────────────
+function inlineFmt(s) {
+  if (!s) return ''
+  return s
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-2 rounded-lg max-w-full h-auto shadow" />')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline">$1</a>')
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-indigo-50 rounded text-sm font-mono text-indigo-700 font-medium">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+}
+
+function renderMd(text) {
+  if (!text || !text.trim()) return null
+  const lines = text.split('\n')
+  const elements = []
+  let i = 0
+  while (i < lines.length) {
+    const ln = lines[i]
+    // code block
+    if (ln.startsWith('```')) {
+      const lang = ln.slice(3).trim()
+      const buf = []; i++
+      while (i < lines.length && !lines[i].startsWith('```')) { buf.push(lines[i]); i++ }
+      elements.push(
+        <div key={i} className="my-2">
+          {lang && <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-0.5">{lang}</div>}
+          <pre className="bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto text-xs font-mono whitespace-pre-wrap">{buf.join('\n')}</pre>
+        </div>
+      )
+      i++; continue
+    }
+    // callout
+    if (ln.startsWith('> ')) {
+      const buf = [ln.slice(2)]
+      while (i + 1 < lines.length && lines[i + 1].startsWith('> ')) { buf.push(lines[++i].slice(2)) }
+      elements.push(
+        <div key={i} className="my-2 border-l-4 border-amber-400 bg-amber-50 px-3 py-2 rounded-r-lg">
+          {buf.map((l, k) => <p key={k} className="text-amber-900 text-sm" dangerouslySetInnerHTML={{ __html: inlineFmt(l) }} />)}
+        </div>
+      )
+      i++; continue
+    }
+    // heading
+    if (ln.startsWith('### ')) { elements.push(<h3 key={i} className="text-base font-semibold mt-3 mb-1 text-slate-800" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(4)) }} />); i++; continue }
+    if (ln.startsWith('## '))  { elements.push(<h2 key={i} className="text-lg font-bold mt-3 mb-1 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(3)) }} />); i++; continue }
+    if (ln.startsWith('# '))   { elements.push(<h1 key={i} className="text-xl font-bold mt-3 mb-2 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(2)) }} />); i++; continue }
+    // list
+    if (/^[-*]\s/.test(ln) || /^\d+\.\s/.test(ln)) {
+      const ordered = /^\d+\.\s/.test(ln)
+      const items = []
+      while (i < lines.length && (ordered ? /^\d+\.\s/.test(lines[i]) : /^[-*]\s/.test(lines[i]))) {
+        items.push(lines[i].replace(/^([-*]|\d+\.)\s+/, '')); i++
+      }
+      const Tag = ordered ? 'ol' : 'ul'
+      elements.push(
+        <Tag key={i} className={ordered ? 'list-decimal list-inside my-2 space-y-0.5 text-slate-700 text-sm' : 'list-disc list-inside my-2 space-y-0.5 text-slate-700 text-sm'}>
+          {items.map((it, k) => <li key={k} dangerouslySetInnerHTML={{ __html: inlineFmt(it) }} />)}
+        </Tag>
+      )
+      continue
+    }
+    // divider
+    if (/^---+$/.test(ln.trim())) { elements.push(<hr key={i} className="my-3 border-slate-200" />); i++; continue }
+    // empty
+    if (!ln.trim()) { i++; continue }
+    // paragraph
+    elements.push(<p key={i} className="text-slate-700 text-sm leading-relaxed my-1" dangerouslySetInnerHTML={{ __html: inlineFmt(ln) }} />)
+    i++
+  }
+  return elements
+}
+
+function MarkdownPreview({ text, placeholder }) {
+  const nodes = renderMd(text)
+  if (!nodes || nodes.length === 0) return null
+  return (
+    <div className="mt-2 px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-lg">
+      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Preview</div>
+      {nodes}
+    </div>
+  )
+}
+
 const TYPES = [
   { value: 'MULTIPLE_CHOICE', label: 'Grilă (multiple choice)' },
   { value: 'SHORT_ANSWER', label: 'Răspuns scurt (text)' },
@@ -105,6 +189,8 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
             placeholder="Descrierea completă a problemei. Suportă markdown / cod."
           />
+          <MarkdownPreview text={form.description} />
+          <p className="text-[11px] text-slate-400 mt-1">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">```python ... ```</code> · <code className="bg-slate-100 px-1 rounded">&gt; notă</code> · <code className="bg-slate-100 px-1 rounded">- listă</code></p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -288,6 +374,8 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
             className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm"
             placeholder={`Pas 1: Înțelegem cerința...\nPas 2: Inițializăm o variabilă...\nPas 3: Iterăm prin array...\n\nCod soluție:\nfor i in arr:\n    total += i`}
           />
+          <MarkdownPreview text={form.explanation} />
+          <p className="text-[11px] text-slate-400 mt-1">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">```python ... ```</code> · <code className="bg-slate-100 px-1 rounded">&gt; notă</code> · <code className="bg-slate-100 px-1 rounded">- listă</code></p>
         </div>
 
         <div>
