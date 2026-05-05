@@ -87,8 +87,9 @@ export async function POST(req, { params }) {
   const maxAttempts = getMaxAttempts(problem)
 
   // ── COOLDOWN: doar la PRIMA tentativă a unei probleme noi (nu pe retry-uri)
+  // Cooldown per lecție: problemele din aceeași lecție nu sunt blocate între ele
   if (attemptNumber === 1) {
-    const cd = await checkCooldown(student.id)
+    const cd = await checkCooldown(student.id, lessonId || null)
     if (!cd.allowed) {
       return NextResponse.json({
         error: `Așteaptă ${cd.remainingMin} min până la următoarea problemă.`,
@@ -157,7 +158,7 @@ export async function POST(req, { params }) {
 
   // ── Marchează cooldown după o rezolvare reușită
   if (status === 'GRADED' && (grade ?? 0) >= 60) {
-    await markProblemSolved(student.id)
+    await markProblemSolved(student.id, lessonId || null)
   }
 
   // Marchează ca citite notificările REVISION_REQUEST pentru această problemă

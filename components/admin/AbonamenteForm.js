@@ -28,8 +28,8 @@ export default function AbonamenteForm({ initial }) {
     cooldownEnabled:    initial.cooldownEnabled ?? true,
     dailyXpCap:         initial.dailyXpCap ?? 500,
     xpCapEnabled:       initial.xpCapEnabled ?? true,
-    levelCurve:         initial.levelCurve?.length ? [...initial.levelCurve] : [0, 100, 300, 700, 1500, 3000],
-    levelNames:         initial.levelNames?.length ? [...initial.levelNames] : ['Novice', 'Explorator', 'Practicant', 'Expert', 'Master', 'Legend'],
+    levelCurve:         initial.levelCurve?.length ? [...initial.levelCurve] : [0, 100, 300, 700, 1500, 3000, 6000, 12000, 25000, 50000],
+    levelNames:         initial.levelNames?.length ? [...initial.levelNames] : ['Novice', 'Explorator', 'Practicant', 'Expert', 'Master', 'Legend', 'Mythic', 'Titan', 'Sage', 'Immortal'],
   })
 
   const save = async () => {

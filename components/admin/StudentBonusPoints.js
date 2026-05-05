@@ -6,21 +6,23 @@ import {
   StarIcon, PlusIcon, TrashIcon, TrophyIcon,
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
+import { buildLevels, getLevel, DEFAULT_LEVEL_CURVE, DEFAULT_LEVEL_NAMES } from '@/lib/levels'
 
-const LEVEL_THRESHOLDS = [
-  { min: 0,    name: 'Novice',     color: 'text-slate-500',  bar: 'bg-slate-400',  bg: 'bg-slate-50 border-slate-200' },
-  { min: 100,  name: 'Explorator', color: 'text-blue-600',   bar: 'bg-blue-400',   bg: 'bg-blue-50 border-blue-200' },
-  { min: 300,  name: 'Practicant', color: 'text-emerald-600',bar: 'bg-emerald-400',bg: 'bg-emerald-50 border-emerald-200' },
-  { min: 700,  name: 'Expert',     color: 'text-amber-600',  bar: 'bg-amber-400',  bg: 'bg-amber-50 border-amber-200' },
-  { min: 1500, name: 'Master',     color: 'text-purple-600', bar: 'bg-purple-400', bg: 'bg-purple-50 border-purple-200' },
-  { min: 3000, name: 'Legend',     color: 'text-rose-600',   bar: 'bg-rose-400',   bg: 'bg-rose-50 border-rose-200' },
-]
-
-function getLevel(xp) {
-  return [...LEVEL_THRESHOLDS].reverse().find(l => xp >= l.min) ?? LEVEL_THRESHOLDS[0]
+function computeLevelData(levelCurve, levelNames, totalXP) {
+  const LEVELS = buildLevels(
+    levelCurve ?? DEFAULT_LEVEL_CURVE,
+    levelNames ?? DEFAULT_LEVEL_NAMES,
+  )
+  const currentLevel = getLevel(LEVELS, totalXP)
+  const idx = LEVELS.findIndex(l => l.num === currentLevel.num)
+  const nextLevel = LEVELS[idx + 1] ?? null
+  const xpIntoLevel = totalXP - currentLevel.min
+  const xpNeeded = nextLevel ? nextLevel.min - currentLevel.min : 1
+  const levelPct = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpNeeded) * 100)) : 100
+  return { LEVELS, currentLevel, nextLevel, levelPct }
 }
 
-export default function StudentBonusPoints({ studentId, initialBonusPoints = [], submissionXP = 0 }) {
+export default function StudentBonusPoints({ studentId, initialBonusPoints = [], submissionXP = 0, levelCurve, levelNames }) {
   const [bonusPoints, setBonusPoints] = useState(initialBonusPoints)
   const [points, setPoints] = useState('')
   const [reason, setReason] = useState('')
@@ -29,12 +31,7 @@ export default function StudentBonusPoints({ studentId, initialBonusPoints = [],
   const bonusXP = bonusPoints.reduce((s, b) => s + b.points, 0)
   const totalXP = submissionXP + bonusXP
 
-  const levels = LEVEL_THRESHOLDS
-  const currentLevel = getLevel(totalXP)
-  const nextLevel = levels[currentLevel.min === 0 ? 1 : levels.findIndex(l => l.min === currentLevel.min) + 1]
-  const xpIntoLevel = totalXP - currentLevel.min
-  const xpNeeded = nextLevel ? nextLevel.min - currentLevel.min : 1
-  const levelPct = nextLevel ? Math.min(100, Math.round((xpIntoLevel / xpNeeded) * 100)) : 100
+  const { currentLevel, nextLevel, levelPct } = computeLevelData(levelCurve, levelNames, totalXP)
 
   const handleAdd = async () => {
     if (!points || !reason.trim()) return toast.error('Completează toate câmpurile')
@@ -73,12 +70,15 @@ export default function StudentBonusPoints({ studentId, initialBonusPoints = [],
 
       {/* XP Summary */}
       <div className="p-5 space-y-4">
-        <div className={`rounded-xl p-4 border ${currentLevel.bg}`}>
-          <div className="flex items-center justify-between mb-3">
-            <div>
+        <div className={`rounded-xl p-4 border ${currentLevel.bg} ${currentLevel.border}`}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${currentLevel.bar}`}>
+              <currentLevel.IconSolid className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
               <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nivel curent</div>
-              <div className={`text-xl font-extrabold ${currentLevel.color}`}>
-                Nivel {levels.findIndex(l => l.min === currentLevel.min) + 1} — {currentLevel.name}
+              <div className={`text-lg font-extrabold ${currentLevel.color}`}>
+                Nivel {currentLevel.num} — {currentLevel.name}
               </div>
             </div>
             <div className="text-right">

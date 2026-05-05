@@ -124,8 +124,9 @@ export async function POST(req, { params }) {
   }
 
   // ── COOLDOWN: doar la PRIMA tentativă a unei probleme noi (nu pe retry-uri)
+  // Cooldown per lecție: problemele din aceeași lecție nu sunt blocate între ele
   if (prevSubs.length === 0) {
-    const cd = await checkCooldown(student.id)
+    const cd = await checkCooldown(student.id, lessonId || null)
     if (!cd.allowed) {
       return NextResponse.json({
         error: `Așteaptă ${cd.remainingMin} min până la următoarea problemă.`,
@@ -224,7 +225,7 @@ export async function POST(req, { params }) {
 
   // ── Marchează cooldown după o rezolvare reușită
   if (passed) {
-    await markProblemSolved(student.id)
+    await markProblemSolved(student.id, lessonId || null)
   }
 
   const usage = await getStudentAiUsage(student.id)

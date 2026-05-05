@@ -300,11 +300,13 @@ export default function AdminSidebar({ user }) {
       )}
 
       {/* Mobile Drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 w-[280px] max-w-[calc(100vw-40px)] bg-white z-50 transform transition-transform duration-300 ease-in-out ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 w-[280px] max-w-[calc(100vw-40px)] bg-white z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      }`}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         {/* Header cu close button */}
-        <div className="flex items-center justify-between h-14 px-3 border-b border-gray-200">
+        <div className="flex items-center justify-between h-14 px-3 border-b border-gray-200 shrink-0">
           <Link 
             href="/admin" 
             className="flex items-center gap-2"
@@ -328,7 +330,7 @@ export default function AdminSidebar({ user }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto scrollbar-sidebar max-h-[calc(100vh-140px)]">
+        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto scrollbar-sidebar">
           {filteredNavigation.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/admin' && item.href !== '/admin/security' && pathname.startsWith(item.href))
@@ -361,7 +363,7 @@ export default function AdminSidebar({ user }) {
         </nav>
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-2.5 border-t border-gray-200 bg-white">
+        <div className="shrink-0 p-2.5 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-2 px-1.5 py-1.5">
             {user?.image ? (
               <Image

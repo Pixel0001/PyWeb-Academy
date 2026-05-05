@@ -1118,9 +1118,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             )}
                             {canUseAi && aiFeedback[cur.id] && (
                               <AiFeedback
+                                key={`${cur.id}-${curAttempts}`}
                                 data={aiFeedback[cur.id]}
                                 token={token}
                                 onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                                onRetry={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                                onContinue={nextProblem}
                               />
                             )}
                           </div>

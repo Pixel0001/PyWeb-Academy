@@ -360,6 +360,7 @@ model Student {
   cooldownDisabled    Boolean  @default(false) // dezactivează explicit cooldown pentru acest elev
   xpCapDisabled       Boolean  @default(false) // dezactivează explicit cap-ul de XP
   lastProblemSolvedAt DateTime? // pentru calcul cooldown
+  lastSolvedLessonId  String?   // lecția în care s-a rezolvat ultima problemă (cooldown per lecție)
 
   createdById  String?  @db.ObjectId // ID-ul userului care a creat elevul (profesor sau admin)
   createdAt    DateTime @default(now())

@@ -27,6 +27,7 @@ import StudentModuleAccessTable from '@/components/admin/StudentModuleAccessTabl
 import StudentLearningPayments from '@/components/admin/StudentLearningPayments'
 import StudentBonusPoints from '@/components/admin/StudentBonusPoints'
 import GenerateTokenButton from '@/components/admin/GenerateTokenButton'
+import { getSystemSettings } from '@/lib/student-limits'
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -81,7 +82,7 @@ export default async function StudentDetailPage({ params }) {
   const groupIds = student.groupStudents.map(gs => gs.groupId)
 
   // Date pentru aplicația /learn: module + accese + avansări + plăți + XP
-  const [allModules, moduleAccesses, moduleAdvances, moduleHiddens, lessonAccesses, learningPayments, gradedSubmissions, bonusPointsRaw] = await Promise.all([
+  const [allModules, moduleAccesses, moduleAdvances, moduleHiddens, lessonAccesses, learningPayments, gradedSubmissions, bonusPointsRaw, settings] = await Promise.all([
     prisma.learningModule.findMany({
       where: { active: true },
       orderBy: { order: 'asc' },
@@ -108,6 +109,7 @@ export default async function StudentDetailPage({ params }) {
       orderBy: { createdAt: 'desc' },
       include: { addedBy: { select: { name: true } } },
     }),
+    getSystemSettings(),
   ])
 
   const submissionXP = gradedSubmissions.reduce((sum, s) =>
@@ -300,6 +302,8 @@ export default async function StudentDetailPage({ params }) {
           studentId={id}
           initialBonusPoints={bonusPointsRaw}
           submissionXP={submissionXP}
+          levelCurve={settings.levelCurve}
+          levelNames={settings.levelNames}
         />
       )}
 

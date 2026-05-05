@@ -7,11 +7,13 @@ import { notFound } from 'next/navigation'
 import {
   PuzzlePieceIcon, ClockIcon, LockClosedIcon, BookOpenIcon,
   RocketLaunchIcon, ChevronRightIcon, SparklesIcon,
-  CodeBracketIcon, FireIcon, StarIcon, TrophyIcon,
+  CodeBracketIcon, FireIcon, TrophyIcon,
   UserCircleIcon, PencilSquareIcon, ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
+import { getSystemSettings } from '@/lib/student-limits'
+import { buildLevels, getLevel } from '@/lib/levels'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
@@ -146,15 +148,9 @@ async function DashboardContent({ token }) {
   // totalXP needs ALL bonus points, not just recent — refetch all
   const allBonusXP = await prisma.bonusPoint.aggregate({ where: { studentId: student.id }, _sum: { points: true } })
   const totalXP = submissionXP + (allBonusXP._sum.points ?? 0)
-  const LEVELS = [
-    { min: 0,    max: 99,   num: 1, name: 'Novice',     color: 'text-slate-300',  bar: 'bg-slate-400' },
-    { min: 100,  max: 299,  num: 2, name: 'Explorator', color: 'text-blue-300',   bar: 'bg-blue-400' },
-    { min: 300,  max: 699,  num: 3, name: 'Practicant', color: 'text-emerald-300',bar: 'bg-emerald-400' },
-    { min: 700,  max: 1499, num: 4, name: 'Expert',     color: 'text-amber-300',  bar: 'bg-amber-400' },
-    { min: 1500, max: 2999, num: 5, name: 'Master',     color: 'text-purple-300', bar: 'bg-purple-400' },
-    { min: 3000, max: Infinity, num: 6, name: 'Legend', color: 'text-rose-300',   bar: 'bg-rose-400' },
-  ]
-  const currentLevel = [...LEVELS].reverse().find(l => totalXP >= l.min) ?? LEVELS[0]
+  const settings = await getSystemSettings()
+  const LEVELS = buildLevels(settings.levelCurve, settings.levelNames)
+  const currentLevel = getLevel(LEVELS, totalXP)
   const nextLevel = LEVELS[currentLevel.num] ?? null
   const xpIntoLevel = totalXP - currentLevel.min
   const xpNeeded = nextLevel ? nextLevel.min - currentLevel.min : 1
@@ -212,13 +208,17 @@ async function DashboardContent({ token }) {
           </div>
 
           {/* XP & Level */}
-          <Link href={`/learn/${token}/levels`} className="block bg-white/10 hover:bg-white/15 rounded-2xl p-4 space-y-2 transition active:scale-[0.99]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <StarIcon className="w-4 h-4 text-yellow-300" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Level {currentLevel.num}</span>
+          <Link href={`/learn/${token}/levels`} className="block bg-white/10 hover:bg-white/15 rounded-2xl p-4 space-y-2.5 transition active:scale-[0.99]">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${currentLevel.bar}`}>
+                <currentLevel.IconSolid className="w-5 h-5 text-white" />
               </div>
-              <span className={`text-xs font-extrabold ${currentLevel.color}`}>{currentLevel.name}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Nivel {currentLevel.num}</span>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${currentLevel.badge}`}>{currentLevel.name}</span>
+                </div>
+              </div>
             </div>
             <div className="flex items-end justify-between gap-2">
               <div>
@@ -226,13 +226,13 @@ async function DashboardContent({ token }) {
                 <span className="text-white/40 text-xs ml-1">XP</span>
               </div>
               {nextLevel && (
-                <span className="text-[10px] text-white/40">{nextLevel.min - totalXP} XP până la {nextLevel.name}</span>
+                <span className="text-[10px] text-white/40">{nextLevel.min - totalXP} XP → {nextLevel.name}</span>
               )}
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
               <div className={`h-full ${currentLevel.bar} rounded-full transition-all duration-700`} style={{ width: `${levelPct}%` }} />
             </div>
-            <div className="text-[10px] text-white/50 font-semibold pt-1">Vezi toate nivelurile →</div>
+            <div className="text-[10px] text-white/50 font-semibold pt-0.5">Vezi toate nivelurile →</div>
           </Link>
 
           {/* Subscription status */}
@@ -374,7 +374,7 @@ async function DashboardContent({ token }) {
             <div className="grid grid-cols-2 gap-2 mt-3">
               <Link href={`/learn/${token}/levels`} className="bg-white/10 hover:bg-white/20 rounded-xl p-2.5 transition active:scale-95">
                 <div className="flex items-center gap-1 mb-1">
-                  <StarIcon className="w-3 h-3 text-yellow-300" />
+                  <currentLevel.IconSolid className="w-3 h-3 text-white" />
                   <span className="text-[9px] font-bold uppercase tracking-wider text-white/60">Nivel {currentLevel.num}</span>
                 </div>
                 <div className="text-lg font-extrabold leading-tight">{totalXP} <span className="text-[10px] text-white/40 font-normal">XP</span></div>
