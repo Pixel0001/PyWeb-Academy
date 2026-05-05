@@ -151,20 +151,18 @@ function ProblemStudentPreview({ form }) {
 
         {/* Buttons */}
         <div className="flex flex-wrap gap-2 pt-1">
-          {showHint ? (
-            <button type="button" onClick={() => setShowHint(false)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
-              💡 Ascunde indiciu
-            </button>
-          ) : (
-            <button type="button" onClick={() => form.hint && setShowHint(true)}
-              title={form.hint ? '' : 'Adaugă un hint în formular pentru a-l activa'}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 rounded-xl font-semibold transition
-                ${form.hint
-                  ? 'border-amber-400 text-amber-800 bg-amber-50 hover:bg-amber-100 animate-pulse'
-                  : 'border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed opacity-60'}`}>
-              💡 {form.hint ? `Vezi indiciu (−${hintPenalty} XP)` : 'Indiciu (necompletat)'}
-            </button>
+          {form.hint && (
+            showHint ? (
+              <button type="button" onClick={() => setShowHint(false)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
+                💡 Ascunde indiciu
+              </button>
+            ) : (
+              <button type="button" onClick={() => setShowHint(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-400 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl font-semibold transition animate-pulse">
+                💡 Vezi indiciu (−{hintPenalty} XP)
+              </button>
+            )
           )}
           {!showSolution && (
             <button type="button" onClick={() => setShowSolution(true)}
