@@ -15,7 +15,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
-import Markdown from '@/lib/markdown'
+import Markdown, { inlineFmt } from '@/lib/markdown'
 import AiChat from '@/components/learn/AiChat'
 import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
@@ -48,13 +48,6 @@ function renderTheory(text) {
     )
     listBuf = []
   }
-
-  const inlineFmt = (s) => s
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-3 rounded-xl max-w-full h-auto shadow" />')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">$1</a>')
-    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-indigo-50 rounded-md text-sm font-mono text-indigo-700 font-medium">$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
 
   for (let i = 0; i < lines.length; i++) {
     const ln = lines[i]

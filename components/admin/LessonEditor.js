@@ -74,7 +74,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
   return (
     <div className="space-y-4">
       {/* Sticky title + save bar */}
-      <div className="sticky top-0 z-20 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
+      <div className="sticky top-14 xs:top-16 z-20 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
         <input
           value={form.title}
           onChange={e => setForm({ ...form, title: e.target.value })}

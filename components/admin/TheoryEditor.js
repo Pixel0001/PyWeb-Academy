@@ -779,7 +779,7 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
 
           {/* PREVIEW column — hidden on mobile, visible lg+ */}
           {view === 'split' && (
-            <div className="hidden lg:block lg:sticky lg:top-4">
+            <div className="hidden lg:block lg:sticky lg:top-20">
               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">⚡ Preview live (ca la elev)</div>
               <div className="bg-white border-2 border-slate-200 rounded-xl p-5 max-h-[75vh] overflow-y-auto">
                 {blocks.length === 0
