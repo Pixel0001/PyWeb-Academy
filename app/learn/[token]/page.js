@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
-import { getSystemSettings } from '@/lib/student-limits'
+import { getSystemSettings, getEffectiveLimits } from '@/lib/student-limits'
 import { buildLevels, getLevel } from '@/lib/levels'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
@@ -48,7 +48,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -88,7 +88,19 @@ async function DashboardContent({ token }) {
     }),
     prisma.moduleHidden.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
     prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
+    getEffectiveLimits(student.id),
   ])
+
+  // Cooldown state
+  const cooldownActive = (() => {
+    if (!studentLimits || studentLimits.cooldownDisabled || !studentLimits.lastProblemSolvedAt) return false
+    const elapsedMs = Date.now() - new Date(studentLimits.lastProblemSolvedAt).getTime()
+    return elapsedMs < studentLimits.cooldownMin * 60_000
+  })()
+  const cooldownLastLessonId = studentLimits?.lastSolvedLessonId || null
+  const cooldownRemainingMs = cooldownActive
+    ? studentLimits.cooldownMin * 60_000 - (Date.now() - new Date(studentLimits.lastProblemSolvedAt).getTime())
+    : 0
 
   const accessSet = new Set(accesses.map(a => a.moduleId))
   const advanceSet = new Set(advances.map(a => a.moduleId))
@@ -566,49 +578,63 @@ async function DashboardContent({ token }) {
                       const prog = progressMap.get(l.id)
                       const done = !!prog?.completedAt
                       const started = !!prog?.theoryCompleted && !done
+                      const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId
 
                       const numCls = done
                         ? 'bg-emerald-500 text-white'
+                        : onCooldown ? 'bg-slate-700 text-slate-300'
                         : started ? 'bg-indigo-500 text-white'
                         : accessible ? 'bg-slate-100 text-slate-600'
                         : 'bg-slate-100 text-slate-300'
 
                       const cardCls = !accessible
                         ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
-                        : done
-                          ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-sm'
-                          : started
-                            ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
-                            : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
+                        : onCooldown
+                          ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-75'
+                          : done
+                            ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-sm'
+                            : started
+                              ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
+                              : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
+
+                      const cooldownRemMin = Math.ceil(cooldownRemainingMs / 60_000)
+                      const cooldownRemH = Math.floor(cooldownRemMin / 60)
+                      const cooldownRemMOnly = cooldownRemMin % 60
 
                       const inner = (
                         <>
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
-                            {done ? <CheckSolid className="w-4 h-4" /> : li + 1}
+                            {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? <ClockIcon className="w-4 h-4" /> : li + 1}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
                               {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
-                              {started && !done && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
+                              {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
+                              {onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded uppercase tracking-wider">Cooldown</span>}
                               {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
                               <PuzzlePieceIcon className="w-3 h-3" />
                               {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
+                              {onCooldown && <span className="ml-1 text-slate-400">· {cooldownRemH > 0 ? `${cooldownRemH}h ${cooldownRemMOnly}min` : `${cooldownRemMin}min`}</span>}
                             </div>
                           </div>
-                          {accessible && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
+                          {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
                         </>
                       )
 
                       const lockReason = !prevDone ? 'module' : 'payment'
 
-                      return accessible ? (
+                      return accessible && !onCooldown ? (
                         <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
                           {inner}
                         </Link>
+                      ) : onCooldown ? (
+                        <div key={l.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                          {inner}
+                        </div>
                       ) : (
                         <LockedLessonCard key={l.id} reason={lockReason}>
                           {inner}
