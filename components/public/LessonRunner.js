@@ -29,29 +29,115 @@ function renderTheory(text) {
   if (!text) return null
   const lines = text.split('\n')
   const out = []
-  let inCode = false; let codeBuf = []
+  let inCode = false; let codeBuf = []; let codeLang = ''
+  let listBuf = []; let listOrdered = false
+
+  const flushList = (key) => {
+    if (listBuf.length === 0) return
+    const Tag = listOrdered ? 'ol' : 'ul'
+    const cls = listOrdered
+      ? 'list-decimal list-inside space-y-1 my-3 text-slate-700'
+      : 'list-disc list-inside space-y-1 my-3 text-slate-700'
+    out.push(
+      <Tag key={`l${key}`} className={cls}>
+        {listBuf.map((item, j) => (
+          <li key={j} dangerouslySetInnerHTML={{ __html: inlineFmt(item) }} />
+        ))}
+      </Tag>
+    )
+    listBuf = []
+  }
+
+  const inlineFmt = (s) => s
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-3 rounded-xl max-w-full h-auto shadow" />')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline hover:text-indigo-800">$1</a>')
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-indigo-50 rounded-md text-sm font-mono text-indigo-700 font-medium">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
   for (let i = 0; i < lines.length; i++) {
     const ln = lines[i]
     if (ln.startsWith('```')) {
+      flushList(i)
       if (inCode) {
-        out.push(<pre key={`c${i}`} className="bg-slate-900 text-slate-100 rounded-xl p-4 my-4 overflow-x-auto text-sm font-mono shadow-inner">{codeBuf.join('\n')}</pre>)
-        codeBuf = []; inCode = false
-      } else { inCode = true }
+        out.push(
+          <div key={`c${i}`} className="my-4">
+            {codeLang && <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">{codeLang}</div>}
+            <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-sm font-mono shadow-inner">{codeBuf.join('\n')}</pre>
+          </div>
+        )
+        codeBuf = []; codeLang = ''; inCode = false
+      } else {
+        inCode = true
+        codeLang = ln.slice(3).trim()
+      }
       continue
     }
     if (inCode) { codeBuf.push(ln); continue }
-    if (ln.startsWith('## ')) out.push(<h2 key={i} className="text-xl font-bold mt-5 mb-2 text-slate-900">{ln.slice(3)}</h2>)
+
+    // YouTube embed: @[youtube](URL_or_ID)
+    const yt = ln.match(/^@\[youtube\]\(([^)]+)\)\s*$/i)
+    if (yt) {
+      flushList(i)
+      const raw = yt[1].trim()
+      let id = raw
+      const m1 = raw.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/)
+      if (m1) id = m1[1]
+      out.push(
+        <div key={i} className="aspect-video my-4 rounded-xl overflow-hidden bg-black shadow">
+          <iframe src={`https://www.youtube.com/embed/${id}`} className="w-full h-full" allowFullScreen />
+        </div>
+      )
+      continue
+    }
+
+    // Image as standalone line: ![alt](url)
+    const imgMatch = ln.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/)
+    if (imgMatch) {
+      flushList(i)
+      out.push(<img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="my-4 rounded-xl max-w-full h-auto shadow" />)
+      continue
+    }
+
+    // Callout / blockquote: > text  (multi-linie)
+    if (ln.startsWith('> ')) {
+      flushList(i)
+      const buf = [ln.slice(2)]
+      while (i + 1 < lines.length && lines[i + 1].startsWith('> ')) {
+        buf.push(lines[++i].slice(2))
+      }
+      out.push(
+        <div key={i} className="my-3 border-l-4 border-amber-400 bg-amber-50 px-4 py-3 rounded-r-xl">
+          {buf.map((b, k) => (
+            <p key={k} className="text-amber-900 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: inlineFmt(b) }} />
+          ))}
+        </div>
+      )
+      continue
+    }
+
+    // List items
+    const ulMatch = ln.match(/^[-*]\s+(.+)$/)
+    const olMatch = ln.match(/^\d+\.\s+(.+)$/)
+    if (ulMatch || olMatch) {
+      const isOrdered = !!olMatch
+      if (listBuf.length > 0 && isOrdered !== listOrdered) flushList(i)
+      listOrdered = isOrdered
+      listBuf.push((ulMatch || olMatch)[1])
+      continue
+    } else if (listBuf.length > 0) {
+      flushList(i)
+    }
+
+    if (ln.startsWith('### ')) out.push(<h3 key={i} className="text-base font-semibold mt-4 mb-1 text-slate-800">{ln.slice(4)}</h3>)
+    else if (ln.startsWith('## ')) out.push(<h2 key={i} className="text-xl font-bold mt-5 mb-2 text-slate-900">{ln.slice(3)}</h2>)
     else if (ln.startsWith('# ')) out.push(<h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-slate-900">{ln.slice(2)}</h1>)
-    else if (ln.startsWith('### ')) out.push(<h3 key={i} className="text-base font-semibold mt-4 mb-1 text-slate-800">{ln.slice(4)}</h3>)
     else if (ln.trim() === '') out.push(<div key={i} className="h-2" />)
     else {
-      const html = ln
-        .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-indigo-50 rounded-md text-sm font-mono text-indigo-700 font-medium">$1</code>')
-        .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      out.push(<p key={i} className="text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: html }} />)
+      out.push(<p key={i} className="text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: inlineFmt(ln) }} />)
     }
   }
+  flushList('end')
   return out
 }
 
