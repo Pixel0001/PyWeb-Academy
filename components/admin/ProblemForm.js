@@ -151,29 +151,33 @@ function ProblemStudentPreview({ form }) {
 
         {/* Buttons */}
         <div className="flex flex-wrap gap-2 pt-1">
-          {form.hint && (
-            showHint ? (
-              <button onClick={() => setShowHint(false)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
-                💡 Ascunde hint
-              </button>
-            ) : (
-              <button onClick={() => setShowHint(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-400 text-amber-800 bg-amber-50 rounded-xl hover:bg-amber-100 font-semibold animate-pulse">
-                💡 Vezi indiciu (−{hintPenalty} XP)
-              </button>
-            )
+          {showHint ? (
+            <button type="button" onClick={() => setShowHint(false)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
+              💡 Ascunde indiciu
+            </button>
+          ) : (
+            <button type="button" onClick={() => form.hint && setShowHint(true)}
+              title={form.hint ? '' : 'Adaugă un hint în formular pentru a-l activa'}
+              className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 rounded-xl font-semibold transition
+                ${form.hint
+                  ? 'border-amber-400 text-amber-800 bg-amber-50 hover:bg-amber-100 animate-pulse'
+                  : 'border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed opacity-60'}`}>
+              💡 {form.hint ? `Vezi indiciu (−${hintPenalty} XP)` : 'Indiciu (necompletat)'}
+            </button>
           )}
           {!showSolution && (
-            <button onClick={() => setShowSolution(true)}
+            <button type="button" onClick={() => setShowSolution(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-indigo-300 text-indigo-700 rounded-xl hover:bg-indigo-50 font-semibold">
               👁️ Vezi rezolvarea (0p)
             </button>
           )}
-          <button className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-semibold shadow text-sm">
+          <button type="button" disabled title="Disponibil doar pentru elevi în platforma reală"
+            className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-semibold shadow text-sm opacity-50 cursor-not-allowed">
             ✈️ Trimite răspunsul
           </button>
         </div>
+        <p className="text-[10px] text-slate-400 text-right">⚠️ Preview admin — butoanele sunt simulate</p>
 
         {/* Hint box */}
         {showHint && form.hint && (
