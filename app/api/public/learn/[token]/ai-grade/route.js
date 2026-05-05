@@ -118,7 +118,7 @@ export async function POST(req, { params }) {
     take: 5,
   })
   const alreadyLocked = prevSubs.some(s => s.locked)
-  const alreadyCorrect = prevSubs.some(s => s.status === 'GRADED' && (s.grade ?? 0) >= 60)
+  const alreadyCorrect = prevSubs.some(s => s.status === 'GRADED' && (s.grade ?? 0) >= 100)
   if (alreadyLocked || alreadyCorrect) {
     return NextResponse.json({ error: 'Problemă deja rezolvată sau blocată' }, { status: 400 })
   }
@@ -184,13 +184,15 @@ export async function POST(req, { params }) {
   const attemptNumber = prevSubs.length + 1
   const MAX_AI_ATTEMPTS = 3
   const passed = finalGrade >= 60
+  const perfect = finalGrade >= 100
   const isLastAttempt = attemptNumber >= MAX_AI_ATTEMPTS
-  const shouldLock = passed || isLastAttempt || aiDetect.isAi
+  const shouldLock = perfect || isLastAttempt || aiDetect.isAi
 
-  // ── XP cap zilnic
+  // ── XP cap zilnic (acordat o singură dată — la prima trecere)
+  const alreadyPassed = prevSubs.some(s => s.autoCorrect === true)
   let xpAwarded = null
   let xpInfo = null
-  if (passed) {
+  if (passed && !alreadyPassed) {
     const baseXp = Math.round((problem.points ?? 10) * (finalGrade / 100))
     const award = await computeXpAward(student.id, baseXp)
     xpAwarded = award.awarded

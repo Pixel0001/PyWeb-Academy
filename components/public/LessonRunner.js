@@ -129,6 +129,36 @@ function renderTheory(text) {
       continue
     }
 
+    // <details>/<summary> block — spoiler / răspuns ascuns
+    if (ln.match(/^<details/i)) {
+      flushList(i)
+      const buf = [ln]
+      while (i + 1 < lines.length && !lines[i].match(/<\/details>/i)) {
+        buf.push(lines[++i])
+      }
+      const block = buf.join('\n')
+      const summaryMatch = block.match(/<summary>([\s\S]*?)<\/summary>/i)
+      const summaryText = summaryMatch ? summaryMatch[1].trim() : 'Răspuns'
+      const inner = block
+        .replace(/<details[^>]*>/i, '')
+        .replace(/<\/details>/i, '')
+        .replace(/<summary>[\s\S]*?<\/summary>/i, '')
+        .trim()
+      const innerNodes = renderTheory(inner)
+      out.push(
+        <details key={i} className="my-3 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden group">
+          <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer font-semibold text-sm text-slate-700 hover:bg-slate-100 transition list-none select-none">
+            <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black group-open:rotate-90 transition-transform">▶</span>
+            <span dangerouslySetInnerHTML={{ __html: inlineFmt(summaryText) }} />
+          </summary>
+          <div className="px-4 pb-4 pt-2 border-t border-slate-200 space-y-2">
+            {innerNodes}
+          </div>
+        </details>
+      )
+      continue
+    }
+
     // List items
     const ulMatch = ln.match(/^[-*]\s+(.+)$/)
     const olMatch = ln.match(/^\d+\.\s+(.+)$/)
@@ -928,10 +958,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     const isWrong = !isOk && !isLocked && needsRetry(i)
                     const isRev = s?.status === 'NEEDS_REVISION'
                     const isPending = s && !isOk && !isRev && !isLocked && !isWrong && s.status === 'PENDING'
+                    const isRevisit = toRevisit.includes(i)
                     const cls = i === idx
                       ? 'bg-blue-800 text-white ring-2 ring-blue-300'
                       : isOk ? 'bg-emerald-100 text-emerald-700'
                       : isLocked ? 'bg-rose-200 text-rose-800'
+                      : isRevisit ? 'bg-rose-200 text-rose-800'
                       : isWrong ? 'bg-rose-100 text-rose-700'
                       : isRev ? 'bg-rose-100 text-rose-700'
                       : isPending ? 'bg-amber-100 text-amber-700'
@@ -939,7 +971,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                     return (
                       <button key={p.id} onClick={() => setIdx(i)}
                         className={`min-w-[38px] h-9 rounded-lg text-sm font-bold transition flex items-center justify-center ${cls}`}>
-                        {isOk ? <CheckSolid className="w-4 h-4" /> : isLocked ? <LockClosedIcon className="w-3.5 h-3.5" /> : isWrong ? <ExclamationTriangleIcon className="w-3.5 h-3.5" /> : i + 1}
+                        {isOk ? <CheckSolid className="w-4 h-4" /> : isLocked ? <LockClosedIcon className="w-3.5 h-3.5" /> : isRevisit ? <ArrowPathIcon className="w-3.5 h-3.5" /> : isWrong ? <ExclamationTriangleIcon className="w-3.5 h-3.5" /> : i + 1}
                       </button>
                     )
                   })}
@@ -1034,27 +1066,30 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           </div>
                         )}
                         {/* Butoane acțiuni — în afara cardului AI/feedback */}
-                        {(curSub.grade ?? 0) < 60 && (
+                        {(curSub.grade ?? 0) < 100 && (
                           <div className="space-y-2">
                             <div className="flex flex-wrap gap-2">
                               {/* Continuă la următoarea problemă */}
                               {idx < problems.length - 1 && (
                                 <button onClick={() => {
-                                  if (!toRevisit.includes(idx)) setToRevisit(prev => [...new Set([...prev, idx])])
+                                  // Adaugă la toRevisit doar dacă nu a trecut (grade < 60)
+                                  if ((curSub.grade ?? 0) < 60 && !toRevisit.includes(idx)) {
+                                    setToRevisit(prev => [...new Set([...prev, idx])])
+                                  }
                                   nextProblem()
                                 }}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                   Continuă <ChevronRightIcon className="w-4 h-4" />
                                 </button>
                               )}
-                              {/* Revin la final */}
+                              {/* Revin la final — doar dacă e programat */}
                               {toRevisit.includes(idx) && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-100 border border-amber-300 text-amber-800 rounded-xl text-xs font-semibold">
-                                  🔁 Programată pentru revizuit la final
+                                <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-100 border border-rose-300 text-rose-800 rounded-xl text-xs font-semibold">
+                                  <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" /> Programată pentru revizuit la final
                                 </span>
                               )}
-                              {/* Vezi rezolvarea */}
-                              {!curSolutionViewed && (
+                              {/* Vezi rezolvarea — doar dacă nu a trecut (nu vrem să resetăm nota la 0 pe o problemă trecută) */}
+                              {!curSolutionViewed && (curSub.grade ?? 0) < 60 && (
                                 <button onClick={viewSolution} disabled={solutionLoading}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
                                   <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea (0p)'}
