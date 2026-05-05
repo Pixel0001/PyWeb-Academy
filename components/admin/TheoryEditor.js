@@ -257,7 +257,7 @@ function TypeMenu({ block, onConvert, disabled }) {
 // BLOCK EDITOR CARD — drag & drop aware
 // ─────────────────────────────────────────────────────────────────────────────
 function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert,
-                       isDragging, isDragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
+                       isDragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
   const update = (patch) => onChange({ ...block, ...patch })
   const dragAllowed = useRef(false)
 
@@ -270,16 +270,19 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
         onDragStart(idx)
       }}
       onDragEnd={onDragEnd}
-      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver(idx) }}
+      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver(idx, e) }}
       onDrop={e => { e.preventDefault(); onDrop(idx) }}
       className={`relative bg-white border-2 rounded-xl transition-all
-        ${isDragOver ? 'border-indigo-400 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-200'}
+        ${dragOver ? 'border-indigo-400 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-200'}
         ${isDragging ? 'opacity-40 border-dashed' : ''}
       `}
     >
-      {/* Drop indicator line above */}
-      {isDragOver && (
+      {/* Drop indicator — top or bottom */}
+      {dragOver === 'top' && (
         <div className="absolute -top-1 left-4 right-4 h-0.5 bg-indigo-500 rounded-full z-10 pointer-events-none" />
+      )}
+      {dragOver === 'bottom' && (
+        <div className="absolute -bottom-1 left-4 right-4 h-0.5 bg-indigo-500 rounded-full z-10 pointer-events-none" />
       )}
 
       {/* Header */}
@@ -455,7 +458,7 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
   const [rawText, setRawText] = useState('')
   const [activeIdx, setActiveIdx] = useState(null) // for preview highlight
   const [dragIdx, setDragIdx] = useState(null)
-  const [dragOverIdx, setDragOverIdx] = useState(null)
+  const [dragOver, setDragOver] = useState(null) // { idx, pos: 'top'|'bottom' }
 
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
@@ -496,13 +499,21 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
 
   // Drag & Drop handlers
   const handleDragStart = (idx) => setDragIdx(idx)
-  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null) }
-  const handleDragOver = (idx) => { if (idx !== dragIdx) setDragOverIdx(idx) }
+  const handleDragEnd = () => { setDragIdx(null); setDragOver(null) }
+  const handleDragOver = (idx, e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const pos = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom'
+    setDragOver(prev => (prev?.idx === idx && prev?.pos === pos) ? prev : { idx, pos })
+  }
   const handleDrop = (targetIdx) => {
-    if (dragIdx === null || dragIdx === targetIdx) { handleDragEnd(); return }
+    if (dragIdx === null) { handleDragEnd(); return }
+    const pos = dragOver?.pos || 'bottom'
+    let insertAt = pos === 'top' ? targetIdx : targetIdx + 1
+    // adjust for the gap created by removing dragIdx
+    if (dragIdx < insertAt) insertAt--
+    if (insertAt === dragIdx) { handleDragEnd(); return }
     const arr = [...blocks]
     const [removed] = arr.splice(dragIdx, 1)
-    const insertAt = dragIdx < targetIdx ? targetIdx - 1 : targetIdx
     arr.splice(insertAt, 0, removed)
     update(arr)
     handleDragEnd()
@@ -548,7 +559,7 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
       {(view === 'edit' || view === 'split') && (
         <div className={view === 'split' ? 'grid lg:grid-cols-2 gap-4 items-start' : ''}>
           {/* Editor column */}
-          <div className="space-y-2" onDragLeave={() => setDragOverIdx(null)}>
+          <div className="space-y-2" onDragLeave={() => setDragOver(null)}>
             {blocks.length === 0 ? (
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
                 <DocumentTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -566,7 +577,7 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
                 onRemove={removeBlock}
                 onConvert={convertBlock}
                 isDragging={dragIdx === i}
-                isDragOver={dragOverIdx === i}
+                dragOver={dragOver?.idx === i ? dragOver.pos : null}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
@@ -577,9 +588,9 @@ export default function TheoryEditor({ value, onChange, disabled = false }) {
             {/* Drop zone at the bottom when dragging */}
             {dragIdx !== null && (
               <div
-                onDragOver={e => { e.preventDefault(); setDragOverIdx(blocks.length) }}
-                onDrop={e => { e.preventDefault(); handleDrop(blocks.length) }}
-                className={`h-10 rounded-xl border-2 border-dashed transition ${dragOverIdx === blocks.length ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200'}`}
+                onDragOver={e => { e.preventDefault(); setDragOver({ idx: blocks.length, pos: 'bottom' }) }}
+                onDrop={e => { e.preventDefault(); handleDrop(blocks.length - 1) }}
+                className={`h-10 rounded-xl border-2 border-dashed transition ${dragOver?.idx === blocks.length ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200'}`}
               />
             )}
 
