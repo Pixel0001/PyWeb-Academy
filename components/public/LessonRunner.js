@@ -32,8 +32,10 @@ function renderTheory(text) {
   const normalized = text
     // 1. Mută ``` mid-linie pe un rând nou
     .replace(/([^\n`])([ \t]*```)/g, '$1\n$2')
-    // 2. Mută textul de după ``` de închidere pe un rând nou (ex: "``` . Continuă")
+    // 2. Mută textul de după ``` de închidere pe un rând nou
     .replace(/^([ \t]*```)([^`\w\n][^\n]*)/gm, '$1\n$2')
+    // 3. Elimină spații la începutul liniilor cu ```
+    .replace(/^[ \t]+(```)/gm, '$1')
   const lines = normalized.split('\n')
   const out = []
   let inCode = false; let codeBuf = []; let codeLang = ''
@@ -60,6 +62,7 @@ function renderTheory(text) {
     if (ln.startsWith('```')) {
       flushList(i)
       if (inCode) {
+        const codeText = reformatCode(codeBuf.join('\n'), codeLang)
         out.push(
           <div key={`c${i}`} className="my-4 rounded-xl bg-slate-900 shadow-inner overflow-hidden">
             {codeLang && (
@@ -67,7 +70,7 @@ function renderTheory(text) {
                 <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{codeLang}</span>
               </div>
             )}
-            <pre className="text-slate-100 p-4 overflow-x-auto text-sm font-mono whitespace-pre">{codeBuf.join('\n')}</pre>
+            <pre className="text-slate-100 p-4 overflow-x-auto text-sm font-mono whitespace-pre">{codeText}</pre>
           </div>
         )
         codeBuf = []; codeLang = ''; inCode = false
@@ -78,7 +81,7 @@ function renderTheory(text) {
         const inlineMatch = rest.match(/^(\w*)\s+(.+)$/)
         codeLang = inlineMatch ? inlineMatch[1] : rest.trim()
         if (inlineMatch) {
-          reformatCode(inlineMatch[2].trim(), codeLang).split('\n').forEach(l => codeBuf.push(l))
+          codeBuf.push(inlineMatch[2].trim())
         }
       }
       continue
