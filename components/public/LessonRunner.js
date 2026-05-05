@@ -210,6 +210,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [submitting, setSubmitting] = useState(false)
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
   const [toRevisit, setToRevisit] = useState([]) // indecși de probleme eșuate, de revăzut la final
+  const [savedCodes, setSavedCodes] = useState({}) // { problemId: code } — păstrează codul la schimbarea problemei
   const [lastOutput, setLastOutput] = useState('')
   const [chatOpen, setChatOpen] = useState({}) // { problemId: bool }
   const [time, setTime] = useState(0)
@@ -234,7 +235,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   }, [step, idx])
 
   useEffect(() => {
-    setAnswer(''); setCode(problems[idx]?.starterCode || ''); setShowHint(false)
+    setAnswer('')
+    // Restaurează codul salvat pentru problema nouă (sau starterCode dacă nu există)
+    const pid = problems[idx]?.id
+    setCode(pid && savedCodes[pid] != null ? savedCodes[pid] : (problems[idx]?.starterCode || ''))
+    setShowHint(false)
     startRef.current = Date.now(); setTime(0)
     setTransitioning(true)
     const t = setTimeout(() => setTransitioning(false), 120)
@@ -242,6 +247,13 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   }, [idx, problems])
 
   const cur = problems[idx]
+  // Salvează codul curent în savedCodes la fiecare modificare
+  useEffect(() => {
+    if (cur?.id && cur.type === 'CODING') {
+      setSavedCodes(prev => ({ ...prev, [cur.id]: code }))
+    }
+  }, [code, cur?.id])
+
   const curSub = submissions[idx]
   const curAttempts = attemptsCount[idx] || 0
   const curHintUsed = hintsUsed[idx]
@@ -548,17 +560,29 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       }).catch(() => {})
       return
     }
-    // Suntem la ultima — întâi verifică toRevisit (probleme blocate esuate)
-    const nextRevisit = toRevisit.find(i => true)
+    // Suntem la ultima — întâi verifică toRevisit (probleme blocate eșuate)
+    const nextRevisit = toRevisit[0]
     if (nextRevisit !== undefined) {
-      setToRevisit(prev => prev.filter(i => i !== nextRevisit))
+      setToRevisit(prev => prev.slice(1))
+      // Deblochează problema local — încercări infinite la revizuire
+      const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
+      const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
+      const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
+      setAiFeedback(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
       setIdx(nextRevisit)
-      toast(`Revenim la problema ${nextRevisit + 1} — mai ai ${toRevisit.length - 1 + 1} de revizuit`, { icon: '🔁' })
-      if (isGuest) return
-      fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentProblemIndex: nextRevisit }),
-      }).catch(() => {})
+      const remaining = toRevisit.length - 1
+      toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { icon: '🔁', duration: 4000 })
+      // Reset pe server în background (fără să ștergem codul — codul e în state local)
+      if (!isGuest) {
+        fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
+        }).catch(() => {})
+        fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentProblemIndex: nextRevisit }),
+        }).catch(() => {})
+      }
       return
     }
     // Apoi verifică needsRetry (greșite neblocate)
