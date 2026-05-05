@@ -259,13 +259,13 @@ function TypeMenu({ block, onConvert, disabled }) {
 function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert,
                        isDragging, isDragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
   const update = (patch) => onChange({ ...block, ...patch })
-  const handleRef = useRef(null)
+  const dragAllowed = useRef(false)
 
   return (
     <div
       draggable={!disabled}
       onDragStart={e => {
-        if (!handleRef.current?.contains(e.target)) { e.preventDefault(); return }
+        if (!dragAllowed.current) { e.preventDefault(); return }
         e.dataTransfer.effectAllowed = 'move'
         onDragStart(idx)
       }}
@@ -286,7 +286,8 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50 rounded-t-xl select-none">
         {/* Drag handle */}
         <div
-          ref={handleRef}
+          onMouseDown={() => { dragAllowed.current = true }}
+          onMouseUp={() => { dragAllowed.current = false }}
           className={`cursor-grab active:cursor-grabbing p-0.5 text-slate-400 hover:text-slate-600 ${disabled ? 'opacity-30' : ''}`}
           title="Trage pentru reordonare"
         >
