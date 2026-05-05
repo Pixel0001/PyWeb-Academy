@@ -11,6 +11,7 @@ const DIFF = { EASY: '🟢', MEDIUM: '🟡', HARD: '🔴' }
 
 export default function LessonEditor({ moduleId, lesson, allProblems, canEdit }) {
   const router = useRouter()
+  const backUrl = typeof window !== 'undefined' ? window.location.pathname : `/admin/modules/${moduleId}/lessons/${lesson.id}`
   const [tab, setTab] = useState('teorie') // 'teorie' | 'practica' | 'setari'
   const [form, setForm] = useState({
     title: lesson.title,
@@ -145,7 +146,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
             </h3>
             {canEdit && (
               <div className="flex gap-2 flex-wrap">
-                <Link href="/admin/problems/new" className="text-sm px-3 py-1.5 border rounded-lg hover:bg-gray-50 font-medium">+ Creează problemă nouă</Link>
+                <Link href={`/admin/problems/new?back=${encodeURIComponent(backUrl)}`} className="text-sm px-3 py-1.5 border rounded-lg hover:bg-gray-50 font-medium">+ Creează problemă nouă</Link>
                 <button onClick={() => setPicker(!picker)} className="text-sm px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition">
                   {picker ? 'Închide' : '+ Atașează din bancă'}
                 </button>
@@ -193,7 +194,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
                   <span>{DIFF[p.difficulty]}</span>
                   <span className="font-medium flex-1 truncate">{p.title}</span>
                   <span className="text-xs text-gray-500 hidden sm:inline">{p.topic}</span>
-                  <Link href={`/admin/problems/${p.id}/edit`} className="text-xs text-indigo-600 px-2 hover:underline">Editează</Link>
+                  <Link href={`/admin/problems/${p.id}/edit?back=${encodeURIComponent(backUrl)}`} className="text-xs text-indigo-600 px-2 hover:underline">Editează</Link>
                   {canEdit && <button onClick={() => detach(p.id)} className="text-xs text-red-600 px-2 hover:underline">Detașează</button>}
                 </li>
               ))}

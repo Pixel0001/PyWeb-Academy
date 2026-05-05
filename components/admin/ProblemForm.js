@@ -16,7 +16,7 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
   const [loading, setLoading] = useState(false)
   const isEdit = !!problem?.id
   const resolvedApiUrl = apiUrl || (isEdit ? `/api/admin/problems/${problem.id}` : '/api/admin/problems')
-  const resolvedBackUrl = backUrl || (isEdit ? '/admin/problems' : '/admin/problems')
+  const resolvedBackUrl = backUrl || '/admin/problems'
 
   const [form, setForm] = useState({
     title: problem?.title || '',

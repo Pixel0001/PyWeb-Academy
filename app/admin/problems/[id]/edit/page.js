@@ -6,16 +6,18 @@ import ProblemForm from '@/components/admin/ProblemForm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-export default async function EditProblemPage({ params }) {
+export default async function EditProblemPage({ params, searchParams }) {
   return (
     <PermissionGuard permission="problems.edit">
-      <Content params={params} />
+      <Content params={params} searchParams={searchParams} />
     </PermissionGuard>
   )
 }
 
-async function Content({ params }) {
+async function Content({ params, searchParams }) {
   const { id } = await params
+  const sp = await searchParams
+  const backUrl = sp?.back ? decodeURIComponent(sp.back) : '/admin/problems'
   const [problem, courses] = await Promise.all([
     prisma.problem.findUnique({ where: { id } }),
     prisma.course.findMany({ orderBy: { title: 'asc' }, select: { id: true, title: true } }),
@@ -24,9 +26,9 @@ async function Content({ params }) {
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/problems" className="text-indigo-600 hover:underline text-sm">← Înapoi la bancă</Link>
+      <Link href={backUrl} className="text-indigo-600 hover:underline text-sm">← Înapoi</Link>
       <h1 className="text-2xl font-bold text-gray-900">✏️ Editează problemă</h1>
-      <ProblemForm problem={problem} courses={courses} />
+      <ProblemForm problem={problem} courses={courses} backUrl={backUrl} />
     </div>
   )
 }
