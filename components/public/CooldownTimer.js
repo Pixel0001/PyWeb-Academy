@@ -1,8 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ClockIcon } from '@heroicons/react/24/outline'
 
-export default function CooldownTimer({ endsAt }) {
+export default function CooldownTimer({ endsAt, compact = false }) {
   const [remaining, setRemaining] = useState(() => Math.max(0, endsAt - Date.now()))
 
   useEffect(() => {
@@ -19,6 +18,15 @@ export default function CooldownTimer({ endsAt }) {
   const m = Math.floor((totalSec % 3600) / 60)
   const s = totalSec % 60
 
+  if (compact) {
+    return (
+      <div className="flex flex-col items-center justify-center leading-none opacity-60 group-hover:opacity-100 transition-opacity">
+        <span className="text-[9px] font-bold">{h}h</span>
+        <span className="text-[9px] font-bold">{m.toString().padStart(2, '0')}m</span>
+      </div>
+    )
+  }
+
   const fmt = h > 0
     ? `${h}h ${m.toString().padStart(2, '0')}min ${s.toString().padStart(2, '0')}s`
     : m > 0
@@ -27,7 +35,6 @@ export default function CooldownTimer({ endsAt }) {
 
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-500">
-      <ClockIcon className="w-3 h-3 shrink-0" />
       {fmt}
     </span>
   )
