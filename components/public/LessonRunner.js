@@ -15,7 +15,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
-import Markdown, { inlineFmt } from '@/lib/markdown'
+import Markdown, { inlineFmt, reformatCode } from '@/lib/markdown'
 import AiChat from '@/components/learn/AiChat'
 import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
@@ -28,9 +28,12 @@ const DIFF_LABEL = { EASY: 'Usor', MEDIUM: 'Mediu', HARD: 'Greu' }
 
 function renderTheory(text) {
   if (!text) return null
-  // Normalizează blocurile de cod: dacă ``` apare la mijlocul unui rând,
-  // îl mută pe un rând nou (ex: "Exemplu: ```python\n...")
-  const normalized = text.replace(/([^\n`])([ \t]*```)/g, '$1\n$2')
+  // Normalizează blocurile de cod
+  const normalized = text
+    // 1. Mută ``` mid-linie pe un rând nou
+    .replace(/([^\n`])([ \t]*```)/g, '$1\n$2')
+    // 2. Mută textul de după ``` de închidere pe un rând nou (ex: "``` . Continuă")
+    .replace(/^([ \t]*```)([^`\w\n][^\n]*)/gm, '$1\n$2')
   const lines = normalized.split('\n')
   const out = []
   let inCode = false; let codeBuf = []; let codeLang = ''
@@ -70,7 +73,13 @@ function renderTheory(text) {
         codeBuf = []; codeLang = ''; inCode = false
       } else {
         inCode = true
-        codeLang = ln.slice(3).trim()
+        const rest = ln.slice(3)
+        // Detectează cod inline pe linia de deschidere: ```python cod_aici
+        const inlineMatch = rest.match(/^(\w*)\s+(.+)$/)
+        codeLang = inlineMatch ? inlineMatch[1] : rest.trim()
+        if (inlineMatch) {
+          reformatCode(inlineMatch[2].trim(), codeLang).split('\n').forEach(l => codeBuf.push(l))
+        }
       }
       continue
     }
