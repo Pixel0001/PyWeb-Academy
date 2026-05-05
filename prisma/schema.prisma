@@ -1123,6 +1123,7 @@ model ProblemSubmission {
   aiTokensIn       Int?     // pentru tracking cost
   aiTokensOut      Int?
   teacherOverride  Boolean  @default(false) // profesorul a suprascris nota AI
+  xpAwarded        Int?     // XP efectiv acordat pentru această submisie
 
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
