@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import MrPyWebAvatar from './MrPyWebAvatar'
+import Markdown from '@/lib/markdown'
 
 /**
  * Chat cu Mr. PyWeb pentru clarificări la o problemă.
@@ -157,12 +158,12 @@ function Bubble({ msg }) {
       <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${isUser ? 'bg-blue-100 text-sm' : 'bg-indigo-100 p-0.5'}`}>
         {isUser ? '🧑' : <MrPyWebAvatar size={26} />}
       </div>
-      <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
+      <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
         isUser
-          ? 'bg-blue-600 text-white rounded-br-sm'
+          ? 'bg-blue-600 text-white rounded-br-sm whitespace-pre-wrap'
           : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm'
       }`}>
-        {msg.content}
+        {isUser ? msg.content : <Markdown text={msg.content} compact />}
       </div>
     </div>
   )

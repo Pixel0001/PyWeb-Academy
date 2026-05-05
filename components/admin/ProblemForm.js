@@ -93,8 +93,8 @@ function ProblemStudentPreview({ form }) {
 
   const validOptions = (form.options || []).filter(o => o.trim())
   const hintPenalty = Math.round((form.points || 10) * 10 / 100)
-  const descNodes = renderMd(form.description)
-  const explNodes = renderMd(form.explanation)
+  const descNodes = renderMd(form.description, { compact: true })
+  const explNodes = renderMd(form.explanation, { compact: true })
 
   return (
     <div className="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg overflow-hidden">

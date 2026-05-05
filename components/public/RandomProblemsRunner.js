@@ -14,6 +14,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
+import Markdown from '@/lib/markdown'
 import AiChat from '@/components/learn/AiChat'
 import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
@@ -672,7 +673,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
 
                     {isExpanded && (
                       <div className="px-5 pb-5 space-y-4 border-t border-slate-100 pt-4">
-                        <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{p.description}</p>
+                        <Markdown text={p.description} compact className="text-slate-700 leading-relaxed" />
 
                         {/* Status banner pentru ultima submisie */}
                         {sub && (
@@ -712,7 +713,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                 {sol.explanation && (
                                   <div className="bg-white/70 rounded-lg p-2">
                                     <div className="text-[10px] font-bold uppercase text-rose-700 mb-1">Explicație</div>
-                                    <div className="text-rose-900 whitespace-pre-wrap">{sol.explanation}</div>
+                                    <Markdown text={sol.explanation} compact className="text-rose-900" />
                                   </div>
                                 )}
                               </div>
@@ -800,7 +801,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
                                 {usedHint ? (
                                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
                                     <LightBulbIcon className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                    <div><strong>Indiciu:</strong> {p.hint}</div>
+                                    <div className="flex-1"><strong>Indiciu:</strong> <Markdown text={p.hint} compact className="inline-block" /></div>
                                   </div>
                                 ) : (
                                   <button type="button" onClick={() => useHintFor(p)}

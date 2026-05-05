@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import MrPyWebAvatar from './MrPyWebAvatar'
+import Markdown from '@/lib/markdown'
 
 /**
  * Afișare feedback AI „Mr. PyWeb" pentru o problemă CODING.
@@ -92,8 +93,8 @@ export default function AiFeedback({ data, onClose, onRetry, token }) {
       {/* Feedback principal */}
       {aiGrade?.reasoning && (
         <div className="px-4 pb-3">
-          <div className="bg-white rounded-xl border border-blue-100 p-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-            {aiGrade.reasoning}
+          <div className="bg-white rounded-xl border border-blue-100 p-3 text-sm text-gray-800 leading-relaxed">
+            <Markdown text={aiGrade.reasoning} compact />
           </div>
         </div>
       )}

@@ -15,6 +15,7 @@ import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/sol
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import CodeRunner from '@/components/learn/CodeRunner'
 import AiFeedback from '@/components/learn/AiFeedback'
+import Markdown from '@/lib/markdown'
 import AiChat from '@/components/learn/AiChat'
 import AiGradingLoader from '@/components/learn/AiGradingLoader'
 
@@ -888,7 +889,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                   </div>
 
                   <div className="p-5 sm:p-6 space-y-4">
-                    <div className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">{cur.description}</div>
+                    <Markdown text={cur.description} className="text-base text-slate-700 leading-relaxed" />
 
                     {/* Soluția — afișată dacă elevul a apăsat „Vezi rezolvarea" */}
                     {curSolutionViewed && solutionData[cur.id] && (
@@ -905,7 +906,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         {solutionData[cur.id].explanation && (
                           <div>
                             <div className="text-[10px] uppercase tracking-wider font-bold text-indigo-700 mb-1">Explicație</div>
-                            <div className="text-sm text-slate-700 whitespace-pre-wrap">{solutionData[cur.id].explanation}</div>
+                            <Markdown text={solutionData[cur.id].explanation} compact className="text-sm text-slate-700" />
                           </div>
                         )}
                       </div>
@@ -1130,7 +1131,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         {showHint && cur.hint && curHintUsed && (
                           <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-sm text-amber-900 flex gap-2">
                             <LightBulbIcon className="w-5 h-5 shrink-0 mt-0.5" />
-                            <div>{cur.hint}</div>
+                            <Markdown text={cur.hint} compact className="flex-1" />
                           </div>
                         )}
                       </>
