@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { BookOpenIcon, PuzzlePieceIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { BookOpenIcon, PuzzlePieceIcon, Cog6ToothIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline'
 import TheoryEditor from './TheoryEditor'
 
 const DIFF = { EASY: '🟢', MEDIUM: '🟡', HARD: '🔴' }
@@ -73,8 +73,8 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
 
   return (
     <div className="space-y-4">
-      {/* Sticky title bar */}
-      <div className="sticky top-14 xs:top-16 z-20 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
+      {/* Title bar — static, nu sticky */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
         <input
           value={form.title}
           onChange={e => setForm({ ...form, title: e.target.value })}
@@ -92,7 +92,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
           title="Salvează lecția"
           className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-sm font-bold shadow-xl disabled:opacity-50 transition"
         >
-          💾 {saving ? 'Se salvează...' : 'Salvează'}
+          <CloudArrowUpIcon className="w-4 h-4" /> {saving ? 'Se salvează...' : 'Salvează'}
         </button>
       )}
 
