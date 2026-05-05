@@ -239,7 +239,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [resetting, setResetting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
-  const [toRevisit, setToRevisit] = useState([]) // indecși de probleme eșuate, de revăzut la final
   const [savedCodes, setSavedCodes] = useState({}) // { problemId: code } — păstrează codul la schimbarea problemei
   const [lastOutput, setLastOutput] = useState('')
   const [chatOpen, setChatOpen] = useState({}) // { problemId: bool }
@@ -290,10 +289,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const curLocked = locks[idx]
   const curSolutionViewed = solutionViewed[idx]
   const curMaxAttempts = cur ? getMaxAttempts(cur) : 3
-  // O problemă e „terminată" dacă: e rezolvată corect, blocată cu 0p, sau profesorul a notat-o
+  // Probleme blocate cu notă mică — derivat din submissions+locks, persistent la reload
+  const toRevisit = problems.map((_, i) => i).filter(i => locks[i] && (submissions[i]?.grade ?? 0) < 60)
+
+  // O problemă e „terminată" dacă e rezolvată corect sau blocată cu notă ≥60
   const isProblemDone = (i) => {
     const s = submissions[i]
     if (!s) return false
+    if (locks[i] && (s.grade ?? 0) < 60) return false // blocat+eșuat → trebuie reluat
     if (locks[i]) return true
     if (s.status === 'GRADED' && (s.grade ?? 0) >= 60) return true
     return false
@@ -309,6 +312,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const allDone = problems.every((_, i) => isProblemDone(i))
   const doneCount = problems.filter((_, i) => isProblemDone(i)).length
   const wrongCount = problems.filter((_, i) => needsRetry(i)).length
+  const revisionCount = problems.filter((_, i) => submissions[i]?.status === 'NEEDS_REVISION').length
   const lessonPct = problems.length > 0 ? Math.round((doneCount / problems.length) * 100) : 0
 
   const completeTheory = async () => {
@@ -526,7 +530,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         // Dacă problema e acum blocată cu notă mică → adaugă la toRevisit și avansează automat
         if (d.submission.locked && finalGrade < 60) {
           const capturedIdx = idx
-          setToRevisit(prev => [...new Set([...prev, capturedIdx])])
           toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
           const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !nl[i])
           if (nextUnlocked !== -1) {
@@ -564,7 +567,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       } else if (d.locked) {
         toast.error(`Greșit — încercări epuizate. 0 XP.`)
         const capturedIdx = idx
-        setToRevisit(prev => [...new Set([...prev, capturedIdx])])
         toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
         const currentLocks = [...locks]; currentLocks[capturedIdx] = true
         const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !currentLocks[i])
@@ -593,7 +595,6 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     // Suntem la ultima — întâi verifică toRevisit (probleme blocate eșuate)
     const nextRevisit = toRevisit[0]
     if (nextRevisit !== undefined) {
-      setToRevisit(prev => prev.slice(1))
       // Deblochează problema local — încercări infinite la revizuire
       const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
       const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
@@ -804,11 +805,18 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
       {/* Finish button */}
       {step === 'problems' && allDone && (
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 space-y-2">
+          {revisionCount > 0 && (
+            <button onClick={() => { const i = problems.findIndex((_, i) => submissions[i]?.status === 'NEEDS_REVISION'); if (i !== -1) setIdx(i) }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-400 hover:bg-amber-500 text-amber-900 rounded-xl font-bold text-sm shadow transition">
+              <ExclamationTriangleIcon className="w-4 h-4" />
+              Refă problema ({revisionCount} de refăcut)
+            </button>
+          )}
           <button onClick={finishLesson} disabled={finishing}
             className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition disabled:opacity-60">
             <TrophyIcon className="w-5 h-5" />
-            {finishing ? 'Se salveaza...' : 'Finalizeaza lectia'}
+            {finishing ? 'Se salveaza...' : revisionCount > 0 ? 'Finalizează oricum' : 'Finalizeaza lectia'}
           </button>
         </div>
       )}
@@ -1071,13 +1079,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             <div className="flex flex-wrap gap-2">
                               {/* Continuă la următoarea problemă */}
                               {idx < problems.length - 1 && (
-                                <button onClick={() => {
-                                  // Adaugă la toRevisit doar dacă nu a trecut (grade < 60)
-                                  if ((curSub.grade ?? 0) < 60 && !toRevisit.includes(idx)) {
-                                    setToRevisit(prev => [...new Set([...prev, idx])])
-                                  }
-                                  nextProblem()
-                                }}
+                                <button onClick={() => { nextProblem() }}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                   Continuă <ChevronRightIcon className="w-4 h-4" />
                                 </button>
@@ -1288,11 +1290,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           Urmatoarea <ChevronRightIcon className="w-4 h-4" />
                         </button>
                       ) : allDone ? (
-                        <button onClick={finishLesson} disabled={finishing}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow">
-                          <TrophyIcon className="w-5 h-5" />
-                          {finishing ? 'Se salveaza...' : 'Finalizeaza lectia'}
-                        </button>
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          {revisionCount > 0 && (
+                            <button onClick={() => { const i = problems.findIndex((_, i) => submissions[i]?.status === 'NEEDS_REVISION'); if (i !== -1) setIdx(i) }}
+                              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-amber-900 rounded-xl text-sm font-bold shadow transition active:scale-95">
+                              <ExclamationTriangleIcon className="w-4 h-4" /> Refă problema ({revisionCount})
+                            </button>
+                          )}
+                          <button onClick={finishLesson} disabled={finishing}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow">
+                            <TrophyIcon className="w-5 h-5" />
+                            {finishing ? 'Se salveaza...' : revisionCount > 0 ? 'Finalizează oricum' : 'Finalizeaza lectia'}
+                          </button>
+                        </div>
                       ) : wrongCount > 0 ? (
                         <button onClick={nextProblem}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">

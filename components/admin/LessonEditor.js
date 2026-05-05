@@ -73,7 +73,7 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
 
   return (
     <div className="space-y-4">
-      {/* Sticky title + save bar */}
+      {/* Sticky title bar */}
       <div className="sticky top-14 xs:top-16 z-20 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-wrap shadow-sm">
         <input
           value={form.title}
@@ -82,12 +82,19 @@ export default function LessonEditor({ moduleId, lesson, allProblems, canEdit })
           placeholder="Titlul lecției..."
           className="flex-1 min-w-[200px] px-3 py-2 border-2 border-transparent hover:border-slate-200 focus:border-indigo-400 rounded-lg text-lg font-bold outline-none transition"
         />
-        {canEdit && (
-          <button onClick={save} disabled={saving} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold disabled:opacity-50 transition shrink-0">
-            {saving ? 'Se salvează...' : '💾 Salvează lecția'}
-          </button>
-        )}
       </div>
+
+      {/* FAB save — colț dreapta-jos */}
+      {canEdit && (
+        <button
+          onClick={save}
+          disabled={saving}
+          title="Salvează lecția"
+          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-sm font-bold shadow-xl disabled:opacity-50 transition"
+        >
+          💾 {saving ? 'Se salvează...' : 'Salvează'}
+        </button>
+      )}
 
       {/* Big tab buttons */}
       <div className="flex gap-2 bg-white rounded-2xl border border-gray-200 p-2">
