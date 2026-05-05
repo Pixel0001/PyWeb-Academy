@@ -675,7 +675,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
             {problems.map((p, i) => {
               const s = submissions[i]
               const isOk = s?.status === 'GRADED' && (s.grade ?? 0) >= 60
-              const isLocked = locks[i] && (s?.grade ?? 0) === 0
+              const isLocked = locks[i] && !isOk
+              const isInRevisit = toRevisit.includes(i)
               const isWrong = !isOk && !isLocked && needsRetry(i)
               const isRev = s?.status === 'NEEDS_REVISION'
               const isPending = s && !isOk && !isRev && !isLocked && !isWrong && s.status === 'PENDING'
@@ -696,7 +697,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-white/80 truncate font-medium">{p.title}</div>
-                    <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block ${DIFF_COLOR[p.difficulty]}`}>{DIFF_LABEL[p.difficulty]}</div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block ${DIFF_COLOR[p.difficulty]}`}>{DIFF_LABEL[p.difficulty]}</div>
+                      {isInRevisit && <span className="text-[9px] text-amber-300 font-bold">🔁 revizuit</span>}
+                    </div>
                   </div>
                 </button>
               )

@@ -182,7 +182,7 @@ export async function POST(req, { params }) {
   // 7. Salvează ca ProblemSubmission
   // 2 încercări: la prima (sub 60) NU blocăm, la a doua sau dacă a trecut → blocăm
   const attemptNumber = prevSubs.length + 1
-  const MAX_AI_ATTEMPTS = 2
+  const MAX_AI_ATTEMPTS = 3
   const passed = finalGrade >= 60
   const isLastAttempt = attemptNumber >= MAX_AI_ATTEMPTS
   const shouldLock = passed || isLastAttempt || aiDetect.isAi
