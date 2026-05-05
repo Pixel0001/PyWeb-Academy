@@ -39,6 +39,55 @@ const DEFAULTS = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// EMOJI / ICON PICKER
+// ─────────────────────────────────────────────────────────────────────────────
+const EMOJI_CATS = [
+  { label: 'Status',      icon: '✅', emojis: ['✅','❌','⚠️','💡','🎯','🔥','⭐','🏆','📌','🔑','💯','📍','🆕','🆗','🔒','🔓'] },
+  { label: 'Numere',      icon: '1️⃣', emojis: ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','0️⃣','🔟','#️⃣','*️⃣','🔢'] },
+  { label: 'Săgeți',      icon: '👉', emojis: ['👉','👈','👆','👇','➡️','⬅️','⬆️','⬇️','↩️','↪️','🔽','🔼','↗️','↘️','🔄','🔁'] },
+  { label: 'Programare',  icon: '💻', emojis: ['🐍','💻','🖥️','⌨️','🐛','🔧','🛠️','⚡','🔄','📊','💾','📦','🚀','🌐','📱','🔌','🖱️','📡','🔐','🗄️'] },
+  { label: 'Educație',    icon: '📚', emojis: ['📝','📖','🎓','🏫','👨‍💻','🧠','✏️','📚','🔬','🔭','🎒','📐','📏','🖊️','📓','📋','📄'] },
+  { label: 'Expresii',    icon: '😊', emojis: ['😊','🎉','👏','🤓','😅','💪','🤔','💭','🙌','🤝','😎','🥳','🤯','😬','🙏','💬'] },
+]
+
+function EmojiPicker({ onInsert, onClose }) {
+  const ref = useRef(null)
+  const [cat, setCat] = useState(0)
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl w-72 overflow-hidden">
+      {/* Category tabs */}
+      <div className="flex overflow-x-auto border-b border-slate-100 bg-slate-50 px-1 pt-1 gap-0.5 scrollbar-none">
+        {EMOJI_CATS.map((c, i) => (
+          <button key={i} type="button" onMouseDown={e => { e.preventDefault(); setCat(i) }}
+            className={`shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-t-lg text-[10px] font-bold transition whitespace-nowrap border border-transparent ${
+              cat === i ? 'bg-white text-indigo-700 border-slate-200 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-700'
+            }`}>
+            <span>{c.icon}</span> {c.label}
+          </button>
+        ))}
+      </div>
+      {/* Emoji grid */}
+      <div className="p-2 grid grid-cols-8 gap-0.5 max-h-36 overflow-y-auto">
+        {EMOJI_CATS[cat].emojis.map((em, i) => (
+          <button key={i} type="button" onMouseDown={e => { e.preventDefault(); onInsert(em) }}
+            className="text-xl p-1 rounded-lg hover:bg-indigo-50 transition active:scale-90 text-center leading-none" title={em}>
+            {em}
+          </button>
+        ))}
+      </div>
+      <div className="px-3 py-1.5 border-t border-slate-100 bg-slate-50">
+        <p className="text-[9px] text-slate-400">Click pe emoji pentru a-l insera la cursor</p>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CONVERT block to new type — preserve content where possible
 // ─────────────────────────────────────────────────────────────────────────────
 function convertBlock(block, newType) {
@@ -260,6 +309,39 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
                        isDragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
   const update = (patch) => onChange({ ...block, ...patch })
   const dragAllowed = useRef(false)
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  // cursor: { field: string, itemIdx: number|null, pos: number }
+  const cursorRef = useRef({ field: 'text', itemIdx: null, pos: 0 })
+
+  const trackCursor = (field, itemIdx = null) => (e) => {
+    cursorRef.current = { field, itemIdx, pos: e.target.selectionStart ?? (e.target.value?.length ?? 0) }
+  }
+
+  const insertEmoji = (emoji) => {
+    const { field, itemIdx, pos } = cursorRef.current
+    if (itemIdx !== null) {
+      const items = [...(block.items || [])]
+      const cur = items[itemIdx] || ''
+      items[itemIdx] = cur.slice(0, pos) + emoji + cur.slice(pos)
+      update({ items })
+    } else {
+      const cur = String(block[field] || '')
+      update({ [field]: cur.slice(0, pos) + emoji + cur.slice(pos) })
+    }
+    cursorRef.current = { ...cursorRef.current, pos: cursorRef.current.pos + [...emoji].length }
+  }
+
+  // Emoji button — shown in text-based blocks
+  const EmojiBtnEl = !disabled && (
+    <div className="relative">
+      <button type="button" onMouseDown={e => { e.stopPropagation(); setEmojiOpen(o => !o) }}
+        className="flex items-center gap-0.5 text-sm px-1.5 py-0.5 rounded hover:bg-slate-200 transition text-slate-500 hover:text-slate-700"
+        title="Inserează emoji">
+        😊 <span className="text-[9px] font-bold">emoji</span>
+      </button>
+      {emojiOpen && <EmojiPicker onInsert={(em) => { insertEmoji(em); setEmojiOpen(false) }} onClose={() => setEmojiOpen(false)} />}
+    </div>
+  )
 
   return (
     <div
@@ -319,16 +401,18 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
       <div className="p-3">
         {block.type === 'heading' && (
           <div className="space-y-2">
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
               {[1, 2, 3].map(lv => (
                 <button key={lv} type="button" disabled={disabled} onClick={() => update({ level: lv })}
                   className={`px-2.5 py-1 rounded text-xs font-bold transition ${block.level === lv ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                   H{lv}
                 </button>
               ))}
+              <div className="ml-auto">{EmojiBtnEl}</div>
             </div>
             <input
               value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
+              onFocus={trackCursor('text')} onClick={trackCursor('text')} onKeyUp={trackCursor('text')}
               placeholder="Textul titlului..."
               className={`w-full px-3 py-2 border rounded-lg outline-none focus:border-indigo-400 ${block.level === 1 ? 'text-2xl font-bold' : block.level === 2 ? 'text-xl font-bold' : 'text-base font-semibold'}`}
             />
@@ -339,6 +423,7 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
           <div className="space-y-2">
             <textarea
               value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
+              onFocus={trackCursor('text')} onClick={trackCursor('text')} onKeyUp={trackCursor('text')}
               placeholder="Scrie un paragraf... Acceptă **bold**, *italic*, `cod`, [link](url)"
               rows={3}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-indigo-400 resize-y"
@@ -347,7 +432,10 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
               <div className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-700 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: inlineFmt(block.text).replace(/\n/g, '<br/>') }} />
             )}
-            <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">[text](url)</code></p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {EmojiBtnEl}
+              <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">[text](url)</code></p>
+            </div>
           </div>
         )}
 
@@ -388,6 +476,7 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
                 <input
                   value={it} disabled={disabled}
                   onChange={e => { const items = [...block.items]; items[j] = e.target.value; update({ items }) }}
+                  onFocus={trackCursor(null, j)} onClick={trackCursor(null, j)} onKeyUp={trackCursor(null, j)}
                   placeholder="Item..."
                   className="flex-1 px-2 py-1.5 border rounded text-sm outline-none focus:border-indigo-400"
                 />
@@ -398,10 +487,13 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
                 </button>
               </div>
             ))}
-            <button type="button" disabled={disabled} onClick={() => update({ items: [...(block.items || []), ''] })}
-              className="text-xs text-indigo-600 font-bold hover:text-indigo-800 disabled:opacity-30">
-              + Adaugă item
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={disabled} onClick={() => update({ items: [...(block.items || []), ''] })}
+                className="text-xs text-indigo-600 font-bold hover:text-indigo-800 disabled:opacity-30">
+                + Adaugă item
+              </button>
+              {EmojiBtnEl}
+            </div>
           </div>
         )}
 
@@ -409,6 +501,7 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
           <div className="space-y-2">
             <textarea
               value={block.text || ''} onChange={e => update({ text: e.target.value })} disabled={disabled}
+              onFocus={trackCursor('text')} onClick={trackCursor('text')} onKeyUp={trackCursor('text')}
               placeholder="💡 O notă, observație, atenționare... (acceptă **bold**, `cod`)"
               rows={2}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-amber-400 resize-y bg-amber-50/40"
@@ -420,7 +513,10 @@ function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConver
                 ))}
               </div>
             )}
-            <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code></p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {EmojiBtnEl}
+              <p className="text-[10px] text-slate-400">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">*italic*</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code></p>
+            </div>
           </div>
         )}
 
