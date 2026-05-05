@@ -88,7 +88,8 @@ export async function POST(req, { params }) {
 
   // ── COOLDOWN: doar la PRIMA tentativă a unei probleme noi (nu pe retry-uri)
   // Cooldown per lecție: problemele din aceeași lecție nu sunt blocate între ele
-  if (attemptNumber === 1) {
+  // La antrenament (random) cooldown-ul nu se aplică deloc
+  if (attemptNumber === 1 && source !== 'random') {
     const cd = await checkCooldown(student.id, lessonId || null)
     if (!cd.allowed) {
       return NextResponse.json({
