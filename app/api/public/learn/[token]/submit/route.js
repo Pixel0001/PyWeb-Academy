@@ -90,7 +90,8 @@ export async function POST(req, { params }) {
   // Cooldown per lecție: problemele din aceeași lecție nu sunt blocate între ele
   // La antrenament (random) sau lecții gratuite cooldown-ul nu se aplică deloc
   const lessonFree = lessonId ? (await prisma.lesson.findUnique({ where: { id: lessonId }, select: { isFree: true } }))?.isFree : false
-  if (attemptNumber === 1 && source !== 'random' && !lessonFree) {
+  const lessonGranted = lessonId ? !!(await prisma.lessonAccess.findFirst({ where: { studentId: student.id, lessonId } })) : false
+  if (attemptNumber === 1 && source !== 'random' && !lessonFree && !lessonGranted) {
     const cd = await checkCooldown(student.id, lessonId || null)
     if (!cd.allowed) {
       return NextResponse.json({

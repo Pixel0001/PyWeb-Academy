@@ -578,7 +578,7 @@ async function DashboardContent({ token }) {
                       const prog = progressMap.get(l.id)
                       const done = !!prog?.completedAt
                       const started = !!prog?.theoryCompleted && !done
-                      const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId
+                      const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId && !grantedLesson
 
                       const numCls = done
                         ? 'bg-emerald-500 text-white'
@@ -597,9 +597,12 @@ async function DashboardContent({ token }) {
                               ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
                               : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
 
-                      const cooldownRemMin = Math.ceil(cooldownRemainingMs / 60_000)
-                      const cooldownRemH = Math.floor(cooldownRemMin / 60)
-                      const cooldownRemMOnly = cooldownRemMin % 60
+                      const cooldownRemSec = Math.ceil(cooldownRemainingMs / 1000)
+                      const cooldownRemH = Math.floor(cooldownRemSec / 3600)
+                      const cooldownRemMOnly = Math.floor((cooldownRemSec % 3600) / 60)
+                      const cooldownFmt = cooldownRemH > 0
+                        ? `${cooldownRemH}h ${cooldownRemMOnly.toString().padStart(2, '0')}min`
+                        : `${cooldownRemMOnly}min`
 
                       const inner = (
                         <>
@@ -617,7 +620,7 @@ async function DashboardContent({ token }) {
                             <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
                               <PuzzlePieceIcon className="w-3 h-3" />
                               {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
-                              {onCooldown && <span className="ml-1 text-slate-400">· {cooldownRemH > 0 ? `${cooldownRemH}h ${cooldownRemMOnly}min` : `${cooldownRemMin}min`}</span>}
+                              {onCooldown && <span className="ml-1 text-slate-400">· {cooldownFmt}</span>}
                             </div>
                           </div>
                           {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}

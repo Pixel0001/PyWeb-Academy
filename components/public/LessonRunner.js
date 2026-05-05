@@ -41,7 +41,7 @@ function CooldownBanner({ until, onExpire }) {
   const m = Math.floor((totalSec % 3600) / 60)
   const s = totalSec % 60
   const fmt = h > 0
-    ? `${h}h ${m.toString().padStart(2, '0')}min`
+    ? `${h}h ${m.toString().padStart(2, '0')}min ${s.toString().padStart(2, '0')}s`
     : m > 0
     ? `${m}min ${s.toString().padStart(2, '0')}s`
     : `${s}s`
@@ -539,7 +539,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         if (!r.ok) {
           if (r.status === 429 && d.cooldown) {
             const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
-            toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+            toast(`Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000, icon: <ClockIcon className="w-5 h-5 text-amber-500" /> })
             setCooldownUntil(new Date(Date.now() + d.remainingMs))
           } else if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
           else throw new Error(d.error || 'Eroare AI')
@@ -579,7 +579,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       if (!r.ok) {
         if (r.status === 429 && d.cooldown) {
           const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
-          toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          toast(`Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000, icon: <ClockIcon className="w-5 h-5 text-amber-500" /> })
           setCooldownUntil(new Date(Date.now() + d.remainingMs))
           setSubmitting(false)
           return
