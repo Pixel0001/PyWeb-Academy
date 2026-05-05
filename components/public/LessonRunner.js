@@ -581,6 +581,29 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
 
+  // Deblochează și navighează la o problemă din toRevisit — apelabilă de oriunde
+  const goToNextRevisit = () => {
+    const nextRevisit = toRevisit[0]
+    if (nextRevisit === undefined) return
+    const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
+    const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
+    const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
+    setAiFeedback(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
+    setIdx(nextRevisit)
+    const remaining = toRevisit.length - 1
+    toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { icon: '🔁', duration: 4000 })
+    if (!isGuest) {
+      fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
+      }).catch(() => {})
+      fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentProblemIndex: nextRevisit }),
+      }).catch(() => {})
+    }
+  }
+
   const nextProblem = () => {
     const ni = idx + 1
     if (ni < problems.length) {
@@ -592,28 +615,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       }).catch(() => {})
       return
     }
-    // Suntem la ultima — întâi verifică toRevisit (probleme blocate eșuate)
-    const nextRevisit = toRevisit[0]
-    if (nextRevisit !== undefined) {
-      // Deblochează problema local — încercări infinite la revizuire
-      const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
-      const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
-      const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
-      setAiFeedback(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
-      setIdx(nextRevisit)
-      const remaining = toRevisit.length - 1
-      toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { icon: '🔁', duration: 4000 })
-      // Reset pe server în background (fără să ștergem codul — codul e în state local)
-      if (!isGuest) {
-        fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
-        }).catch(() => {})
-        fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentProblemIndex: nextRevisit }),
-        }).catch(() => {})
-      }
+    // Suntem la ultima — întâi verifică toRevisit
+    if (toRevisit.length > 0) {
+      goToNextRevisit()
       return
     }
     // Apoi verifică needsRetry (greșite neblocate)
@@ -1097,7 +1101,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 )}
                                 {/* Dacă nu mai sunt probleme deblocate dar sunt revisit-uri */}
                                 {!allDone && nextToGo === -1 && nextRevisitIdx !== undefined && (
-                                  <button onClick={nextProblem}
+                                  <button onClick={goToNextRevisit}
                                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                     <ArrowPathIcon className="w-4 h-4" /> Reia blocată ({toRevisit.length})
                                   </button>
@@ -1328,7 +1332,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           Reia greșite ({wrongCount}) <ArrowPathIcon className="w-4 h-4" />
                         </button>
                       ) : toRevisit.length > 0 ? (
-                        <button onClick={nextProblem}
+                        <button onClick={goToNextRevisit}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">
                           <ArrowPathIcon className="w-4 h-4" /> Reia blocate ({toRevisit.length})
                         </button>
