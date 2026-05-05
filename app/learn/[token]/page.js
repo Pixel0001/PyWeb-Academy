@@ -599,23 +599,29 @@ async function DashboardContent({ token }) {
                               ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
                               : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
 
+                      const cooldownRemH = Math.floor(cooldownRemainingMs / 3_600_000)
+                      const cooldownRemM = Math.floor((cooldownRemainingMs % 3_600_000) / 60_000)
+
                       const inner = (
                         <>
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
-                            {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? <ClockIcon className="w-4 h-4" /> : li + 1}
+                            {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? (
+                              <div className="flex flex-col items-center justify-center leading-none opacity-60 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[9px] font-bold">{cooldownRemH}h</span>
+                                <span className="text-[9px] font-bold">{cooldownRemM.toString().padStart(2,'0')}m</span>
+                              </div>
+                            ) : li + 1}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`font-semibold text-slate-900 truncate ${onCooldown ? 'text-xs' : 'text-sm'}`}>{l.title}</span>
+                              <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
                               {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
                               {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
                               {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                              {onCooldown
-                                ? <CooldownTimer endsAt={cooldownEndsAt} />
-                                : <><PuzzlePieceIcon className="w-3 h-3" />{l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}</>
-                              }
+                              <PuzzlePieceIcon className="w-3 h-3" />
+                              {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
                             </div>
                           </div>
                           {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
@@ -630,7 +636,7 @@ async function DashboardContent({ token }) {
                           {inner}
                         </Link>
                       ) : onCooldown ? (
-                        <div key={l.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                        <div key={l.id} className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
                           {inner}
                         </div>
                       ) : (
