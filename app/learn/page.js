@@ -1,13 +1,15 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   CodeBracketIcon, BookOpenIcon, PuzzlePieceIcon, AcademicCapIcon,
   SparklesIcon, RocketLaunchIcon, LockClosedIcon, CheckCircleIcon,
-  ChevronRightIcon, StarIcon, UserGroupIcon, ClockIcon, TrophyIcon,
-  KeyIcon,
+  ChevronRightIcon, StarIcon, TrophyIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import LearnPWARedirect from '@/components/public/LearnPWARedirect'
+import Navbar from '@/components/public/Navbar'
+import TopBar from '@/components/public/TopBar'
 
 export const metadata = {
   title: 'Module de învățare online — PyWeb Academy',
@@ -28,13 +30,6 @@ const MODULE_THEMES = [
   { gradient: 'from-violet-500 to-purple-600', soft: 'from-violet-50 to-purple-50', ring: 'ring-violet-200', dot: 'bg-violet-400', tag: 'bg-violet-100 text-violet-800' },
   { gradient: 'from-rose-500 to-pink-600', soft: 'from-rose-50 to-pink-50', ring: 'ring-rose-200', dot: 'bg-rose-400', tag: 'bg-rose-100 text-rose-800' },
   { gradient: 'from-indigo-500 to-blue-600', soft: 'from-indigo-50 to-blue-50', ring: 'ring-indigo-200', dot: 'bg-indigo-400', tag: 'bg-indigo-100 text-indigo-800' },
-]
-
-const STATS = [
-  { icon: UserGroupIcon, label: 'Elevi activi', value: '150+' },
-  { icon: BookOpenIcon, label: 'Lecții interactive', value: '80+' },
-  { icon: PuzzlePieceIcon, label: 'Exerciții & probleme', value: '400+' },
-  { icon: TrophyIcon, label: 'Ani de experiență', value: '5+' },
 ]
 
 const FEATURES = [
@@ -70,63 +65,52 @@ export default async function PublicLearnPage() {
       {/* Redirect PWA: dacă e deschis din Home Screen, merge la /learn/[token] */}
       <LearnPWARedirect />
 
+      <TopBar />
+      <Navbar forceOpaque />
+
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-600 text-white">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-yellow-300/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden" style={{ height: '100svh' }}>
+        <Image
+          src="/aplicatie_desktop8.png"
+          alt="PyWeb Academy — platformă de învățare"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+        />
+        {/* Slight dark gradient at bottom so buttons are readable */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/60 to-transparent" />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-sm font-semibold mb-6 ring-1 ring-white/20">
-            <SparklesIcon className="w-4 h-4 text-yellow-300" />
-            Platformă interactivă de programare pentru copii
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-            Învață să programezi<br />
-            <span className="text-yellow-300">pas cu pas</span>
-          </h1>
-
-          <p className="mt-6 text-lg sm:text-xl text-white/80 max-w-2xl mx-auto">
-            Module structurate de <strong className="text-white">Python, JavaScript, HTML și CSS</strong> — cu lecții interactive,
-            exerciții cu feedback instant și progres vizibil după fiecare sesiune.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/inscriere"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-amber-900 font-bold text-lg rounded-2xl shadow-lg transition hover:-translate-y-0.5">
-              <RocketLaunchIcon className="w-5 h-5" />
-              Înscrie-te gratuit
-            </Link>
-            <a href="#module"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white font-semibold text-lg rounded-2xl ring-1 ring-white/30 transition">
-              <BookOpenIcon className="w-5 h-5" />
-              Vezi modulele
-            </a>
-            <Link href="/learn/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold text-lg rounded-2xl ring-1 ring-white/20 transition">
-              <AcademicCapIcon className="w-5 h-5" />
-              Autentificare elev
-            </Link>
-          </div>
-
-          <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
-            {STATS.map(s => (
-              <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-white/20">
-                <s.icon className="w-6 h-6 text-yellow-300 mb-1.5 mx-auto" />
-                <div className="text-2xl font-extrabold">{s.value}</div>
-                <div className="text-xs text-white/70 font-medium">{s.label}</div>
-              </div>
-            ))}
-          </div>
+        {/* Buttons pinned to bottom center */}
+        <div className="absolute inset-x-0 bottom-10 flex flex-col sm:flex-row gap-3 justify-center items-center px-4">
+          <Link href="/inscriere"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-400 hover:bg-amber-300 text-blue-900 font-bold text-lg rounded-2xl shadow-lg transition hover:-translate-y-0.5">
+            <RocketLaunchIcon className="w-5 h-5" />
+            Înscrie-te gratuit
+          </Link>
+          <a href="#module"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold text-lg rounded-2xl ring-1 ring-white/30 transition">
+            <BookOpenIcon className="w-5 h-5" />
+            Vezi modulele
+          </a>
+          <Link href="/learn/login"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold text-lg rounded-2xl ring-1 ring-white/30 transition">
+            <AcademicCapIcon className="w-5 h-5" />
+            Autentificare elev
+          </Link>
+          <Link href="/learn/guest"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-300/90 hover:bg-amber-200 text-blue-900 font-bold text-lg rounded-2xl ring-1 ring-amber-200 shadow transition">
+            <SparklesIcon className="w-5 h-5" />
+            Încearcă demo (fără cont)
+          </Link>
         </div>
       </section>
 
       {/* ── CUM FUNCȚIONEAZĂ ─────────────────────────────────────────── */}
-      <section className="bg-slate-50 py-16 sm:py-20">
+      <section className="bg-sky-50 py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Cum funcționează platforma?</h2>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-900">Cum funcționează platforma?</h2>
             <p className="mt-3 text-slate-600 text-lg max-w-xl mx-auto">
               Un sistem de învățare gândit pentru copii și adolescenți (10–18 ani), fără experiență anterioară.
             </p>
@@ -134,11 +118,11 @@ export default async function PublicLearnPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {FEATURES.map((f, i) => (
-              <div key={f.title} className="bg-white rounded-2xl p-6 ring-1 ring-slate-200 shadow-sm hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center mb-4">
-                  <f.icon className="w-6 h-6 text-indigo-600" />
+              <div key={f.title} className="bg-white rounded-2xl p-6 ring-1 ring-blue-100 shadow-sm hover:shadow-md transition">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+                  <f.icon className="w-6 h-6 text-blue-700" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-lg mb-1">{f.title}</h3>
+                <h3 className="font-bold text-blue-900 text-lg mb-1">{f.title}</h3>
                 <p className="text-slate-600 text-sm">{f.desc}</p>
               </div>
             ))}
@@ -150,7 +134,7 @@ export default async function PublicLearnPage() {
       <section id="module" className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Module disponibile</h2>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-900">Module disponibile</h2>
             <p className="mt-3 text-slate-600 text-lg">
               {modules.length} module · {totalLessons} lecții · {totalProblems}+ exerciții
             </p>
@@ -225,9 +209,9 @@ export default async function PublicLearnPage() {
       </section>
 
       {/* ── TESTIMONIALE RAPIDE ───────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-slate-50 to-indigo-50 py-16 sm:py-20">
+      <section className="bg-gradient-to-br from-sky-50 to-blue-50 py-16 sm:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">Ce spun părinții</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-900 mb-3">Ce spun părinții</h2>
           <p className="text-slate-600 text-lg mb-10">Feedback real de la familii care studiază la PyWeb Academy.</p>
           <div className="grid sm:grid-cols-3 gap-5">
             {[
@@ -253,25 +237,25 @@ export default async function PublicLearnPage() {
       </section>
 
       {/* ── CTA FINAL ────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 py-20 text-white text-center">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-yellow-300/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 py-20 text-white text-center">
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-300/15 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl" />
         <div className="relative max-w-3xl mx-auto px-4">
-          <RocketLaunchIcon className="w-14 h-14 mx-auto mb-5 text-yellow-300" />
+          <RocketLaunchIcon className="w-14 h-14 mx-auto mb-5 text-amber-400" />
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
             Gata să începi?
           </h2>
-          <p className="text-white/80 text-lg mb-8">
+          <p className="text-blue-200 text-lg mb-8">
             Prima lecție este <strong className="text-white">100% gratuită</strong>, fără card și fără angajament.
             Te contactăm în mai puțin de 24 de ore.
           </p>
           <Link href="/inscriere"
-            className="inline-flex items-center gap-2 px-10 py-4 bg-yellow-400 hover:bg-yellow-300 text-amber-900 font-bold text-xl rounded-2xl shadow-2xl transition hover:-translate-y-0.5">
+            className="inline-flex items-center gap-2 px-10 py-4 bg-amber-400 hover:bg-amber-300 text-blue-900 font-bold text-xl rounded-2xl shadow-2xl transition hover:-translate-y-0.5">
             <SparklesIcon className="w-6 h-6" />
             Înscrie-te gratuit acum
           </Link>
           <p className="mt-4 text-white/60 text-sm">
-            Sau sună-ne direct — <a href="tel:+37368000000" className="underline text-white/80 hover:text-white">+373 68 000 000</a>
+            Sau sună-ne direct — <a href="tel:+37368113314" className="underline text-white/80 hover:text-white">068 113 314</a>
           </p>
         </div>
       </section>

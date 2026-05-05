@@ -7,9 +7,9 @@ import Image from 'next/image'
 const navLinks = [
   { label: 'Cursuri', href: '/#cursuri' },
   { label: 'Cum funcționează', href: '/#cum-functioneaza' },
-  { label: 'Aplicație', href: '/#aplicatie' },
+  { label: 'Aplicație', href: '/learn' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Recenzii', href: '/#recenzii' },
+  { label: 'Recenzii', href: '/#testimoniale' },
   { label: 'Contact', href: '/#contact' },
 ]
 
@@ -85,7 +85,7 @@ export default function Navbar({ forceOpaque = false }) {
         {/* Desktop Actions */}
         {!isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Link href="/login"
+            <Link href="/learn/login"
               style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
               onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)' }}
               onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)' }}
@@ -154,7 +154,7 @@ export default function Navbar({ forceOpaque = false }) {
             >
               Înregistrează-te gratuit
             </a>
-            <Link href="/login" onClick={() => setMenuOpen(false)}
+            <Link href="/learn/login" onClick={() => setMenuOpen(false)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: 'transparent', color: 'var(--text-body)',

@@ -129,6 +129,20 @@ export default function LearnLoginPage() {
           <p className="text-center text-white/30 text-xs mt-6">
             Nu ai cont? Contactează profesorul pentru a primi acces.
           </p>
+
+          {/* Divider + Guest CTA */}
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[10px] uppercase tracking-wider text-white/30 font-bold">sau</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+          <Link
+            href="/learn/guest"
+            className="mt-4 w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold rounded-xl text-sm transition"
+          >
+            Încearcă în mod demo (fără cont)
+            <ArrowRightIcon className="w-4 h-4" />
+          </Link>
         </div>
 
         {/* Token fallback hint */}

@@ -74,7 +74,12 @@ function Timer({ seconds }) {
   )
 }
 
-export default function LessonRunner({ token, lesson, problems, initialProgress, advanceGranted, moduleLessons = [], progressByLesson = {}, superStudent = false, grantedLessonIds = [], canUseAi = false }) {
+export default function LessonRunner({ token, lesson, problems, initialProgress, advanceGranted, moduleLessons = [], progressByLesson = {}, superStudent = false, grantedLessonIds = [], canUseAi = false, isGuest = false }) {
+  // În mod GUEST: zero fetch-uri către server. Toate acțiunile sunt locale.
+  // canUseAi forțat fals + token-urile pentru linkurile fraților sunt înlocuite cu prefixul guest.
+  if (isGuest) canUseAi = false
+  const dashboardHref = isGuest ? '/learn/guest' : `/learn/${token}`
+  const lessonHrefBase = isGuest ? '/learn/guest/lesson' : `/learn/${token}/lesson`
   const router = useRouter()
   const searchParams = useSearchParams()
   const grantedLessonSet = new Set(grantedLessonIds)
@@ -165,6 +170,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const lessonPct = problems.length > 0 ? Math.round((doneCount / problems.length) * 100) : 0
 
   const completeTheory = async () => {
+    if (isGuest) {
+      setProgress({ ...progress, theoryCompleted: true })
+      setStep('problems')
+      return
+    }
     await fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theoryCompleted: true }),
@@ -175,6 +185,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   const useHint = async () => {
     if (!cur?.hint || curHintUsed || curLocked) return
+    if (isGuest) {
+      const nh = [...hintsUsed]; nh[idx] = true; setHintsUsed(nh)
+      setShowHint(true)
+      toast('Hint afișat (mod demo)', { icon: '💡' })
+      return
+    }
     setHintLoading(true)
     try {
       const r = await fetch(`/api/public/learn/${token}/hint`, {
@@ -195,6 +211,17 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       if (solutionData[cur.id]) return
     }
     if (!confirm('Apăsând „Vezi rezolvarea" pierzi toate punctele pentru această problemă (0p) și nu o mai poți reîncerca decât resetând lecția. Continui?')) return
+    if (isGuest) {
+      // În mod demo soluția e luată direct din props
+      setSolutionData(prev => ({ ...prev, [cur.id]: { correctAnswer: cur.correctAnswer, explanation: cur.explanation } }))
+      const nl = [...locks]; nl[idx] = true; setLocks(nl)
+      const nv = [...solutionViewed]; nv[idx] = true; setSolutionViewed(nv)
+      const next = [...submissions]
+      next[idx] = { ...(next[idx] || {}), status: 'GRADED', grade: 0, autoCorrect: false, locked: true, solutionViewed: true }
+      setSubmissions(next)
+      toast('Rezolvarea e afișată', { icon: '📖' })
+      return
+    }
     setSolutionLoading(true)
     try {
       const r = await fetch(`/api/public/learn/${token}/solution`, {
@@ -216,6 +243,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   const resetLesson = async () => {
     if (!confirm('Resetezi lecția? Toate răspunsurile, hint-urile și progresul problemelor vor fi șterse. Vei putea reîncepe de la zero pentru punctaj maxim.')) return
+    if (isGuest) {
+      setSubmissions(problems.map(() => null))
+      setAttemptsCount(problems.map(() => 0))
+      setHintsUsed(problems.map(() => false))
+      setLocks(problems.map(() => false))
+      setSolutionViewed(problems.map(() => false))
+      setSolutionData({})
+      setAnswer(''); setCode(problems[0]?.starterCode || '')
+      setIdx(0); setStep('theory')
+      setProgress({ theoryCompleted: false, currentProblemIndex: 0 })
+      toast.success('Lecția a fost resetată (mod demo)')
+      return
+    }
     setResetting(true)
     try {
       const r = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset`, { method: 'POST' })
@@ -228,6 +268,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   const [resettingProblem, setResettingProblem] = useState(false)
   const resetProblem = async (problemId) => {
+    if (isGuest) {
+      const next = [...submissions]; next[idx] = null; setSubmissions(next)
+      const na = [...attemptsCount]; na[idx] = 0; setAttemptsCount(na)
+      const nl = [...locks]; nl[idx] = false; setLocks(nl)
+      const nv = [...solutionViewed]; nv[idx] = false; setSolutionViewed(nv)
+      setAnswer(''); setCode(cur?.starterCode || '')
+      setSolutionData(prev => { const c = { ...prev }; delete c[problemId]; return c })
+      toast.success('Problema a fost resetată (mod demo)')
+      return
+    }
     setResettingProblem(true)
     try {
       const r = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
@@ -253,6 +303,54 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     if (cur.type === 'CODING' || cur.type === 'INPUT_OUTPUT') {
       if (!code.trim() && !answer.trim()) return toast.error('Introdu un raspuns')
     } else if (!answer.trim()) return toast.error('Introdu un raspuns')
+
+    // ===== MOD GUEST: notare 100% client-side, ZERO request către server =====
+    if (isGuest) {
+      setSubmitting(true)
+      const norm = (s) => String(s ?? '').trim().toLowerCase()
+      let correct = false
+      if (cur.type === 'MULTIPLE_CHOICE' || cur.type === 'SHORT_ANSWER') {
+        correct = norm(answer) === norm(cur.correctAnswer)
+      } else if (cur.type === 'INPUT_OUTPUT') {
+        const target = cur.correctAnswer || ''
+        correct = norm(answer || lastOutput) === norm(target)
+      } else if (cur.type === 'CODING') {
+        // Fără AI în mod guest — compară outputul cu correctAnswer dacă există
+        if (cur.correctAnswer) {
+          correct = norm(lastOutput) === norm(cur.correctAnswer)
+        } else {
+          // Nu avem cu ce să comparăm — acceptăm dacă codul a rulat fără erori
+          correct = !!lastOutput && !/error|traceback|exception/i.test(lastOutput)
+        }
+      }
+      const grade = correct ? 100 : 0
+      const newAttempts = (attemptsCount[idx] || 0) + 1
+      const exhausted = !correct && newAttempts >= curMaxAttempts
+      const fakeSub = {
+        problemId: cur.id,
+        status: 'GRADED',
+        grade,
+        autoCorrect: correct,
+        locked: correct || exhausted,
+        answer: answer || null,
+        code: code || null,
+      }
+      const next = [...submissions]; next[idx] = fakeSub; setSubmissions(next)
+      const na = [...attemptsCount]; na[idx] = newAttempts; setAttemptsCount(na)
+      if (correct || exhausted) {
+        const nl = [...locks]; nl[idx] = true; setLocks(nl)
+      }
+      if (correct) {
+        toast.success(`Corect! +${cur.points ?? 10} XP (mod demo)`)
+      } else if (exhausted) {
+        toast.error('Greșit — încercări epuizate. Resetează problema pentru a reîncerca.')
+      } else {
+        toast.error(`Răspuns greșit. Mai ai ${curMaxAttempts - newAttempts} încercări.`)
+      }
+      setSubmitting(false)
+      return
+    }
+    // ===== END MOD GUEST =====
 
     // Pentru CODING — trimite la AI grader (Mr. PyWeb) doar dacă elevul are acces AI
     if (cur.type === 'CODING' && canUseAi) {
@@ -314,6 +412,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     const ni = idx + 1
     if (ni < problems.length) {
       setIdx(ni)
+      if (isGuest) return
       // fire-and-forget — nu blocăm UI
       fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -326,6 +425,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     if (firstWrong !== -1) {
       setIdx(firstWrong)
       toast(`Reia problemele greșite (${wrongCount} ${wrongCount === 1 ? 'rămasă' : 'rămase'})`, { icon: '🔁' })
+      if (isGuest) return
       fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentProblemIndex: firstWrong }),
@@ -335,6 +435,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   const finishLesson = async () => {
     setFinishing(true)
+    if (isGuest) {
+      toast.success('Bravo! Ai terminat lecția (mod demo). Înscrie-te ca să salvezi progresul!')
+      setTimeout(() => router.push('/learn/guest'), 900)
+      return
+    }
     try {
       await fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -353,7 +458,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     <div className="flex flex-col min-h-full">
       {/* Back link */}
       <div className="p-4 border-b border-white/10 shrink-0">
-        <Link href={`/learn/${token}`}
+        <Link href={dashboardHref}
           className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm font-medium transition">
           <ChevronLeftIcon className="w-4 h-4" /> Inapoi la module
         </Link>
@@ -485,7 +590,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
               ) : (
                 <Link
                   key={l.id}
-                  href={`/learn/${token}/lesson/${l.id}`}
+                  href={`${lessonHrefBase}/${l.id}`}
                   onClick={() => setMobileSidebarOpen(false)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition ${
                     isCurrent ? 'bg-white/20 ring-1 ring-white/40' : 'hover:bg-white/10'
@@ -572,6 +677,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         <div className="h-1 bg-slate-200 shrink-0">
           <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-500" style={{ width: `${lessonPct}%` }} />
         </div>
+
+        {/* Guest banner */}
+        {isGuest && (
+          <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2 flex items-center justify-between gap-3 flex-wrap text-xs sm:text-sm">
+            <div className="flex items-center gap-2 text-amber-900">
+              <SparklesIcon className="w-4 h-4 shrink-0" />
+              <span><strong>Mod demo</strong> — progresul nu se salvează, AI și submisiile sunt dezactivate.</span>
+            </div>
+            <Link href="/inscriere" className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold shrink-0">
+              Înscrie-te gratuit <ChevronRightIcon className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
@@ -860,8 +978,19 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 flex items-start gap-2.5 text-xs sm:text-sm">
                                 <SparklesIcon className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                 <div className="flex-1">
-                                  <div className="font-bold text-amber-900">Mr. PyWeb (AI) e disponibil cu abonament</div>
-                                  <div className="text-amber-800 mt-0.5">Cere profesorului să-ți activeze abonamentul pentru notare instant cu AI și ajutor cu indicii. Codul tău va fi trimis profesorului spre evaluare.</div>
+                                  {isGuest ? (
+                                    <>
+                                      <div className="font-bold text-amber-900">Mr. PyWeb (AI) — disponibil doar pentru elevi înscriși</div>
+                                      <div className="text-amber-800 mt-0.5">
+                                        În modul demo nu ai acces la corectarea AI. Codul tău se rulează local în browser și se compară cu rezultatul așteptat. <Link href="/inscriere" className="underline font-bold">Înscrie-te aici</Link> pentru notare instant cu AI.
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="font-bold text-amber-900">Mr. PyWeb (AI) e disponibil cu abonament</div>
+                                      <div className="text-amber-800 mt-0.5">Cere profesorului să-ți activeze abonamentul pentru notare instant cu AI și ajutor cu indicii. Codul tău va fi trimis profesorului spre evaluare.</div>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -956,7 +1085,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         <RocketLaunchIcon className="w-7 h-7 text-purple-600 shrink-0 mt-0.5" />
                         <div className="text-sm text-purple-900">
                           <div className="font-bold mb-0.5">Profesorul ti-a acordat advance!</div>
-                          <Link href={`/learn/${token}`} className="underline font-semibold">Inapoi la module</Link>
+                          <Link href={dashboardHref} className="underline font-semibold">Inapoi la module</Link>
                         </div>
                       </div>
                     ) : (
@@ -965,7 +1094,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         <div className="text-sm text-amber-900">
                           <div className="font-bold mb-0.5">Bravo ca ai terminat!</div>
                           Pentru modulul urmator ai nevoie de aprobarea profesorului. Pana atunci incearca{' '}
-                          <Link href={`/learn/${token}/random`} className="underline font-semibold">probleme aleatorii</Link>.
+                          {isGuest ? (
+                            <Link href="/inscriere" className="underline font-semibold">înscrie-te ca să salvezi progresul</Link>
+                          ) : (
+                            <Link href={`/learn/${token}/random`} className="underline font-semibold">probleme aleatorii</Link>
+                          )}.
                         </div>
                       </div>
                     )}

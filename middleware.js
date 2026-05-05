@@ -32,6 +32,17 @@ export async function middleware(request) {
     pathname.startsWith('/uploads/') ||
     pathname.includes('.') // Static files
   ) {
+    // Defense-in-depth: blochează orice request API care încearcă să folosească
+    // token-ul sentinel "guest" — modul demo NU trebuie să atingă serverul.
+    if (
+      pathname.startsWith('/api/public/learn/guest') ||
+      pathname.startsWith('/api/public/learn/guest/')
+    ) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Mod demo — server inaccesibil. Înscrie-te pentru funcționalitate completă.' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
     return NextResponse.next()
   }
 
