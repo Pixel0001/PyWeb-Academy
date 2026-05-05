@@ -151,7 +151,7 @@ function ProblemStudentPreview({ form }) {
 
         {/* Buttons */}
         <div className="flex flex-wrap gap-2 pt-1">
-          {form.hint && (
+          {form.hint?.trim() && (
             showHint ? (
               <button type="button" onClick={() => setShowHint(false)}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 font-semibold">
@@ -550,7 +550,7 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
 
         {/* Preview column — shown in split + preview modes */}
         {tab !== 'edit' && (
-          <div className={tab === 'split' ? 'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:rounded-2xl' : ''}>
+          <div className={tab === 'split' ? 'lg:sticky lg:top-4 self-start' : ''}>
             <ProblemStudentPreview form={form} />
           </div>
         )}
