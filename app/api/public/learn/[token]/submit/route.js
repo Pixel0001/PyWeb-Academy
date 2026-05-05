@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { verifyAnswer } from '@/lib/problem-utils'
 import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
+import { checkCooldown, computeXpAward, markProblemSolved } from '@/lib/student-limits'
 
 // Trimite o submisie de problemă (din lecție sau random)
 // POST { problemId, lessonId?, answer?, code?, source: 'lesson'|'random', timeSpent? }
@@ -85,6 +86,21 @@ export async function POST(req, { params }) {
   const attemptNumber = prevSubs.length + 1
   const maxAttempts = getMaxAttempts(problem)
 
+  // ── COOLDOWN: doar la PRIMA tentativă a unei probleme noi (nu pe retry-uri)
+  if (attemptNumber === 1) {
+    const cd = await checkCooldown(student.id)
+    if (!cd.allowed) {
+      return NextResponse.json({
+        error: `Așteaptă ${cd.remainingMin} min până la următoarea problemă.`,
+        cooldown: true,
+        remainingMin: cd.remainingMin,
+        remainingMs: cd.remainingMs,
+        cooldownMin: cd.cooldownMin,
+        nextAllowedAt: cd.nextAllowedAt,
+      }, { status: 429 })
+    }
+  }
+
   // Dacă vine cod (fără answer text), tratează mereu ca CODING → merge la profesor
   const isCoding = problem.type === 'CODING' || (code && !answer)
 
@@ -108,6 +124,16 @@ export async function POST(req, { params }) {
     }
   }
 
+  // ── XP cap zilnic — calculează xpAwarded pentru submisia auto-gradată
+  let xpAwarded = null
+  let xpInfo = null
+  if (status === 'GRADED' && (grade ?? 0) >= 60) {
+    const baseXp = Math.round((problem.points ?? 10) * (grade / 100))
+    const award = await computeXpAward(student.id, baseXp)
+    xpAwarded = award.awarded
+    xpInfo = award
+  }
+
   const sub = await prisma.problemSubmission.create({
     data: {
       studentId: student.id,
@@ -125,8 +151,14 @@ export async function POST(req, { params }) {
       attemptNumber,
       hintUsed,
       locked,
+      xpAwarded,
     },
   })
+
+  // ── Marchează cooldown după o rezolvare reușită
+  if (status === 'GRADED' && (grade ?? 0) >= 60) {
+    await markProblemSolved(student.id)
+  }
 
   // Marchează ca citite notificările REVISION_REQUEST pentru această problemă
   // (când elevul reia o problemă cerută la refacere, notificarea persistentă dispare)
@@ -166,5 +198,7 @@ export async function POST(req, { params }) {
     maxAttempts,
     locked,
     hintUsed,
+    xpAwarded,
+    xpInfo,
   }, { status: 201 })
 }

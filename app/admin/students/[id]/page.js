@@ -22,6 +22,7 @@ import {
 import SuperStudentToggle from '@/components/admin/SuperStudentToggle'
 import StudentActiveToggle from '@/components/admin/StudentActiveToggle'
 import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
+import StudentLimitsOverride from '@/components/admin/StudentLimitsOverride'
 import StudentModuleAccessTable from '@/components/admin/StudentModuleAccessTable'
 import StudentLearningPayments from '@/components/admin/StudentLearningPayments'
 import StudentBonusPoints from '@/components/admin/StudentBonusPoints'
@@ -263,6 +264,12 @@ export default async function StudentDetailPage({ params }) {
                   </div>
                   <SuperStudentToggle studentId={id} initialValue={student.superStudent ?? false} />
                 </div>
+                <StudentLimitsOverride studentId={id} initial={{
+                  cooldownOverrideMin: student.cooldownOverrideMin,
+                  dailyXpCapOverride: student.dailyXpCapOverride,
+                  cooldownDisabled: student.cooldownDisabled,
+                  xpCapDisabled: student.xpCapDisabled,
+                }} />
               </div>
             )}
           </div>

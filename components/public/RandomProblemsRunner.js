@@ -156,7 +156,10 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         })
         const d = await r.json()
         if (!r.ok) {
-          if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
+          if (r.status === 429 && d.cooldown) {
+            const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
+            toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          } else if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
           else throw new Error(d.error || 'Eroare AI')
           return
         }
@@ -189,7 +192,15 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         }),
       })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Eroare')
+      if (!r.ok) {
+        if (r.status === 429 && d.cooldown) {
+          const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
+          toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          setSubmitting(s => ({ ...s, [p.id]: false }))
+          return
+        }
+        throw new Error(d.error || 'Eroare')
+      }
       setSubmissions(s => ({ ...s, [p.id]: d.submission }))
       setAttemptsCount(a => ({ ...a, [p.id]: d.attemptNumber || (a[p.id] || 0) + 1 }))
       if (d.locked) setLocked(l => ({ ...l, [p.id]: true }))

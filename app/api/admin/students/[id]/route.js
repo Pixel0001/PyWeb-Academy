@@ -86,10 +86,24 @@ export async function PATCH(request, { params }) {
     const { id } = await params
     const body = await request.json()
 
-    const allowedFields = ['superStudent', 'active']
+    const allowedFields = [
+      'superStudent', 'active',
+      'cooldownOverrideMin', 'dailyXpCapOverride',
+      'cooldownDisabled', 'xpCapDisabled',
+    ]
     const data = {}
     for (const key of allowedFields) {
-      if (key in body) data[key] = body[key]
+      if (key in body) {
+        const v = body[key]
+        // normalize empty → null pentru câmpurile Int? override
+        if ((key === 'cooldownOverrideMin' || key === 'dailyXpCapOverride') && (v === '' || v == null)) {
+          data[key] = null
+        } else if (key === 'cooldownOverrideMin' || key === 'dailyXpCapOverride') {
+          const n = parseInt(v); if (Number.isFinite(n) && n >= 0) data[key] = n
+        } else {
+          data[key] = v
+        }
+      }
     }
 
     // Password (hash if provided, null to clear)

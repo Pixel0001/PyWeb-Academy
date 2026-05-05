@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 import TwoFactorModal from './TwoFactorModal'
+import LimitsOverridePanel from './LimitsOverridePanel'
 
 const days = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică']
 
@@ -42,7 +43,11 @@ export default function GroupForm({ group, courses, teachers, branches = [] }) {
     locationType: group?.locationType || 'offline',
     locationDetails: group?.locationDetails || '',
     startDate: group?.startDate ? new Date(group.startDate).toISOString().split('T')[0] : '',
-    active: group?.active ?? true
+    active: group?.active ?? true,
+    cooldownOverrideMin: group?.cooldownOverrideMin ?? '',
+    dailyXpCapOverride:  group?.dailyXpCapOverride ?? '',
+    cooldownDisabled:    !!group?.cooldownDisabled,
+    xpCapDisabled:       !!group?.xpCapDisabled,
   })
 
   const handleChange = (e) => {
@@ -165,7 +170,11 @@ export default function GroupForm({ group, courses, teachers, branches = [] }) {
         locationType: formData.locationType,
         locationDetails: formData.locationDetails,
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-        active: formData.active
+        active: formData.active,
+        cooldownOverrideMin: formData.cooldownOverrideMin === '' ? null : parseInt(formData.cooldownOverrideMin),
+        dailyXpCapOverride:  formData.dailyXpCapOverride  === '' ? null : parseInt(formData.dailyXpCapOverride),
+        cooldownDisabled: !!formData.cooldownDisabled,
+        xpCapDisabled:    !!formData.xpCapDisabled,
       }
       if (actionToken) {
         payload.actionToken = actionToken
@@ -406,6 +415,17 @@ export default function GroupForm({ group, courses, teachers, branches = [] }) {
           </label>
         </div>
       </div>
+
+      <LimitsOverridePanel
+        scope="group"
+        value={{
+          cooldownOverrideMin: formData.cooldownOverrideMin,
+          dailyXpCapOverride: formData.dailyXpCapOverride,
+          cooldownDisabled: formData.cooldownDisabled,
+          xpCapDisabled: formData.xpCapDisabled,
+        }}
+        onChange={(patch) => setFormData(prev => ({ ...prev, ...patch }))}
+      />
 
       <div className="flex flex-col xs:flex-row gap-2 xs:gap-4 pt-3 xs:pt-4 border-t">
         <button

@@ -76,7 +76,12 @@ export async function PUT(request, { params }) {
     }
 
     const { name, courseId, teacherId, branchId, scheduleDays, scheduleTime,
-            locationType, locationDetails, startDate, active } = body
+            locationType, locationDetails, startDate, active,
+            cooldownOverrideMin, dailyXpCapOverride,
+            cooldownDisabled, xpCapDisabled } = body
+
+    // Normalizare override-uri
+    const norm = (v) => (v === '' || v == null) ? null : (Number.isFinite(parseInt(v)) ? parseInt(v) : null)
 
     const group = await prisma.group.update({
       where: { id },
@@ -90,7 +95,11 @@ export async function PUT(request, { params }) {
         locationType,
         locationDetails,
         startDate: startDate ? new Date(startDate) : null,
-        active
+        active,
+        ...(cooldownOverrideMin !== undefined ? { cooldownOverrideMin: norm(cooldownOverrideMin) } : {}),
+        ...(dailyXpCapOverride !== undefined  ? { dailyXpCapOverride:  norm(dailyXpCapOverride) }  : {}),
+        ...(cooldownDisabled !== undefined    ? { cooldownDisabled: !!cooldownDisabled }            : {}),
+        ...(xpCapDisabled !== undefined       ? { xpCapDisabled:    !!xpCapDisabled }               : {}),
       }
     })
 

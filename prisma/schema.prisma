@@ -353,6 +353,14 @@ model Student {
   password     String?  // hash parolă opțional pentru autentificare alternativă (Argon2id)
   active       Boolean  @default(true) // dacă e false, /learn/[token] returnează acces interzis
   superStudent Boolean  @default(false) // Super elev — accesează orice lecție din orice modul, indiferent de progres
+
+  // Limite per-elev (override peste grupă/global; null = folosește valoarea super-setării)
+  cooldownOverrideMin Int?     // în minute, null = moștenește de la grupă/global
+  dailyXpCapOverride  Int?     // în puncte XP, null = moștenește
+  cooldownDisabled    Boolean  @default(false) // dezactivează explicit cooldown pentru acest elev
+  xpCapDisabled       Boolean  @default(false) // dezactivează explicit cap-ul de XP
+  lastProblemSolvedAt DateTime? // pentru calcul cooldown
+
   createdById  String?  @db.ObjectId // ID-ul userului care a creat elevul (profesor sau admin)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -398,6 +406,32 @@ model BonusPoint {
   @@map("bonus_points")
 }
 
+// ==================== SYSTEM SETTINGS (singleton) ====================
+// Setări globale: cooldown probleme, cap XP zilnic, curba de niveluri.
+// Doar UN singur rând în acest model (singleton); creat la primul GET dacă lipsește.
+
+model SystemSettings {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Cooldown între rezolvarea a 2 probleme (în minute). Default 4h = 240 min.
+  problemCooldownMin  Int      @default(240)
+  cooldownEnabled     Boolean  @default(true)
+
+  // Cap zilnic de XP per elev. Default 500 XP/zi.
+  dailyXpCap          Int      @default(500)
+  xpCapEnabled        Boolean  @default(true)
+
+  // Curba de niveluri — array crescator de praguri XP. Index 0 = nivel 1.
+  // Default progresie exponențială dificil de atins la niveluri mari.
+  levelCurve          Int[]    @default([0, 100, 300, 700, 1500, 3000, 6000, 12000, 25000, 50000])
+  levelNames          String[] @default(["Novice","Explorator","Practicant","Expert","Master","Legend","Mythic","Titan","Sage","Immortal"])
+
+  updatedAt           DateTime @updatedAt
+  updatedById         String?  @db.ObjectId
+
+  @@map("system_settings")
+}
+
 // ==================== BRANCHES (FILIALE) ====================
 
 model Branch {
@@ -429,6 +463,13 @@ model Group {
   locationDetails String?  // Sala/Link
   startDate       DateTime?
   active          Boolean  @default(true)
+
+  // Limite per-grupă (override peste global; null = moștenește)
+  cooldownOverrideMin Int?
+  dailyXpCapOverride  Int?
+  cooldownDisabled    Boolean @default(false)
+  xpCapDisabled       Boolean @default(false)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

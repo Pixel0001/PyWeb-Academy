@@ -24,6 +24,10 @@ import { cssQuizPack } from './css-quiz-pack.mjs'
 import { cQuizPack } from './c-quiz-pack.mjs'
 import { cppQuizPack } from './cpp-quiz-pack.mjs'
 import { csharpQuizPack } from './csharp-quiz-pack.mjs'
+// Extras — lecții suplimentare pentru a ajunge la ~25 lecții/limbaj
+import { cExtras } from './c-extras.mjs'
+import { cppExtras } from './cpp-extras.mjs'
+import { csharpExtras } from './csharp-extras.mjs'
 
 // Convertește un dicționar enriched ({ slug: { theory, problems } })
 // într-un patch ({ replaceTheory, appendProblems }).
@@ -86,9 +90,9 @@ const enrichedJavascript = applyPatch(
 )
 const enrichedHtml = applyPatch(applyPatch(htmlModule, enrichedToPatch(htmlEnriched)), htmlQuizPack)
 const enrichedCss = applyPatch(applyPatch(cssModule, enrichedToPatch(cssEnriched)), cssQuizPack)
-const enrichedC = applyPatch(cModule, cQuizPack)
-const enrichedCpp = applyPatch(cppModule, cppQuizPack)
-const enrichedCsharp = applyPatch(csharpModule, csharpQuizPack)
+const enrichedC = applyPatch(applyPatch(cModule, cQuizPack), cExtras)
+const enrichedCpp = applyPatch(applyPatch(cppModule, cppQuizPack), cppExtras)
+const enrichedCsharp = applyPatch(applyPatch(csharpModule, csharpQuizPack), csharpExtras)
 
 export const allModules = [
   enrichedPython,

@@ -380,6 +380,13 @@ export const PERMISSIONS = {
     label: 'Generează / atribuie seturi',
     description: 'Poate genera seturi de probleme și le poate atribui elevilor',
     category: 'Banca de Probleme'
+  },
+
+  // Sistem (cooldown, XP cap, niveluri)
+  'system.settings': {
+    label: 'Setări sistem (Abonamente)',
+    description: 'Configurează cooldown între probleme, cap zilnic XP și curba de niveluri',
+    category: 'Sistem'
   }
 }
 
@@ -441,7 +448,8 @@ export const PERMISSION_CATEGORIES = [
   'Blog',
   'Banca de Probleme',
   'Module Învățare',
-  'Submisii Probleme'
+  'Submisii Probleme',
+  'Sistem'
 ]
 
 export default PERMISSIONS

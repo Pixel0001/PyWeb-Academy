@@ -55,9 +55,13 @@ function renderTheory(text) {
       flushList(i)
       if (inCode) {
         out.push(
-          <div key={`c${i}`} className="my-4">
-            {codeLang && <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">{codeLang}</div>}
-            <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 overflow-x-auto text-sm font-mono shadow-inner">{codeBuf.join('\n')}</pre>
+          <div key={`c${i}`} className="my-4 rounded-xl bg-slate-900 shadow-inner overflow-hidden">
+            {codeLang && (
+              <div className="px-4 py-1.5 border-b border-slate-700 flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">{codeLang}</span>
+              </div>
+            )}
+            <pre className="text-slate-100 p-4 overflow-x-auto text-sm font-mono whitespace-pre">{codeBuf.join('\n')}</pre>
           </div>
         )
         codeBuf = []; codeLang = ''; inCode = false
@@ -443,7 +447,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         })
         const d = await r.json()
         if (!r.ok) {
-          if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
+          if (r.status === 429 && d.cooldown) {
+            const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
+            toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          } else if (r.status === 429) toast.error(d.error || 'Limită AI atinsă')
           else throw new Error(d.error || 'Eroare AI')
           return
         }
@@ -469,7 +476,15 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         body: JSON.stringify({ problemId: cur.id, lessonId: lesson.id, source: 'lesson', answer: answer || null, code: code || null, timeSpent: time }),
       })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.error || 'Eroare')
+      if (!r.ok) {
+        if (r.status === 429 && d.cooldown) {
+          const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
+          toast.error(`⏳ Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000 })
+          setSubmitting(false)
+          return
+        }
+        throw new Error(d.error || 'Eroare')
+      }
       const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
       const na = [...attemptsCount]; na[idx] = (na[idx] || 0) + 1; setAttemptsCount(na)
       if (d.locked) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { gradeCode, detectAiCode, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
 import { assertAiAccess } from '@/lib/learning-access'
+import { checkCooldown, computeXpAward, markProblemSolved } from '@/lib/student-limits'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30 // Vercel — extindem timeout pentru OpenAI
@@ -122,6 +123,21 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: 'Problemă deja rezolvată sau blocată' }, { status: 400 })
   }
 
+  // ── COOLDOWN: doar la PRIMA tentativă a unei probleme noi (nu pe retry-uri)
+  if (prevSubs.length === 0) {
+    const cd = await checkCooldown(student.id)
+    if (!cd.allowed) {
+      return NextResponse.json({
+        error: `Așteaptă ${cd.remainingMin} min până la următoarea problemă.`,
+        cooldown: true,
+        remainingMin: cd.remainingMin,
+        remainingMs: cd.remainingMs,
+        cooldownMin: cd.cooldownMin,
+        nextAllowedAt: cd.nextAllowedAt,
+      }, { status: 429 })
+    }
+  }
+
   // 4. Cere AI: grading + detection în paralel
   let aiGrade, aiDetect
   try {
@@ -168,6 +184,17 @@ export async function POST(req, { params }) {
   const passed = finalGrade >= 60
   const isLastAttempt = attemptNumber >= MAX_AI_ATTEMPTS
   const shouldLock = passed || isLastAttempt || aiDetect.isAi
+
+  // ── XP cap zilnic
+  let xpAwarded = null
+  let xpInfo = null
+  if (passed) {
+    const baseXp = Math.round((problem.points ?? 10) * (finalGrade / 100))
+    const award = await computeXpAward(student.id, baseXp)
+    xpAwarded = award.awarded
+    xpInfo = award
+  }
+
   const sub = await prisma.problemSubmission.create({
     data: {
       studentId: student.id,
@@ -191,8 +218,14 @@ export async function POST(req, { params }) {
       aiTokensIn: (aiGrade.tokensIn || 0) + (aiDetect.tokensIn || 0),
       aiTokensOut: (aiGrade.tokensOut || 0) + (aiDetect.tokensOut || 0),
       feedback: aiGrade.reasoning,
+      xpAwarded,
     },
   })
+
+  // ── Marchează cooldown după o rezolvare reușită
+  if (passed) {
+    await markProblemSolved(student.id)
+  }
 
   const usage = await getStudentAiUsage(student.id)
 
@@ -202,5 +235,7 @@ export async function POST(req, { params }) {
     aiDetect,
     aiPenaltyApplied: aiDetect.isAi ? AI_PENALTY : 0,
     usage,
+    xpAwarded,
+    xpInfo,
   })
 }

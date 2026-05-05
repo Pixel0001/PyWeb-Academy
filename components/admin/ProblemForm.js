@@ -229,6 +229,21 @@ const FMT_HINT = (
   </p>
 )
 
+// ── Tab key inserts 2 spaces instead of switching focus ──────────────────────
+function handleTab(e, onChange) {
+  if (e.key !== 'Tab') return
+  e.preventDefault()
+  const el = e.target
+  const start = el.selectionStart
+  const end = el.selectionEnd
+  const val = el.value
+  const next = val.substring(0, start) + '  ' + val.substring(end)
+  onChange(next)
+  requestAnimationFrame(() => {
+    el.selectionStart = el.selectionEnd = start + 2
+  })
+}
+
 // ── Main form ─────────────────────────────────────────────────────────────────
 export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) {
   const router = useRouter()
@@ -341,9 +356,10 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
                 <textarea
                   value={form.description}
                   onChange={e => update('description', e.target.value)}
-                  rows={5}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
-                  placeholder="Descrierea completă a problemei. Suportă markdown / cod."
+                  onKeyDown={e => handleTab(e, v => update('description', v))}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm leading-relaxed"
+                  placeholder={'Descrierea completă a problemei. Suportă markdown / cod.\n\nEx pentru cod pe mai multe rânduri:\n```python\nx = int(input())\nprint(x + 5)\n```'}
                 />
                 <MarkdownPreview text={form.description} />
                 {FMT_HINT}
@@ -489,7 +505,8 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
                     <textarea
                       value={form.starterCode}
                       onChange={e => update('starterCode', e.target.value)}
-                      rows={5}
+                      onKeyDown={e => handleTab(e, v => update('starterCode', v))}
+                      rows={6}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
                       placeholder={'def solve():\n    pass'}
                     />
@@ -526,8 +543,9 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
                 <textarea
                   value={form.explanation}
                   onChange={e => update('explanation', e.target.value)}
+                  onKeyDown={e => handleTab(e, v => update('explanation', v))}
                   rows={8}
-                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm"
+                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm leading-relaxed"
                   placeholder={'Pas 1: Înțelegem cerința...\nPas 2: Inițializăm o variabilă...\n\n```python\nfor i in arr:\n    total += i\n```'}
                 />
                 <MarkdownPreview text={form.explanation} />
@@ -536,11 +554,13 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hint (opțional)</label>
-                <input
+                <textarea
                   value={form.hint}
                   onChange={e => update('hint', e.target.value)}
-                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg"
-                  placeholder="ex: Gândește-te la o variabilă acumulator inițializată cu 0"
+                  onKeyDown={e => handleTab(e, v => update('hint', v))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm"
+                  placeholder={'ex: Gândește-te la o variabilă acumulator inițializată cu 0\n\nSau cod:\n```python\ntotal = 0\n```'}
                 />
               </div>
             </section>
