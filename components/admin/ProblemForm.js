@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 const DIFF_COLOR = { EASY: 'bg-emerald-100 text-emerald-700', MEDIUM: 'bg-amber-100 text-amber-700', HARD: 'bg-rose-100 text-rose-700' }
 const DIFF_LABEL = { EASY: '🟢 Ușor', MEDIUM: '🟡 Mediu', HARD: '🔴 Greu' }
 
-// ── Markdown preview helpers (aceleași ca în TheoryEditor) ───────────────────
+// ── Markdown helpers ──────────────────────────────────────────────────────────
 function inlineFmt(s) {
   if (!s) return ''
   return s
@@ -26,7 +26,6 @@ function renderMd(text) {
   let i = 0
   while (i < lines.length) {
     const ln = lines[i]
-    // code block
     if (ln.startsWith('```')) {
       const lang = ln.slice(3).trim()
       const buf = []; i++
@@ -39,7 +38,6 @@ function renderMd(text) {
       )
       i++; continue
     }
-    // callout
     if (ln.startsWith('> ')) {
       const buf = [ln.slice(2)]
       while (i + 1 < lines.length && lines[i + 1].startsWith('> ')) { buf.push(lines[++i].slice(2)) }
@@ -50,11 +48,9 @@ function renderMd(text) {
       )
       i++; continue
     }
-    // heading
     if (ln.startsWith('### ')) { elements.push(<h3 key={i} className="text-base font-semibold mt-3 mb-1 text-slate-800" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(4)) }} />); i++; continue }
     if (ln.startsWith('## '))  { elements.push(<h2 key={i} className="text-lg font-bold mt-3 mb-1 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(3)) }} />); i++; continue }
     if (ln.startsWith('# '))   { elements.push(<h1 key={i} className="text-xl font-bold mt-3 mb-2 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(ln.slice(2)) }} />); i++; continue }
-    // list
     if (/^[-*]\s/.test(ln) || /^\d+\.\s/.test(ln)) {
       const ordered = /^\d+\.\s/.test(ln)
       const items = []
@@ -69,18 +65,15 @@ function renderMd(text) {
       )
       continue
     }
-    // divider
     if (/^---+$/.test(ln.trim())) { elements.push(<hr key={i} className="my-3 border-slate-200" />); i++; continue }
-    // empty
     if (!ln.trim()) { i++; continue }
-    // paragraph
     elements.push(<p key={i} className="text-slate-700 text-sm leading-relaxed my-1" dangerouslySetInnerHTML={{ __html: inlineFmt(ln) }} />)
     i++
   }
   return elements
 }
 
-function MarkdownPreview({ text, placeholder }) {
+function MarkdownPreview({ text }) {
   const nodes = renderMd(text)
   if (!nodes || nodes.length === 0) return null
   return (
@@ -91,7 +84,7 @@ function MarkdownPreview({ text, placeholder }) {
   )
 }
 
-// ── Student-facing preview — replică exact cardul din LessonRunner ───────────
+// ── Student-facing preview ────────────────────────────────────────────────────
 function ProblemStudentPreview({ form }) {
   const [showHint, setShowHint] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
@@ -105,7 +98,7 @@ function ProblemStudentPreview({ form }) {
 
   return (
     <div className="bg-white rounded-2xl border-2 border-indigo-200 shadow-lg overflow-hidden">
-      {/* Header — identic cu LessonRunner */}
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-900 to-blue-700 px-5 py-3 flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold text-white">1</div>
         <div className="flex-1 min-w-0">
@@ -156,7 +149,7 @@ function ProblemStudentPreview({ form }) {
           </div>
         )}
 
-        {/* Hint + Submit buttons */}
+        {/* Buttons */}
         <div className="flex flex-wrap gap-2 pt-1">
           {form.hint && (
             showHint ? (
@@ -216,6 +209,7 @@ function ProblemStudentPreview({ form }) {
   )
 }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const TYPES = [
   { value: 'MULTIPLE_CHOICE', label: 'Grilă (multiple choice)' },
   { value: 'SHORT_ANSWER', label: 'Răspuns scurt (text)' },
@@ -223,9 +217,21 @@ const TYPES = [
   { value: 'CODING', label: 'Cod (verifică output)' },
 ]
 
+const FMT_HINT = (
+  <p className="text-[11px] text-slate-400 mt-1">
+    Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> ·{' '}
+    <code className="bg-slate-100 px-1 rounded">`cod`</code> ·{' '}
+    <code className="bg-slate-100 px-1 rounded">```python ... ```</code> ·{' '}
+    <code className="bg-slate-100 px-1 rounded">&gt; notă</code> ·{' '}
+    <code className="bg-slate-100 px-1 rounded">- listă</code>
+  </p>
+)
+
+// ── Main form ─────────────────────────────────────────────────────────────────
 export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [tab, setTab] = useState('edit') // 'edit' | 'split' | 'preview'
   const isEdit = !!problem?.id
   const resolvedApiUrl = apiUrl || (isEdit ? `/api/admin/problems/${problem.id}` : '/api/admin/problems')
   const resolvedBackUrl = backUrl || '/admin/problems'
@@ -271,10 +277,8 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
         courseId: form.courseId || null,
       }
-      const url = resolvedApiUrl
-      const method = isEdit ? 'PATCH' : 'POST'
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(resolvedApiUrl, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -294,238 +298,264 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
 
   return (
     <form onSubmit={submit} className="space-y-6 max-w-4xl">
-      {/* Date generale */}
-      <section className="bg-white rounded-2xl border border-gray-200 p-4 xs:p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">📋 Date generale</h2>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Titlu *</label>
-          <input
-            value={form.title}
-            onChange={e => update('title', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            placeholder="ex: Suma elementelor unui array"
-          />
-        </div>
+      {/* ── Tab switcher ── */}
+      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2">
+        {[
+          { k: 'edit',    l: '✏️ Editare' },
+          { k: 'split',   l: '⚡ Editare + Preview' },
+          { k: 'preview', l: '👁️ Preview ca elev' },
+        ].map(o => (
+          <button key={o.k} type="button" onClick={() => setTab(o.k)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${tab === o.k ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
+            {o.l}
+          </button>
+        ))}
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cerință (descriere) *</label>
-          <textarea
-            value={form.description}
-            onChange={e => update('description', e.target.value)}
-            rows={5}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
-            placeholder="Descrierea completă a problemei. Suportă markdown / cod."
-          />
-          <MarkdownPreview text={form.description} />
-          <p className="text-[11px] text-slate-400 mt-1">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">```python ... ```</code> · <code className="bg-slate-100 px-1 rounded">&gt; notă</code> · <code className="bg-slate-100 px-1 rounded">- listă</code></p>
-        </div>
+      {/* ── Content area ── */}
+      <div className={tab === 'split' ? 'grid lg:grid-cols-2 gap-6 items-start' : ''}>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic *</label>
-            <input
-              value={form.topic}
-              onChange={e => update('topic', e.target.value.toLowerCase())}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="loops, arrays, functions..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subtopic</label>
-            <input
-              value={form.subtopic}
-              onChange={e => update('subtopic', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="opțional"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Curs (opțional)</label>
-            <select
-              value={form.courseId}
-              onChange={e => update('courseId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="">— Niciunul —</option>
-              {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
-          </div>
-        </div>
+        {/* Form columns — hidden in preview-only mode */}
+        {tab !== 'preview' && (
+          <div className="space-y-6">
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dificultate</label>
-            <select value={form.difficulty} onChange={e => update('difficulty', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-              <option value="EASY">🟢 Ușor</option>
-              <option value="MEDIUM">🟡 Mediu</option>
-              <option value="HARD">🔴 Greu</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tip</label>
-            <select value={form.type} onChange={e => update('type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-              {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Timp (min)</label>
-            <input type="number" min="1" value={form.estimatedTime}
-              onChange={e => update('estimatedTime', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Punctaj</label>
-            <input type="number" min="1" value={form.points}
-              onChange={e => update('points', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          </div>
-        </div>
+            {/* Date generale */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-4 xs:p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">📋 Date generale</h2>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tags (separate cu virgulă)</label>
-          <input
-            value={form.tags}
-            onChange={e => update('tags', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            placeholder="recursivitate, sortare, stringuri"
-          />
-        </div>
-      </section>
-
-      {/* Răspuns */}
-      <section className="bg-white rounded-2xl border border-gray-200 p-4 xs:p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">✅ Răspuns corect</h2>
-
-        {form.type === 'MULTIPLE_CHOICE' && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Opțiuni (bifează corectul)</label>
-            {form.options.map((opt, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titlu *</label>
                 <input
-                  type="radio"
-                  name="correct"
-                  checked={form.correctAnswer === opt && opt !== ''}
-                  onChange={() => update('correctAnswer', opt)}
-                  className="w-4 h-4 text-indigo-600"
+                  value={form.title}
+                  onChange={e => update('title', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="ex: Suma elementelor unui array"
                 />
-                <input
-                  value={opt}
-                  onChange={e => updateOption(i, e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder={`Opțiunea ${i + 1}`}
-                />
-                {form.options.length > 2 && (
-                  <button type="button" onClick={() => removeOption(i)}
-                    className="text-red-600 hover:text-red-700 px-2">×</button>
-                )}
               </div>
-            ))}
-            <button type="button" onClick={addOption}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              + Adaugă opțiune
-            </button>
-          </div>
-        )}
 
-        {(form.type === 'SHORT_ANSWER' || form.type === 'INPUT_OUTPUT') && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Răspuns corect (compararea ignoră majuscule/spații)
-            </label>
-            <input
-              value={form.correctAnswer}
-              onChange={e => update('correctAnswer', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono"
-              placeholder={form.type === 'INPUT_OUTPUT' ? 'output exact așteptat' : 'răspunsul așteptat'}
-            />
-          </div>
-        )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cerință (descriere) *</label>
+                <textarea
+                  value={form.description}
+                  onChange={e => update('description', e.target.value)}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                  placeholder="Descrierea completă a problemei. Suportă markdown / cod."
+                />
+                <MarkdownPreview text={form.description} />
+                {FMT_HINT}
+              </div>
 
-        {form.type === 'CODING' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Limbaj</label>
-              <select value={form.language} onChange={e => update('language', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cod de start (opțional)</label>
-              <textarea
-                value={form.starterCode}
-                onChange={e => update('starterCode', e.target.value)}
-                rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-                placeholder="def solve():&#10;    pass"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Output așteptat / cuvânt-cheie de verificat
-              </label>
-              <textarea
-                value={form.correctAnswer}
-                onChange={e => update('correctAnswer', e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-                placeholder="ex: rezultatul printat de cod"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Verificarea automată compară output-ul / textul submisiei cu acest șir (case-insensitive).
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic *</label>
+                  <input
+                    value={form.topic}
+                    onChange={e => update('topic', e.target.value.toLowerCase())}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="loops, arrays, functions..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subtopic</label>
+                  <input
+                    value={form.subtopic}
+                    onChange={e => update('subtopic', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="opțional"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Curs (opțional)</label>
+                  <select
+                    value={form.courseId}
+                    onChange={e => update('courseId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="">— Niciunul —</option>
+                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dificultate</label>
+                  <select value={form.difficulty} onChange={e => update('difficulty', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <option value="EASY">🟢 Ușor</option>
+                    <option value="MEDIUM">🟡 Mediu</option>
+                    <option value="HARD">🔴 Greu</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tip</label>
+                  <select value={form.type} onChange={e => update('type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timp (min)</label>
+                  <input type="number" min="1" value={form.estimatedTime}
+                    onChange={e => update('estimatedTime', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Punctaj</label>
+                  <input type="number" min="1" value={form.points}
+                    onChange={e => update('points', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tags (separate cu virgulă)</label>
+                <input
+                  value={form.tags}
+                  onChange={e => update('tags', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="recursivitate, sortare, stringuri"
+                />
+              </div>
+            </section>
+
+            {/* Răspuns */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-4 xs:p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">✅ Răspuns corect</h2>
+
+              {form.type === 'MULTIPLE_CHOICE' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Opțiuni (bifează corectul)</label>
+                  {form.options.map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="correct"
+                        checked={form.correctAnswer === opt && opt !== ''}
+                        onChange={() => update('correctAnswer', opt)}
+                        className="w-4 h-4 text-indigo-600"
+                      />
+                      <input
+                        value={opt}
+                        onChange={e => updateOption(i, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        placeholder={`Opțiunea ${i + 1}`}
+                      />
+                      {form.options.length > 2 && (
+                        <button type="button" onClick={() => removeOption(i)}
+                          className="text-red-600 hover:text-red-700 px-2">×</button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={addOption}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                    + Adaugă opțiune
+                  </button>
+                </div>
+              )}
+
+              {(form.type === 'SHORT_ANSWER' || form.type === 'INPUT_OUTPUT') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Răspuns corect (compararea ignoră majuscule/spații)
+                  </label>
+                  <input
+                    value={form.correctAnswer}
+                    onChange={e => update('correctAnswer', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono"
+                    placeholder={form.type === 'INPUT_OUTPUT' ? 'output exact așteptat' : 'răspunsul așteptat'}
+                  />
+                </div>
+              )}
+
+              {form.type === 'CODING' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Limbaj</label>
+                    <select value={form.language} onChange={e => update('language', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <option value="python">Python</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="java">Java</option>
+                      <option value="cpp">C++</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cod de start (opțional)</label>
+                    <textarea
+                      value={form.starterCode}
+                      onChange={e => update('starterCode', e.target.value)}
+                      rows={5}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                      placeholder={'def solve():\n    pass'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Output așteptat / cuvânt-cheie de verificat
+                    </label>
+                    <textarea
+                      value={form.correctAnswer}
+                      onChange={e => update('correctAnswer', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                      placeholder="ex: rezultatul printat de cod"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Verificarea automată compară output-ul / textul submisiei cu acest șir (case-insensitive).
+                    </p>
+                  </div>
+                </>
+              )}
+            </section>
+
+            {/* Explicație + hint */}
+            <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-4 xs:p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">💡 Explicație + hint</h2>
+              <p className="text-xs text-amber-700">
+                Scrie explicația <strong>pas cu pas</strong>, ca și cum ai fi profesor — clar, simplu, prietenos.
+                Aceasta e ce vede elevul când apasă „Vezi explicația".
               </p>
-            </div>
-          </>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Explicație completă *</label>
+                <textarea
+                  value={form.explanation}
+                  onChange={e => update('explanation', e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm"
+                  placeholder={'Pas 1: Înțelegem cerința...\nPas 2: Inițializăm o variabilă...\n\n```python\nfor i in arr:\n    total += i\n```'}
+                />
+                <MarkdownPreview text={form.explanation} />
+                {FMT_HINT}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hint (opțional)</label>
+                <input
+                  value={form.hint}
+                  onChange={e => update('hint', e.target.value)}
+                  className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg"
+                  placeholder="ex: Gândește-te la o variabilă acumulator inițializată cu 0"
+                />
+              </div>
+            </section>
+
+          </div>
         )}
-      </section>
 
-      {/* Explicație + hint */}
-      <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-4 xs:p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">💡 Explicație + hint</h2>
-        <p className="text-xs text-amber-700">
-          Scrie explicația <strong>pas cu pas</strong>, ca și cum ai fi profesor — clar, simplu, prietenos.
-          Aceasta e ce vede elevul când apasă „Vezi explicația”.
-        </p>
+        {/* Preview column — shown in split + preview modes */}
+        {tab !== 'edit' && (
+          <div className={tab === 'split' ? 'lg:sticky lg:top-4' : ''}>
+            <ProblemStudentPreview form={form} />
+          </div>
+        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Explicație completă *</label>
-          <textarea
-            value={form.explanation}
-            onChange={e => update('explanation', e.target.value)}
-            rows={8}
-            className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg font-mono text-sm"
-            placeholder={`Pas 1: Înțelegem cerința...\nPas 2: Inițializăm o variabilă...\nPas 3: Iterăm prin array...\n\nCod soluție:\nfor i in arr:\n    total += i`}
-          />
-          <MarkdownPreview text={form.explanation} />
-          <p className="text-[11px] text-slate-400 mt-1">Formatare: <code className="bg-slate-100 px-1 rounded">**bold**</code> · <code className="bg-slate-100 px-1 rounded">`cod`</code> · <code className="bg-slate-100 px-1 rounded">```python ... ```</code> · <code className="bg-slate-100 px-1 rounded">&gt; notă</code> · <code className="bg-slate-100 px-1 rounded">- listă</code></p>
-        </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Hint (opțional)</label>
-          <input
-            value={form.hint}
-            onChange={e => update('hint', e.target.value)}
-            className="w-full px-3 py-2 border border-amber-300 bg-white rounded-lg"
-            placeholder="ex: Gândește-te la o variabilă acumulator inițializată cu 0"
-          />
-        </div>
-      </section>
-
-      {/* Preview ca elev */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-gray-900">👁️ Preview ca elev</h2>
-          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">live — se actualizează automat</span>
-        </div>
-        <ProblemStudentPreview form={form} />
-      </section>
-
+      {/* Save buttons — always visible */}
       <div className="flex justify-end gap-3">
         <button type="button" onClick={() => router.back()}
           className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
@@ -536,6 +566,7 @@ export default function ProblemForm({ problem, courses = [], apiUrl, backUrl }) 
           {loading ? 'Se salvează...' : (isEdit ? 'Salvează modificările' : 'Creează problema')}
         </button>
       </div>
+
     </form>
   )
 }
