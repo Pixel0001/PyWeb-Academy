@@ -209,6 +209,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [resetting, setResetting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [aiFeedback, setAiFeedback] = useState({}) // { problemId: { aiGrade, aiDetect, aiPenaltyApplied, usage } }
+  const [toRevisit, setToRevisit] = useState([]) // indecși de probleme eșuate, de revăzut la final
   const [lastOutput, setLastOutput] = useState('')
   const [chatOpen, setChatOpen] = useState({}) // { problemId: bool }
   const [time, setTime] = useState(0)
@@ -480,6 +481,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
         else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} XP. Vezi feedback-ul AI.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
+        // Dacă problema e acum blocată cu notă mică → adaugă la toRevisit și avansează automat
+        if (d.submission.locked && finalGrade < 60) {
+          const capturedIdx = idx
+          setToRevisit(prev => [...new Set([...prev, capturedIdx])])
+          toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
+          const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !nl[i])
+          if (nextUnlocked !== -1) {
+            setTimeout(() => setIdx(nextUnlocked), 3500)
+          }
+        }
       } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
       return
     }
@@ -509,7 +520,15 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
         toast.success(`Corect! +${earnedXP} XP`)
       } else if (d.locked) {
-        toast.error(`Greșit — încercări epuizate. 0 XP. Resetează lecția pentru a reîncerca.`)
+        toast.error(`Greșit — încercări epuizate. 0 XP.`)
+        const capturedIdx = idx
+        setToRevisit(prev => [...new Set([...prev, capturedIdx])])
+        toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
+        const currentLocks = [...locks]; currentLocks[capturedIdx] = true
+        const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !currentLocks[i])
+        if (nextUnlocked !== -1) {
+          setTimeout(() => setIdx(nextUnlocked), 3500)
+        }
       } else {
         const nextGrade = applyHintPenalty(gradeForAttempt(cur, d.attemptNumber + 1), curHintUsed || d.hintUsed)
         const nextXP = Math.round((cur.points ?? 10) * (nextGrade / 100))
@@ -523,14 +542,26 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     if (ni < problems.length) {
       setIdx(ni)
       if (isGuest) return
-      // fire-and-forget — nu blocăm UI
       fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentProblemIndex: ni }),
       }).catch(() => {})
       return
     }
-    // Suntem la ultima — dacă există probleme greșite nereparate, sari la prima
+    // Suntem la ultima — întâi verifică toRevisit (probleme blocate esuate)
+    const nextRevisit = toRevisit.find(i => true)
+    if (nextRevisit !== undefined) {
+      setToRevisit(prev => prev.filter(i => i !== nextRevisit))
+      setIdx(nextRevisit)
+      toast(`Revenim la problema ${nextRevisit + 1} — mai ai ${toRevisit.length - 1 + 1} de revizuit`, { icon: '🔁' })
+      if (isGuest) return
+      fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentProblemIndex: nextRevisit }),
+      }).catch(() => {})
+      return
+    }
+    // Apoi verifică needsRetry (greșite neblocate)
     const firstWrong = problems.findIndex((_, i) => needsRetry(i))
     if (firstWrong !== -1) {
       setIdx(firstWrong)
@@ -978,18 +1009,23 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         {(curSub.grade ?? 0) < 60 && (
                           <div className="space-y-2">
                             <div className="flex flex-wrap gap-2">
-                              {!curSolutionViewed && (
-                                <button onClick={() => resetProblem(cur.id)} disabled={resettingProblem}
-                                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition active:scale-95">
-                                  <ArrowPathIcon className="w-4 h-4" /> {resettingProblem ? 'Se resetează...' : 'Reîncearcă problema'}
-                                </button>
-                              )}
+                              {/* Continuă la următoarea problemă */}
                               {idx < problems.length - 1 && (
-                                <button onClick={nextProblem}
+                                <button onClick={() => {
+                                  if (!toRevisit.includes(idx)) setToRevisit(prev => [...new Set([...prev, idx])])
+                                  nextProblem()
+                                }}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                   Continuă <ChevronRightIcon className="w-4 h-4" />
                                 </button>
                               )}
+                              {/* Revin la final */}
+                              {toRevisit.includes(idx) && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-100 border border-amber-300 text-amber-800 rounded-xl text-xs font-semibold">
+                                  🔁 Programată pentru revizuit la final
+                                </span>
+                              )}
+                              {/* Vezi rezolvarea */}
                               {!curSolutionViewed && (
                                 <button onClick={viewSolution} disabled={solutionLoading}
                                   className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
@@ -1125,12 +1161,20 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               <AiGradingLoader />
                             )}
                             {canUseAi && aiFeedback[cur.id] && (
-                              <AiFeedback
-                                key={`${cur.id}-${curAttempts}`}
-                                data={aiFeedback[cur.id]}
-                                token={token}
-                                onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
-                              />
+                              <>
+                                <AiFeedback
+                                  key={`${cur.id}-${curAttempts}`}
+                                  data={aiFeedback[cur.id]}
+                                  token={token}
+                                  onClose={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                                />
+                                <button
+                                  onClick={() => setAiFeedback(prev => { const c = { ...prev }; delete c[cur.id]; return c })}
+                                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-blue-200 hover:border-blue-400 text-blue-700 hover:text-blue-900 rounded-xl font-semibold text-sm transition active:scale-95"
+                                >
+                                  <ArrowPathIcon className="w-4 h-4" /> Întoarce-te la cod
+                                </button>
+                              </>
                             )}
                           </div>
                         )}
