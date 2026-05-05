@@ -824,6 +824,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
           </button>
         </div>
       )}
+      {/* Reset lecție — mereu vizibil jos în sidebar */}
+      {step === 'problems' && !isGuest && (
+        <div className="p-3 border-t border-white/10">
+          <button onClick={resetLesson} disabled={resetting}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-white/40 hover:text-rose-300 hover:bg-white/5 rounded-lg transition">
+            <ArrowPathIcon className="w-3.5 h-3.5" />
+            {resetting ? 'Se resetează...' : 'Resetează lecția (0 de la capăt)'}
+          </button>
+        </div>
+      )}
     </div>
   )
 
@@ -1120,10 +1130,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                   </button>
                                 )}
                               </div>
-                              <div className="pt-1">
+                              <div className="pt-1 flex items-center gap-3 flex-wrap">
                                 <button onClick={resetLesson} disabled={resetting}
                                   className="text-xs text-slate-400 hover:text-rose-600 underline underline-offset-2 transition">
-                                  {resetting ? 'Se resetează...' : 'Reseteză întreaga lecție (pierd tot progresul)'}
+                                  {resetting ? 'Se resetează...' : 'Resetează lecția de la 0'}
                                 </button>
                               </div>
                             </div>
@@ -1307,12 +1317,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                         className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl disabled:opacity-30 hover:bg-slate-50 font-semibold">
                         <ChevronLeftIcon className="w-4 h-4" /> Anterior
                       </button>
-                      {idx < problems.length - 1 ? (
-                        <button onClick={nextProblem}
-                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700">
-                          Urmatoarea <ChevronRightIcon className="w-4 h-4" />
-                        </button>
-                      ) : allDone ? (
+                      {allDone ? (
                         <div className="flex flex-wrap gap-2 justify-end">
                           {revisionCount > 0 && (
                             <button onClick={() => { const i = problems.findIndex((_, i) => submissions[i]?.status === 'NEEDS_REVISION'); if (i !== -1) setIdx(i) }}
@@ -1326,6 +1331,11 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             {finishing ? 'Se salveaza...' : revisionCount > 0 ? 'Finalizează oricum' : 'Finalizeaza lectia'}
                           </button>
                         </div>
+                      ) : idx < problems.length - 1 ? (
+                        <button onClick={nextProblem}
+                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700">
+                          Urmatoarea <ChevronRightIcon className="w-4 h-4" />
+                        </button>
                       ) : wrongCount > 0 ? (
                         <button onClick={nextProblem}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">
