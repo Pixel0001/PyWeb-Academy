@@ -52,10 +52,11 @@ const EMOJI_CATS = [
 ]
 
 const ICON_CATS = [
-  { label: 'Status',   keys: ['check','xmark','warning','info','star','fire','bolt','trophy','heart','flag','pin','bookmark'] },
-  { label: 'Acțiuni',  keys: ['arrow-r','arrow-l','arrow-u','arrow-d','refresh','plus','minus','share','download','upload'] },
-  { label: 'Tech',     keys: ['code','terminal','rocket','globe','bug','key','lock','eye','search'] },
-  { label: 'Educație', keys: ['book','pencil','cap','bulb','chat','clock','calendar'] },
+  { label: 'Status',   keys: ['check','xmark','warning','info','star','fire','bolt','trophy','heart','flag','pin','bookmark','check-circle','x-circle','exclamation','question','ban','shield','sparkles','thumb-up','thumb-down','gift','medal'] },
+  { label: 'Acțiuni',  keys: ['arrow-r','arrow-l','arrow-u','arrow-d','refresh','plus','minus','share','download','upload','send','link','external','filter','sort','cursor'] },
+  { label: 'Tech',     keys: ['code','terminal','rocket','globe','bug','key','lock','eye','search','cpu','server','cloud','wifi','phone','desktop','battery','database','puzzle'] },
+  { label: 'Educație', keys: ['book','pencil','cap','bulb','chat','clock','calendar','beaker','mic','music','play','chart-bar','chart-pie','table'] },
+  { label: 'UI',       keys: ['home','menu','settings','notification','user','users','photo','video-cam','paper','folder','tag','clipboard','trending-up'] },
 ]
 
 function EmojiPicker({ onInsert, onClose }) {
