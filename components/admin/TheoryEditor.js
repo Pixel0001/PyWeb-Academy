@@ -152,9 +152,9 @@ function PreviewBlock({ b, highlight }) {
   const wrap = (node) => <div className={cls}>{node}</div>
   switch (b.type) {
     case 'heading':
-      if (b.level === 1) return wrap(<h1 className="text-2xl font-bold mt-4 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h1>)
-      if (b.level === 3) return wrap(<h3 className="text-base font-semibold mt-3 mb-1 text-slate-800">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h3>)
-      return wrap(<h2 className="text-xl font-bold mt-3 mb-2 text-slate-900">{b.text || <em className="text-slate-300">(titlu gol)</em>}</h2>)
+      if (b.level === 1) return wrap(<h1 className="text-2xl font-bold mt-4 mb-2 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(b.text) || '<em style="color:#ccc">(titlu gol)</em>' }} />)
+      if (b.level === 3) return wrap(<h3 className="text-base font-semibold mt-3 mb-1 text-slate-800" dangerouslySetInnerHTML={{ __html: inlineFmt(b.text) || '<em style="color:#ccc">(titlu gol)</em>' }} />)
+      return wrap(<h2 className="text-xl font-bold mt-3 mb-2 text-slate-900" dangerouslySetInnerHTML={{ __html: inlineFmt(b.text) || '<em style="color:#ccc">(titlu gol)</em>' }} />)
     case 'paragraph':
       return wrap(b.text
         ? <p className="text-slate-700 leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: inlineFmt(b.text).replace(/\n/g, '<br/>') }} />
@@ -259,28 +259,34 @@ function TypeMenu({ block, onConvert, disabled }) {
 function BlockEditor({ block, idx, total, disabled, onChange, onRemove, onConvert,
                        isDragging, isDragOver, onDragStart, onDragEnd, onDragOver, onDrop }) {
   const update = (patch) => onChange({ ...block, ...patch })
+  const handleRef = useRef(null)
 
   return (
     <div
       draggable={!disabled}
-      onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(idx) }}
+      onDragStart={e => {
+        if (!handleRef.current?.contains(e.target)) { e.preventDefault(); return }
+        e.dataTransfer.effectAllowed = 'move'
+        onDragStart(idx)
+      }}
       onDragEnd={onDragEnd}
       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver(idx) }}
       onDrop={e => { e.preventDefault(); onDrop(idx) }}
-      className={`relative bg-white border-2 rounded-xl transition-all select-none
-        ${isDragOver ? 'border-indigo-400 shadow-lg shadow-indigo-100 scale-[1.01]' : 'border-slate-200 hover:border-indigo-200'}
-        ${isDragging ? 'opacity-40 scale-[0.98] border-dashed' : ''}
+      className={`relative bg-white border-2 rounded-xl transition-all
+        ${isDragOver ? 'border-indigo-400 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-200'}
+        ${isDragging ? 'opacity-40 border-dashed' : ''}
       `}
     >
       {/* Drop indicator line above */}
       {isDragOver && (
-        <div className="absolute -top-1.5 left-4 right-4 h-1 bg-indigo-500 rounded-full z-10 pointer-events-none" />
+        <div className="absolute -top-1 left-4 right-4 h-0.5 bg-indigo-500 rounded-full z-10 pointer-events-none" />
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50 rounded-t-xl select-none">
         {/* Drag handle */}
         <div
+          ref={handleRef}
           className={`cursor-grab active:cursor-grabbing p-0.5 text-slate-400 hover:text-slate-600 ${disabled ? 'opacity-30' : ''}`}
           title="Trage pentru reordonare"
         >
