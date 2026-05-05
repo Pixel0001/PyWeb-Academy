@@ -10,6 +10,7 @@ import {
   H1Icon, H2Icon, H3Icon, DocumentTextIcon, FilmIcon, MinusIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
+import { inlineFmt, INLINE_ICONS } from '@/lib/markdown'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOCK TYPES metadata
@@ -42,46 +43,99 @@ const DEFAULTS = {
 // EMOJI / ICON PICKER
 // ─────────────────────────────────────────────────────────────────────────────
 const EMOJI_CATS = [
-  { label: 'Status',      icon: '✅', emojis: ['✅','❌','⚠️','💡','🎯','🔥','⭐','🏆','📌','🔑','💯','📍','🆕','🆗','🔒','🔓'] },
-  { label: 'Numere',      icon: '1️⃣', emojis: ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','0️⃣','🔟','#️⃣','*️⃣','🔢'] },
-  { label: 'Săgeți',      icon: '👉', emojis: ['👉','👈','👆','👇','➡️','⬅️','⬆️','⬇️','↩️','↪️','🔽','🔼','↗️','↘️','🔄','🔁'] },
-  { label: 'Programare',  icon: '💻', emojis: ['🐍','💻','🖥️','⌨️','🐛','🔧','🛠️','⚡','🔄','📊','💾','📦','🚀','🌐','📱','🔌','🖱️','📡','🔐','🗄️'] },
-  { label: 'Educație',    icon: '📚', emojis: ['📝','📖','🎓','🏫','👨‍💻','🧠','✏️','📚','🔬','🔭','🎒','📐','📏','🖊️','📓','📋','📄'] },
-  { label: 'Expresii',    icon: '😊', emojis: ['😊','🎉','👏','🤓','😅','💪','🤔','💭','🙌','🤝','😎','🥳','🤯','😬','🙏','💬'] },
+  { label: 'Status',     icon: '✅', emojis: ['✅','❌','⚠️','💡','🎯','🔥','⭐','🏆','📌','🔑','💯','📍','🆕','🆗','🔒','🔓'] },
+  { label: 'Numere',     icon: '1️⃣', emojis: ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','0️⃣','🔟','#️⃣','*️⃣','🔢'] },
+  { label: 'Săgeți',     icon: '👉', emojis: ['👉','👈','👆','👇','➡️','⬅️','⬆️','⬇️','↩️','↪️','🔽','🔼','↗️','↘️','🔄','🔁'] },
+  { label: 'Programare', icon: '💻', emojis: ['🐍','💻','🖥️','⌨️','🐛','🔧','🛠️','⚡','🔄','📊','💾','📦','🚀','🌐','📱','🔌','🖱️','📡','🔐','🗄️'] },
+  { label: 'Educație',   icon: '📚', emojis: ['📝','📖','🎓','🏫','👨‍💻','🧠','✏️','📚','🔬','🔭','🎒','📐','📏','🖊️','📓','📋','📄'] },
+  { label: 'Expresii',   icon: '😊', emojis: ['😊','🎉','👏','🤓','😅','💪','🤔','💭','🙌','🤝','😎','🥳','🤯','😲','🙏','💬'] },
+]
+
+const ICON_CATS = [
+  { label: 'Status',   keys: ['check','xmark','warning','info','star','fire','bolt','trophy','heart','flag','pin','bookmark'] },
+  { label: 'Acțiuni',  keys: ['arrow-r','arrow-l','arrow-u','arrow-d','refresh','plus','minus','share','download','upload'] },
+  { label: 'Tech',     keys: ['code','terminal','rocket','globe','bug','key','lock','eye','search'] },
+  { label: 'Educație', keys: ['book','pencil','cap','bulb','chat','clock','calendar'] },
 ]
 
 function EmojiPicker({ onInsert, onClose }) {
   const ref = useRef(null)
+  const [tab, setTab] = useState('emoji') // 'emoji' | 'icon'
   const [cat, setCat] = useState(0)
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
+
   return (
-    <div ref={ref} className="absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl w-72 overflow-hidden">
-      {/* Category tabs */}
-      <div className="flex overflow-x-auto border-b border-slate-100 bg-slate-50 px-1 pt-1 gap-0.5 scrollbar-none">
-        {EMOJI_CATS.map((c, i) => (
-          <button key={i} type="button" onMouseDown={e => { e.preventDefault(); setCat(i) }}
-            className={`shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-t-lg text-[10px] font-bold transition whitespace-nowrap border border-transparent ${
-              cat === i ? 'bg-white text-indigo-700 border-slate-200 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-700'
-            }`}>
-            <span>{c.icon}</span> {c.label}
-          </button>
+    <div ref={ref} className="absolute bottom-full left-0 mb-1 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl w-80 overflow-hidden">
+      {/* Main tabs: Emoji / Icons */}
+      <div className="flex border-b border-slate-100 bg-slate-50">
+        {[['emoji','😊 Emoji'],['icon','🎨 Icons']].map(([k,l]) => (
+          <button key={k} type="button" onMouseDown={e => { e.preventDefault(); setTab(k); setCat(0) }}
+            className={`flex-1 py-2 text-xs font-bold transition ${
+              tab === k ? 'bg-white text-indigo-700 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-700'
+            }`}>{l}</button>
         ))}
       </div>
-      {/* Emoji grid */}
-      <div className="p-2 grid grid-cols-8 gap-0.5 max-h-36 overflow-y-auto">
-        {EMOJI_CATS[cat].emojis.map((em, i) => (
-          <button key={i} type="button" onMouseDown={e => { e.preventDefault(); onInsert(em) }}
-            className="text-xl p-1 rounded-lg hover:bg-indigo-50 transition active:scale-90 text-center leading-none" title={em}>
-            {em}
-          </button>
-        ))}
-      </div>
-      <div className="px-3 py-1.5 border-t border-slate-100 bg-slate-50">
-        <p className="text-[9px] text-slate-400">Click pe emoji pentru a-l insera la cursor</p>
+
+      {tab === 'emoji' && (
+        <>
+          <div className="flex overflow-x-auto bg-slate-50 px-1 pt-1 gap-0.5 scrollbar-none">
+            {EMOJI_CATS.map((c, i) => (
+              <button key={i} type="button" onMouseDown={e => { e.preventDefault(); setCat(i) }}
+                className={`shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-t-lg text-[10px] font-bold transition whitespace-nowrap border border-transparent ${
+                  cat === i ? 'bg-white text-indigo-700 border-slate-200 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-700'
+                }`}>
+                <span>{c.icon}</span> {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="p-2 grid grid-cols-8 gap-0.5 max-h-36 overflow-y-auto">
+            {EMOJI_CATS[cat].emojis.map((em, i) => (
+              <button key={i} type="button" onMouseDown={e => { e.preventDefault(); onInsert(em) }}
+                className="text-xl p-1 rounded-lg hover:bg-indigo-50 transition active:scale-90 text-center leading-none">{em}</button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === 'icon' && (
+        <>
+          <div className="flex overflow-x-auto bg-slate-50 px-1 pt-1 gap-0.5 scrollbar-none">
+            {ICON_CATS.map((c, i) => (
+              <button key={i} type="button" onMouseDown={e => { e.preventDefault(); setCat(i) }}
+                className={`shrink-0 px-2.5 py-1.5 rounded-t-lg text-[10px] font-bold transition whitespace-nowrap border border-transparent ${
+                  cat === i ? 'bg-white text-indigo-700 border-slate-200 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-700'
+                }`}>{c.label}</button>
+            ))}
+          </div>
+          <div className="p-2 grid grid-cols-5 gap-1 max-h-40 overflow-y-auto">
+            {ICON_CATS[cat].keys.map((name) => {
+              const ic = INLINE_ICONS[name]
+              if (!ic) return null
+              return (
+                <button key={name} type="button"
+                  onMouseDown={e => { e.preventDefault(); onInsert(`:${name}:`) }}
+                  className="flex flex-col items-center gap-0.5 p-2 rounded-xl hover:bg-indigo-50 transition active:scale-90 group"
+                  title={`:${name}: — ${ic.label}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke={ic.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={ic.d} />
+                  </svg>
+                  <span className="text-[9px] text-slate-500 group-hover:text-indigo-700 font-medium truncate w-full text-center">{ic.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      <div className="px-3 py-1.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <p className="text-[9px] text-slate-400">
+          {tab === 'icon' ? 'Iconul se inserează ca :nume: → randat automat' : 'Click pentru a insera la cursor'}
+        </p>
       </div>
     </div>
   )
@@ -177,20 +231,6 @@ function blocksToMarkdown(blocks) {
       default:          return ''
     }
   }).join('\n\n')
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INLINE format helper (preview HTML)
-// ─────────────────────────────────────────────────────────────────────────────
-function inlineFmt(s) {
-  if (!s) return ''
-  return s
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="my-2 rounded-lg max-w-full h-auto shadow" />')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-indigo-600 underline">$1</a>')
-    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-indigo-50 rounded text-sm font-mono text-indigo-700 font-medium">$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
