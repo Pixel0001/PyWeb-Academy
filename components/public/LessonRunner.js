@@ -1074,38 +1074,57 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           </div>
                         )}
                         {/* Butoane acțiuni — în afara cardului AI/feedback */}
-                        {(curSub.grade ?? 0) < 100 && (
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                              {/* Continuă la următoarea problemă */}
-                              {idx < problems.length - 1 && (
-                                <button onClick={() => { nextProblem() }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
-                                  Continuă <ChevronRightIcon className="w-4 h-4" />
+                        {(curSub.grade ?? 0) < 100 && (() => {
+                          const nextUnlockedIdx = problems.findIndex((_, i) => i > idx && !locks[i] && !isProblemDone(i))
+                          const nextRevisitIdx = toRevisit.find(i => i !== idx)
+                          const nextToGo = nextUnlockedIdx !== -1 ? nextUnlockedIdx : -1
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap gap-2">
+                                {/* Finalizează lecția dacă totul e gata */}
+                                {allDone && (
+                                  <button onClick={finishLesson} disabled={finishing}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 text-blue-900 rounded-xl text-sm font-bold hover:shadow-lg disabled:opacity-50 shadow transition active:scale-95">
+                                    <TrophyIcon className="w-4 h-4" /> {finishing ? 'Se salveaza...' : 'Finalizează lecția'}
+                                  </button>
+                                )}
+                                {/* Mergi la urm problemă deblocată sau la urm din revisit */}
+                                {!allDone && nextToGo !== -1 && (
+                                  <button onClick={() => setIdx(nextToGo)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
+                                    Continuă <ChevronRightIcon className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {/* Dacă nu mai sunt probleme deblocate dar sunt revisit-uri */}
+                                {!allDone && nextToGo === -1 && nextRevisitIdx !== undefined && (
+                                  <button onClick={nextProblem}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
+                                    <ArrowPathIcon className="w-4 h-4" /> Reia blocată ({toRevisit.length})
+                                  </button>
+                                )}
+                                {/* Revin la final — badge informativ */}
+                                {toRevisit.includes(idx) && (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-100 border border-rose-300 text-rose-800 rounded-xl text-xs font-semibold">
+                                    <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" /> Programată pentru revizuit
+                                  </span>
+                                )}
+                                {/* Vezi rezolvarea */}
+                                {!curSolutionViewed && (curSub.grade ?? 0) < 60 && (
+                                  <button onClick={viewSolution} disabled={solutionLoading}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
+                                    <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea (0p)'}
+                                  </button>
+                                )}
+                              </div>
+                              <div className="pt-1">
+                                <button onClick={resetLesson} disabled={resetting}
+                                  className="text-xs text-slate-400 hover:text-rose-600 underline underline-offset-2 transition">
+                                  {resetting ? 'Se resetează...' : 'Reseteză întreaga lecție (pierd tot progresul)'}
                                 </button>
-                              )}
-                              {/* Revin la final — doar dacă e programat */}
-                              {toRevisit.includes(idx) && (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-100 border border-rose-300 text-rose-800 rounded-xl text-xs font-semibold">
-                                  <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" /> Programată pentru revizuit la final
-                                </span>
-                              )}
-                              {/* Vezi rezolvarea — doar dacă nu a trecut (nu vrem să resetăm nota la 0 pe o problemă trecută) */}
-                              {!curSolutionViewed && (curSub.grade ?? 0) < 60 && (
-                                <button onClick={viewSolution} disabled={solutionLoading}
-                                  className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-700 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
-                                  <EyeIcon className="w-4 h-4" /> {solutionLoading ? 'Se încarcă...' : 'Vezi rezolvarea (0p)'}
-                                </button>
-                              )}
+                              </div>
                             </div>
-                            <div className="pt-1">
-                              <button onClick={resetLesson} disabled={resetting}
-                                className="text-xs text-slate-400 hover:text-rose-600 underline underline-offset-2 transition">
-                                {resetting ? 'Se resetează...' : 'Reseteză întreaga lecție (pierd tot progresul)'}
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                          )
+                        })()}
                       </div>
                     ) : curSub && curSub.status === 'PENDING' ? (
                       <div className="rounded-xl p-4 border-2 bg-amber-50 border-amber-200">
