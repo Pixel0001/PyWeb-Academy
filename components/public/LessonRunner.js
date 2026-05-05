@@ -28,7 +28,10 @@ const DIFF_LABEL = { EASY: 'Usor', MEDIUM: 'Mediu', HARD: 'Greu' }
 
 function renderTheory(text) {
   if (!text) return null
-  const lines = text.split('\n')
+  // Normalizează blocurile de cod: dacă ``` apare la mijlocul unui rând,
+  // îl mută pe un rând nou (ex: "Exemplu: ```python\n...")
+  const normalized = text.replace(/([^\n`])([ \t]*```)/g, '$1\n$2')
+  const lines = normalized.split('\n')
   const out = []
   let inCode = false; let codeBuf = []; let codeLang = ''
   let listBuf = []; let listOrdered = false
