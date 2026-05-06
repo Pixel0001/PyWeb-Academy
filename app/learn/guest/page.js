@@ -1,8 +1,8 @@
-// Guest dashboard pentru /learn — � fara cont, fara DB writes, fara AI.
-// Listeaza modulele active. Doar lec?iile FREE sunt accesibile (link-uri activate).
-// Restul lec?iilor se afi?eaza blocate cu CTA catre /inscriere.
+// Guest dashboard pentru /learn — fara cont, fara DB writes, fara AI.
+// Listeaza modulele active. Doar lectiile FREE sunt accesibile (link-uri activate).
+// Restul lectiilor se afiseaza blocate cu CTA catre /inscriere.
 
-export const revalidate = 3600 // cache 1 ora � toate guest-urile vad acela?i con?inut
+export const revalidate = 3600 // cache 1 ora — toate guest-urile vad acelasi continut
 
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
@@ -29,63 +29,63 @@ const BENEFITS = [
     icon: BookOpenIcon,
     color: 'text-blue-600',
     bg: 'bg-blue-100',
-    title: 'Toate lec?iile deblocate',
-    desc: 'Acces la 100% din con?inut � teorie, exerci?ii ?i proiecte pentru fiecare modul.',
+    title: 'Toate lecțiile deblocate',
+    desc: 'Acces la 100% din conținut — teorie, exerciții și proiecte pentru fiecare modul.',
   },
   {
     icon: SparklesIcon,
     color: 'text-violet-600',
     bg: 'bg-violet-100',
-    title: 'Mr. PyWeb � AI Tutor',
-    desc: 'ntreaba AI-ul orice, prime?ti explica?ii personalizate ?i feedback instant pe codul tau.',
+    title: 'Mr. PyWeb — AI Tutor',
+    desc: 'Întreabă AI-ul orice, primești explicații personalizate și feedback instant pe codul tău.',
   },
   {
     icon: CheckSolid,
     color: 'text-emerald-600',
     bg: 'bg-emerald-100',
     title: 'Progres salvat automat',
-    desc: 'Lec?iile completate, XP-ul ?i nivelul tau se salveaza ?i te a?teapta la revenire.',
+    desc: 'Lecțiile completate, XP-ul și nivelul tău se salvează și te așteaptă la revenire.',
   },
   {
     icon: TrophyIcon,
     color: 'text-amber-600',
     bg: 'bg-amber-100',
     title: 'Clasament & niveluri XP',
-    desc: 'Ca?tiga XP la fiecare problema rezolvata ?i urca in clasamentul platformei.',
+    desc: 'Câștigă XP la fiecare problemă rezolvată și urcă în clasamentul platformei.',
   },
   {
     icon: ChatBubbleLeftRightIcon,
     color: 'text-sky-600',
     bg: 'bg-sky-100',
     title: 'Feedback de la profesor',
-    desc: 'Solu?iile tale ajung la profesor pentru recenzie, notare ?i feedback detaliat.',
+    desc: 'Soluțiile tale ajung la profesor pentru recenzie, notare și feedback detaliat.',
   },
   {
     icon: FireIcon,
     color: 'text-rose-600',
     bg: 'bg-rose-100',
     title: 'Antrenament aleator',
-    desc: 'Rezolva probleme aleatoare din toata platforma pentru a-?i testa cuno?tin?ele.',
+    desc: 'Rezolvă probleme aleatoare din toată platforma pentru a-ți testa cunoștințele.',
   },
   {
     icon: BoltIcon,
     color: 'text-orange-600',
     bg: 'bg-orange-100',
     title: 'Bonus XP de la profesor',
-    desc: 'Profesorul poate acorda puncte bonus pentru progres excep?ional.',
+    desc: 'Profesorul poate acorda puncte bonus pentru progres excepțional.',
   },
   {
     icon: UserGroupIcon,
     color: 'text-indigo-600',
     bg: 'bg-indigo-100',
-    title: 'Comunitate & notificari',
-    desc: 'Prime?ti notificari cand ai teme de refacut ?i faci parte din grupul tau.',
+    title: 'Comunitate & notificări',
+    desc: 'Primești notificări când ai teme de refăcut și faci parte din grupul tău.',
   },
 ]
 
 export const metadata = {
-  title: 'Mod demo � PyWeb Academy',
-  description: 'ncearca platforma PyWeb Academy fara cont. Lec?ii gratuite ?i exerci?ii interactive.',
+  title: 'Mod demo — PyWeb Academy',
+  description: 'Încearcă platforma PyWeb Academy fără cont. Lecții gratuite și exerciții interactive.',
   robots: { index: false, follow: false },
 }
 
@@ -116,14 +116,14 @@ export default async function GuestDashboard() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-3">
           <Link href="/learn" className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-medium transition shrink-0 p-1.5 rounded-lg hover:bg-white/10">
             <ChevronLeftIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">napoi</span>
+            <span className="hidden sm:inline">Înapoi</span>
           </Link>
           <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center shrink-0">
             <AcademicCapIcon className="w-5 h-5 text-blue-900" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] uppercase tracking-wider text-amber-300 font-bold leading-none">Mod demo</div>
-            <h1 className="font-extrabold text-base sm:text-lg truncate leading-tight">PyWeb Academy � vizitator</h1>
+            <h1 className="font-extrabold text-base sm:text-lg truncate leading-tight">PyWeb Academy — vizitator</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/learn/login"
@@ -133,7 +133,7 @@ export default async function GuestDashboard() {
             <Link href="/inscriere"
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-blue-900 rounded-lg text-sm font-bold transition">
               <RocketLaunchIcon className="w-3.5 h-3.5" />
-              <span>nscrie-te</span>
+              <span>Înscrie-te</span>
             </Link>
           </div>
         </div>
@@ -148,23 +148,23 @@ export default async function GuestDashboard() {
           <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
             <div className="flex-1 min-w-0">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 text-amber-300 rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-3">
-                <SparklesIcon className="w-3 h-3" /> Bine ai venit in modul demo
+                <SparklesIcon className="w-3 h-3" /> Bine ai venit în modul demo
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-                ncearca PyWeb Academy<br />
-                <span className="text-amber-300">fara cont</span>
+                Încearcă PyWeb Academy<br />
+                <span className="text-amber-300">fără cont</span>
               </h2>
               <p className="text-blue-200 text-sm mt-2 leading-relaxed">
-                Parcurge teorie ?i rezolva exerci?ii la{' '}
-                <strong className="text-white">{totalFreeLessons} lec?ii gratuite</strong> din{' '}
-                {totalLessons} disponibile. Progresul nu se salveaza ?i AI-ul este dezactivat.
+                Parcurge teorie și rezolvă exerciții la{' '}
+                <strong className="text-white">{totalFreeLessons} lecții gratuite</strong> din{' '}
+                {totalLessons} disponibile. Progresul nu se salvează și AI-ul este dezactivat.
               </p>
             </div>
             <div className="flex flex-col gap-2.5 shrink-0">
               <Link href="/inscriere"
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-amber-400 hover:bg-amber-300 text-blue-900 rounded-xl font-extrabold text-sm transition shadow-md active:scale-95">
                 <RocketLaunchIcon className="w-4 h-4" />
-                nscrie-te gratuit
+                Înscrie-te gratuit
               </Link>
               <Link href="/learn/login"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-sm transition">
@@ -175,15 +175,15 @@ export default async function GuestDashboard() {
           </div>
         </div>
 
-        {/* Benefits � ce pierzi fara abonament */}
+        {/* Benefits — ce pierzi fara abonament */}
         <div className="bg-white rounded-2xl shadow-md ring-1 ring-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shrink-0">
               <ShieldCheckIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-base">Ce pierzi fara abonament</h3>
-              <p className="text-xs text-slate-500">nscrie-te pentru a debloca toate func?ionalita?ile platformei</p>
+              <h3 className="font-extrabold text-slate-900 text-base">Ce pierzi fără abonament</h3>
+              <p className="text-xs text-slate-500">Înscrie-te pentru a debloca toate funcționalitățile platformei</p>
             </div>
           </div>
           <div className="p-4 grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -203,7 +203,7 @@ export default async function GuestDashboard() {
             <Link href="/inscriere"
               className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-extrabold text-sm transition shadow-sm active:scale-[0.99]">
               <RocketLaunchIcon className="w-4 h-4" />
-              Deblocheaza tot � nscrie-te gratuit
+              Deblochează tot — Înscrie-te gratuit
             </Link>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default async function GuestDashboard() {
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Module disponibile</h2>
           <p className="text-sm text-slate-500 mt-0.5">
-            Apasa pe un modul ca sa il deschizi, apoi alege o lec?ie gratuita.
+            Apasă pe un modul ca să îl deschizi, apoi alege o lecție gratuită.
           </p>
         </div>
 
@@ -242,16 +242,16 @@ export default async function GuestDashboard() {
             </div>
             <div className="flex-1">
               <h3 className="text-xl sm:text-2xl font-extrabold leading-tight">
-                Vrei tot con?inutul, AI tutor ?i progres salvat?
+                Vrei tot conținutul, AI tutor și progres salvat?
               </h3>
               <p className="text-blue-200 text-sm mt-1.5 leading-relaxed">
-                nscrie-te gratuit ?i beneficiezi de toate lec?iile, Mr. PyWeb (AI tutor),
-                feedback de la profesor ?i salvare automata a progresului tau.
+                Înscrie-te gratuit și beneficiezi de toate lecțiile, Mr. PyWeb (AI tutor),
+                feedback de la profesor și salvare automată a progresului tău.
               </p>
               <div className="flex flex-wrap gap-3 mt-4">
                 <Link href="/inscriere"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-blue-900 rounded-xl font-bold text-sm transition shadow active:scale-95">
-                  <RocketLaunchIcon className="w-4 h-4" /> nscrie-te gratuit
+                  <RocketLaunchIcon className="w-4 h-4" /> Înscrie-te gratuit
                 </Link>
                 <Link href="/learn/login"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white rounded-xl font-bold text-sm transition">
