@@ -19,7 +19,7 @@ import {
   BanknotesIcon,
   BoltIcon,
 } from '@heroicons/react/24/outline'
-import dynamic from 'next/dynamic'
+import nextDynamic from 'next/dynamic'
 import SuperStudentToggle from '@/components/admin/SuperStudentToggle'
 import StudentActiveToggle from '@/components/admin/StudentActiveToggle'
 import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
@@ -27,9 +27,9 @@ import StudentLimitsOverride from '@/components/admin/StudentLimitsOverride'
 import GenerateTokenButton from '@/components/admin/GenerateTokenButton'
 import { getSystemSettings } from '@/lib/student-limits'
 // Heavy components: lazy-loaded to reduce initial bundle
-const StudentModuleAccessTable = dynamic(() => import('@/components/admin/StudentModuleAccessTable'))
-const StudentLearningPayments = dynamic(() => import('@/components/admin/StudentLearningPayments'))
-const StudentBonusPoints = dynamic(() => import('@/components/admin/StudentBonusPoints'))
+const StudentModuleAccessTable = nextDynamic(() => import('@/components/admin/StudentModuleAccessTable'))
+const StudentLearningPayments = nextDynamic(() => import('@/components/admin/StudentLearningPayments'))
+const StudentBonusPoints = nextDynamic(() => import('@/components/admin/StudentBonusPoints'))
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
