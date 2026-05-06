@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 const STORAGE_KEY_PREFIX = 'pyweb-learn-session:'
-const POLL_INTERVAL_MS = 15000 // 15 secunde
+const POLL_INTERVAL_MS = 15000  // 15 secunde — poll pentru a detecta kick
+const HEARTBEAT_INTERVAL_MS = 60000 // 60 secunde — re-claim pentru a menține sesiunea activă
 
 function generateSessionId() {
   // 16 bytes random hex (32 chars)
@@ -20,16 +21,50 @@ function generateSessionId() {
 export default function SessionGuard({ token }) {
   const [kicked, setKicked] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const sessionIdRef = useRef(null)
   const pollTimerRef = useRef(null)
+  const heartbeatTimerRef = useRef(null)
+  const kickedRef = useRef(false)
 
+  // Claim — declară acest browser ca sesiune activă
+  const claim = async (sid) => {
+    try {
+      await fetch(`/api/public/learn/${token}/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sid }),
+        cache: 'no-store',
+      })
+    } catch {}
+  }
+
+  // Check — verifică dacă mai suntem sesiunea activă
+  const check = async (sid) => {
+    if (kickedRef.current) return
+    try {
+      const r = await fetch(
+        `/api/public/learn/${token}/session?sessionId=${encodeURIComponent(sid)}`,
+        { cache: 'no-store' }
+      )
+      if (!r.ok) return
+      const d = await r.json()
+      if (kickedRef.current) return
+      if (d.active === false && d.kicked === true) {
+        kickedRef.current = true
+        setKicked(true)
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+        if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current)
+        try { localStorage.removeItem(STORAGE_KEY_PREFIX + token) } catch {}
+      }
+    } catch {}
+  }
+
+  // Montare inițială: generează/preia sessionId + pornește polling + heartbeat
   useEffect(() => {
-    if (!token) return
-    if (typeof window === 'undefined') return
+    if (!token || typeof window === 'undefined') return
 
     const storageKey = STORAGE_KEY_PREFIX + token
-
-    // Generează sau preia sessionId-ul din localStorage
     let sid = null
     try { sid = localStorage.getItem(storageKey) } catch {}
     if (!sid) {
@@ -38,56 +73,38 @@ export default function SessionGuard({ token }) {
     }
     sessionIdRef.current = sid
 
-    let cancelled = false
+    claim(sid)
 
-    // Claim: declarăm acest browser ca sesiune activă
-    const claim = async () => {
-      try {
-        await fetch(`/api/public/learn/${token}/session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid }),
-          cache: 'no-store',
-        })
-      } catch {}
-    }
+    // Poll
+    pollTimerRef.current = setInterval(() => check(sid), POLL_INTERVAL_MS)
 
-    // Check: verifică dacă mai suntem sesiunea activă
-    const check = async () => {
-      if (cancelled) return
-      try {
-        const r = await fetch(
-          `/api/public/learn/${token}/session?sessionId=${encodeURIComponent(sid)}`,
-          { cache: 'no-store' }
-        )
-        if (!r.ok) return
-        const d = await r.json()
-        if (cancelled) return
-        if (d.active === false && d.kicked === true) {
-          setKicked(true)
-          if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-          // Curăță sessionId-ul ca să nu reclaim accidental la refresh
-          try { localStorage.removeItem(storageKey) } catch {}
-        }
-      } catch {}
-    }
+    // Heartbeat: re-claim periodic ca să rămâi sesiunea activă
+    heartbeatTimerRef.current = setInterval(() => {
+      if (!kickedRef.current) claim(sid)
+    }, HEARTBEAT_INTERVAL_MS)
 
-    claim().then(() => {
-      // Polling
-      pollTimerRef.current = setInterval(check, POLL_INTERVAL_MS)
-      // Verifică la întoarcerea în tab
-      const onVisible = () => {
-        if (document.visibilityState === 'visible') check()
+    // Re-claim la revenirea în tab
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !kickedRef.current) {
+        claim(sid)
+        check(sid)
       }
-      document.addEventListener('visibilitychange', onVisible)
-      return () => document.removeEventListener('visibilitychange', onVisible)
-    })
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
-      cancelled = true
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
+      clearInterval(pollTimerRef.current)
+      clearInterval(heartbeatTimerRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [token])
+
+  // Re-claim la fiecare schimbare de rută (layout persists în Next.js App Router)
+  useEffect(() => {
+    const sid = sessionIdRef.current
+    if (!sid || kickedRef.current) return
+    claim(sid)
+  }, [pathname])
 
   if (!kicked) return null
 
