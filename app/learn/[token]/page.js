@@ -19,6 +19,7 @@ import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
 import CooldownTimer from '@/components/public/CooldownTimer'
 import LearnLoading from './loading'
+import ModuleAccordion from '@/components/learn/ModuleAccordion'
 
 const MODULE_THEMES = [
   { from: 'from-amber-400', to: 'to-orange-500', soft: 'from-amber-50 to-orange-50', ring: 'ring-amber-200' },
@@ -531,11 +532,11 @@ async function DashboardContent({ token }) {
             const pct = totalL > 0 ? Math.round((doneL / totalL) * 100) : 0
             const theme = MODULE_THEMES[idx % MODULE_THEMES.length]
 
-            return (
-              <div id={`module-${m.id}`} key={m.id}
-                className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${unlocked ? theme.ring : 'ring-slate-200 opacity-70'}`}>
+            // Auto-open dacă studentul are progres sau e primul modul
+            const defaultOpen = idx === 0 || doneL > 0
 
-                {/* Module header */}
+            const headerJSX = (
+              <div className={`bg-white rounded-t-2xl overflow-hidden`}>
                 <div className={`h-1.5 bg-gradient-to-r ${theme.from} ${theme.to}`} />
                 <div className={`px-5 py-4 bg-gradient-to-br ${theme.soft} flex items-center gap-4`}>
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} flex items-center justify-center shadow shrink-0`}>
@@ -559,93 +560,106 @@ async function DashboardContent({ token }) {
                     <div className="text-xs text-slate-500">{doneL}/{totalL} lectii</div>
                   </div>
                 </div>
+              </div>
+            )
 
-                {/* Progress bar */}
-                <div className="h-1 bg-slate-100">
-                  <div className={`h-full bg-gradient-to-r ${theme.from} ${theme.to} transition-all duration-700`} style={{ width: `${pct}%` }} />
-                </div>
+            const progressBarJSX = (
+              <div className="h-1 bg-slate-100">
+                <div className={`h-full bg-gradient-to-r ${theme.from} ${theme.to} transition-all duration-700`} style={{ width: `${pct}%` }} />
+              </div>
+            )
 
-                {/* Lessons grid */}
-                <div className="p-4">
-                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                    {m.lessons.map((l, li) => {
-                      // În interiorul modulului, lecțiile sunt secvențiale
-                      const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
-                      const grantedLesson = lessonAccessSet.has(l.id)
-                      const accessible = student.superStudent
-                        ? true
-                        : grantedLesson
+            return (
+              <div key={m.id}
+                className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${unlocked ? theme.ring : 'ring-slate-200 opacity-70'}`}>
+                <ModuleAccordion
+                  moduleId={m.id}
+                  defaultOpen={defaultOpen}
+                  header={headerJSX}
+                  progressBar={progressBarJSX}
+                >
+                  {/* Lessons grid */}
+                  <div className="p-4">
+                    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                      {m.lessons.map((l, li) => {
+                        // În interiorul modulului, lecțiile sunt secvențiale
+                        const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
+                        const grantedLesson = lessonAccessSet.has(l.id)
+                        const accessible = student.superStudent
                           ? true
-                          : (subscriptionActive || hasFullAccess || l.isFree) && prevDone
-                      const prog = progressMap.get(l.id)
-                      const done = !!prog?.completedAt
-                      const started = !!prog?.theoryCompleted && !done
-                      const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId && !grantedLesson
+                          : grantedLesson
+                            ? true
+                            : (subscriptionActive || hasFullAccess || l.isFree) && prevDone
+                        const prog = progressMap.get(l.id)
+                        const done = !!prog?.completedAt
+                        const started = !!prog?.theoryCompleted && !done
+                        const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId && !grantedLesson && !l.isFree
 
-                      const numCls = done
-                        ? 'bg-emerald-500 text-white'
-                        : onCooldown ? 'bg-slate-700 text-slate-300'
-                        : started ? 'bg-indigo-500 text-white'
-                        : accessible ? 'bg-slate-100 text-slate-600'
-                        : 'bg-slate-100 text-slate-300'
+                        const numCls = done
+                          ? 'bg-emerald-500 text-white'
+                          : onCooldown ? 'bg-slate-700 text-slate-300'
+                          : started ? 'bg-indigo-500 text-white'
+                          : accessible ? 'bg-slate-100 text-slate-600'
+                          : 'bg-slate-100 text-slate-300'
 
-                      const cardCls = !accessible
-                        ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
-                        : onCooldown
-                          ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-75'
-                          : done
-                            ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-sm'
-                            : started
-                              ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
-                              : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
+                        const cardCls = !accessible
+                          ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
+                          : onCooldown
+                            ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-75'
+                            : done
+                              ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-sm'
+                              : started
+                                ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
+                                : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
 
-                      const inner = (
-                        <>
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
-                            {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? (
-                              <CooldownTimer endsAt={cooldownEndsAt} compact />
-                            ) : li + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
-                              {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
-                              {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
-                              {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
+                        const inner = (
+                          <>
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
+                              {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? (
+                                <CooldownTimer endsAt={cooldownEndsAt} compact />
+                              ) : li + 1}
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                              <PuzzlePieceIcon className="w-3 h-3" />
-                              {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
+                                {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
+                                {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
+                                {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                                <PuzzlePieceIcon className="w-3 h-3" />
+                                {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
+                              </div>
                             </div>
+                            {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
+                          </>
+                        )
+
+                        const lockReason = !prevDone ? 'module' : 'payment'
+
+                        return accessible && !onCooldown ? (
+                          <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
+                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                            {inner}
+                          </Link>
+                        ) : onCooldown ? (
+                          <div key={l.id} className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                            {inner}
                           </div>
-                          {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
-                        </>
-                      )
-
-                      const lockReason = !prevDone ? 'module' : 'payment'
-
-                      return accessible && !onCooldown ? (
-                        <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
-                          className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
-                          {inner}
-                        </Link>
-                      ) : onCooldown ? (
-                        <div key={l.id} className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
-                          {inner}
-                        </div>
-                      ) : (
-                        <LockedLessonCard key={l.id} reason={lockReason}>
-                          {inner}
-                        </LockedLessonCard>
-                      )
-                    })}
-                    {m.lessons.length === 0 && (
-                      <p className="sm:col-span-2 xl:col-span-3 text-sm text-slate-400 text-center py-4">
-                        Nicio lectie inca.
-                      </p>
-                    )}
+                        ) : (
+                          <LockedLessonCard key={l.id} reason={lockReason}>
+                            {inner}
+                          </LockedLessonCard>
+                        )
+                      })}
+                      {m.lessons.length === 0 && (
+                        <p className="sm:col-span-2 xl:col-span-3 text-sm text-slate-400 text-center py-4">
+                          Nicio lectie inca.
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </ModuleAccordion>
               </div>
             )
           })}

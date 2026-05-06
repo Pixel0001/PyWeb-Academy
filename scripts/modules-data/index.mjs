@@ -28,6 +28,11 @@ import { csharpQuizPack } from './csharp-quiz-pack.mjs'
 import { cExtras } from './c-extras.mjs'
 import { cppExtras } from './cpp-extras.mjs'
 import { csharpExtras } from './csharp-extras.mjs'
+// Module noi: React / Tailwind / Next.js Frontend / Next.js Backend
+import { reactModule } from './react.mjs'
+import { tailwindModule } from './tailwind.mjs'
+import { nextjsFrontendModule } from './nextjs-frontend.mjs'
+import { nextjsBackendModule } from './nextjs-backend.mjs'
 
 // Convertește un dicționar enriched ({ slug: { theory, problems } })
 // într-un patch ({ replaceTheory, appendProblems }).
@@ -102,4 +107,8 @@ export const allModules = [
   enrichedC,
   enrichedCpp,
   enrichedCsharp,
+  reactModule,
+  tailwindModule,
+  nextjsFrontendModule,
+  nextjsBackendModule,
 ]
