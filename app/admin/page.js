@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import Image from 'next/image'
-import { checkPermission } from '@/lib/permissions'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { 
   AcademicCapIcon, 
   UserGroupIcon, 
@@ -21,27 +23,22 @@ import {
   LockClosedIcon
 } from '@heroicons/react/24/outline'
 
-export default async function AdminDashboard() {
-  // Check permissions for each section
-  const [
-    canViewCourses,
-    canViewEnrollments,
-    canViewStudents,
-    canViewGroups,
-    canViewTeachers,
-    canViewContact,
-    canViewMissedSessions
-  ] = await Promise.all([
-    checkPermission('courses.view'),
-    checkPermission('inscrieri.view'),
-    checkPermission('students.view'),
-    checkPermission('groups.view'),
-    checkPermission('teachers.view'),
-    checkPermission('contact.view'),
-    checkPermission('missed-sessions.view')
-  ])
+async function AdminDashboardContent() {
+  // Read session once — permissions are embedded in the JWT, no extra DB call needed
+  const session = await getServerSession(authOptions)
+  const isSuperAdmin = session?.user?.role === 'SUPERADMIN'
+  const perms = Array.isArray(session?.user?.permissions) ? session.user.permissions : []
+  const has = (p) => isSuperAdmin || perms.includes(p)
 
-  // Only fetch data user has permission to see
+  const canViewCourses    = { allowed: has('courses.view') }
+  const canViewEnrollments = { allowed: has('inscrieri.view') }
+  const canViewStudents   = { allowed: has('students.view') }
+  const canViewGroups     = { allowed: has('groups.view') }
+  const canViewTeachers   = { allowed: has('teachers.view') }
+  const canViewContact    = { allowed: has('contact.view') }
+  const canViewMissedSessions = { allowed: has('missed-sessions.view') }
+
+  // All data queries in a SINGLE parallel batch — no sequential round-trips
   const [
     coursesCount, 
     enrollmentsCount, 
@@ -492,5 +489,13 @@ export default async function AdminDashboard() {
 
       {/* Recent Enrollments section removed — /admin/enrollments page not implemented */}
     </div>
+  )
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={null}>
+      <AdminDashboardContent />
+    </Suspense>
   )
 }

@@ -13,8 +13,8 @@ import {
 export default async function TeacherDashboardPage() {
   const session = await getServerSession(authOptions)
 
-  // Get teacher's groups and statistics
-  const [groups, students, recentSessions, makeupLessons] = await Promise.all([
+  // Get teacher's groups and statistics — all in one parallel batch
+  const [groups, students, recentSessions, makeupLessons, totalSessions] = await Promise.all([
     prisma.group.findMany({
       where: { teacherId: session.user.id, active: true },
       include: {
@@ -61,14 +61,12 @@ export default async function TeacherDashboardPage() {
         },
         students: true
       }
-    })
+    }),
+    prisma.lessonSession.count({ where: { group: { teacherId: session.user.id } } }),
   ])
 
   const totalStudents = students.length
   const totalGroups = groups.length
-  const totalSessions = await prisma.lessonSession.count({
-    where: { group: { teacherId: session.user.id } }
-  })
   const upcomingMakeups = makeupLessons.length
 
   const stats = [
