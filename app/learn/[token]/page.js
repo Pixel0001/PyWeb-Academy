@@ -536,42 +536,53 @@ async function DashboardContent({ token }) {
             const defaultOpen = idx === 0 || doneL > 0
 
             const headerJSX = (
-              <div className={`bg-white rounded-t-2xl overflow-hidden`}>
-                <div className={`h-1.5 bg-gradient-to-r ${theme.from} ${theme.to}`} />
-                <div className={`px-5 py-4 bg-gradient-to-br ${theme.soft} flex items-center gap-4`}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} flex items-center justify-center shadow shrink-0`}>
+              <div className="bg-white rounded-t-2xl overflow-hidden">
+                {/* Thick accent bar */}
+                <div className={`h-2 bg-gradient-to-r ${theme.from} ${theme.to}`} />
+                {/* Header body */}
+                <div className="px-5 py-5 flex items-center gap-4">
+                  {/* Icon */}
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${theme.from} ${theme.to} flex items-center justify-center shadow-lg shrink-0`}>
                     {unlocked
-                      ? <CodeBracketIcon className="w-6 h-6 text-white" />
-                      : <LockClosedIcon className="w-6 h-6 text-white" />
+                      ? <CodeBracketIcon className="w-7 h-7 text-white drop-shadow" />
+                      : <LockClosedIcon className="w-7 h-7 text-white drop-shadow" />
                     }
                   </div>
+                  {/* Text */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-white/80 text-slate-600 rounded-full">Modul {idx + 1}</span>
-                      {m.language && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-900 text-white rounded-full">{m.language}</span>}
-                      {!unlocked && <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-600 text-white rounded-full"><LockClosedIcon className="w-3 h-3" /> Blocat</span>}
-                      {hasFullAccess && unlocked && <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-full"><CheckSolid className="w-3 h-3" /> Acces complet</span>}
-                      {advanceGranted && <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-purple-600 text-white rounded-full"><RocketLaunchIcon className="w-3 h-3" /> Advance</span>}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r ${theme.from} ${theme.to} text-white shadow-sm`}>Modul {idx + 1}</span>
+                      {m.language && <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-slate-900 text-white rounded-full">{m.language}</span>}
+                      {!unlocked && <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-slate-500 text-white rounded-full"><LockClosedIcon className="w-3 h-3" /> Blocat</span>}
+                      {hasFullAccess && unlocked && <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-emerald-500 text-white rounded-full"><CheckSolid className="w-3 h-3" /> Acces complet</span>}
+                      {advanceGranted && <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-purple-600 text-white rounded-full"><RocketLaunchIcon className="w-3 h-3" /> Advance</span>}
                     </div>
-                    <h2 className="text-lg font-extrabold text-slate-900">{m.title}</h2>
+                    <h2 className="text-xl font-extrabold text-slate-900 leading-tight">{m.title}</h2>
+                    {m.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{m.description}</p>}
+                    {/* Inline progress bar */}
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full bg-gradient-to-r ${theme.from} ${theme.to} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-500">{doneL}/{totalL} lecții</span>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 hidden sm:block">
-                    <div className={`text-2xl font-extrabold bg-gradient-to-r ${theme.from} ${theme.to} bg-clip-text text-transparent`}>{pct}%</div>
-                    <div className="text-xs text-slate-500">{doneL}/{totalL} lectii</div>
+                  {/* % badge */}
+                  <div className="hidden sm:flex flex-col items-center justify-center shrink-0">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${theme.from} ${theme.to} bg-opacity-10 flex flex-col items-center justify-center`} style={{ background: 'rgba(0,0,0,0.04)' }}>
+                      <div className={`text-2xl font-black bg-gradient-to-br ${theme.from} ${theme.to} bg-clip-text text-transparent leading-none`}>{pct}%</div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">gata</div>
+                    </div>
                   </div>
                 </div>
               </div>
             )
 
-            const progressBarJSX = (
-              <div className="h-1 bg-slate-100">
-                <div className={`h-full bg-gradient-to-r ${theme.from} ${theme.to} transition-all duration-700`} style={{ width: `${pct}%` }} />
-              </div>
-            )
+            const progressBarJSX = null
 
             return (
               <div key={m.id}
-                className={`bg-white rounded-2xl shadow-sm overflow-hidden ring-1 ${unlocked ? theme.ring : 'ring-slate-200 opacity-70'}`}>
+                className={`bg-white rounded-2xl shadow-md overflow-hidden ring-1 ${unlocked ? theme.ring : 'ring-slate-200 opacity-70'}`}>
                 <ModuleAccordion
                   moduleId={m.id}
                   defaultOpen={defaultOpen}
@@ -579,8 +590,8 @@ async function DashboardContent({ token }) {
                   progressBar={progressBarJSX}
                 >
                   {/* Lessons grid */}
-                  <div className="p-4">
-                    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                  <div className="p-4 pt-3">
+                    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                       {m.lessons.map((l, li) => {
                         // În interiorul modulului, lecțiile sunt secvențiale
                         const prevDone = li === 0 || !!progressMap.get(m.lessons[li - 1].id)?.completedAt
@@ -596,42 +607,46 @@ async function DashboardContent({ token }) {
                         const onCooldown = cooldownActive && accessible && !done && l.id !== cooldownLastLessonId && !grantedLesson && !l.isFree
 
                         const numCls = done
-                          ? 'bg-emerald-500 text-white'
-                          : onCooldown ? 'bg-slate-700 text-slate-300'
-                          : started ? 'bg-indigo-500 text-white'
-                          : accessible ? 'bg-slate-100 text-slate-600'
+                          ? `bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow-sm`
+                          : onCooldown ? 'bg-slate-800 text-slate-300'
+                          : started ? 'bg-indigo-500 text-white shadow-sm'
+                          : accessible ? 'bg-slate-100 text-slate-500 font-bold'
                           : 'bg-slate-100 text-slate-300'
 
                         const cardCls = !accessible
-                          ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-60'
+                          ? 'border-slate-100 bg-slate-50/80 cursor-not-allowed opacity-55'
                           : onCooldown
-                            ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-75'
+                            ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-70'
                             : done
-                              ? 'border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50 hover:shadow-sm'
+                              ? `border-slate-200 bg-gradient-to-r from-slate-50 to-white hover:shadow-md hover:border-slate-300`
                               : started
-                                ? 'border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:shadow-sm'
-                                : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm'
+                                ? 'border-indigo-200 bg-gradient-to-r from-indigo-50/60 to-white hover:shadow-md hover:border-indigo-300'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md hover:bg-slate-50/50'
 
                         const inner = (
                           <>
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
-                              {done ? <CheckSolid className="w-4 h-4" /> : onCooldown ? (
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${numCls}`}>
+                              {done ? <CheckSolid className="w-5 h-5" /> : onCooldown ? (
                                 <CooldownTimer endsAt={cooldownEndsAt} compact />
-                              ) : li + 1}
+                              ) : <span>{li + 1}</span>}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-semibold text-sm text-slate-900 truncate">{l.title}</span>
-                                {l.isFree && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded uppercase tracking-wider">Gratis</span>}
-                                {started && !done && !onCooldown && <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase tracking-wider">In curs</span>}
+                              <span className="font-semibold text-sm text-slate-900 leading-snug block truncate">{l.title}</span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                {l.isFree && <span className="text-[10px] font-extrabold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full uppercase tracking-wider">Gratis</span>}
+                                {started && !done && !onCooldown && <span className="text-[10px] font-extrabold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full uppercase tracking-wider">În curs</span>}
                                 {!accessible && <LockClosedIcon className="w-3 h-3 text-slate-300" />}
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                                <PuzzlePieceIcon className="w-3 h-3" />
-                                {l._count.problems} {l._count.problems === 1 ? 'problema' : 'probleme'}
+                                <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                                  <PuzzlePieceIcon className="w-3 h-3" />
+                                  {l._count.problems} {l._count.problems === 1 ? 'prob.' : 'prob.'}
+                                </span>
                               </div>
                             </div>
-                            {accessible && !onCooldown && <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0" />}
+                            {accessible && !onCooldown && (
+                              done
+                                ? <CheckSolid className="w-4 h-4 shrink-0 text-emerald-500" />
+                                : <ChevronRightIcon className="w-4 h-4 text-slate-300 shrink-0 group-hover:text-slate-400 transition" />
+                            )}
                           </>
                         )
 
@@ -639,11 +654,11 @@ async function DashboardContent({ token }) {
 
                         return accessible && !onCooldown ? (
                           <Link key={l.id} href={`/learn/${token}/lesson/${l.id}`}
-                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                            className={`group flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 ${cardCls}`}>
                             {inner}
                           </Link>
                         ) : onCooldown ? (
-                          <div key={l.id} className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                          <div key={l.id} className={`group flex items-center gap-3 p-3.5 rounded-xl border transition-all ${cardCls}`}>
                             {inner}
                           </div>
                         ) : (
@@ -653,8 +668,8 @@ async function DashboardContent({ token }) {
                         )
                       })}
                       {m.lessons.length === 0 && (
-                        <p className="sm:col-span-2 xl:col-span-3 text-sm text-slate-400 text-center py-4">
-                          Nicio lectie inca.
+                        <p className="sm:col-span-2 xl:col-span-3 text-sm text-slate-400 text-center py-6">
+                          Nicio lecție încă.
                         </p>
                       )}
                     </div>

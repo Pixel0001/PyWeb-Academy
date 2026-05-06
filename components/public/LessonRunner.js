@@ -465,6 +465,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       const next = [...submissions]; next[idx] = null; setSubmissions(next)
       const na = [...attemptsCount]; na[idx] = 0; setAttemptsCount(na)
       const nl = [...locks]; nl[idx] = false; setLocks(nl)
+      const nv = [...solutionViewed]; nv[idx] = false; setSolutionViewed(nv)
       setAnswer(''); setCode(cur?.starterCode || '')
       setAiFeedback(prev => { const c = { ...prev }; delete c[problemId]; return c })
       setSolutionData(prev => { const c = { ...prev }; delete c[problemId]; return c })
