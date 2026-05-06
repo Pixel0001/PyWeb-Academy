@@ -24,6 +24,7 @@ import SuperStudentToggle from '@/components/admin/SuperStudentToggle'
 import StudentActiveToggle from '@/components/admin/StudentActiveToggle'
 import StudentPasswordSetter from '@/components/admin/StudentPasswordSetter'
 import StudentLimitsOverride from '@/components/admin/StudentLimitsOverride'
+import StudentSessionInfo from '@/components/admin/StudentSessionInfo'
 import GenerateTokenButton from '@/components/admin/GenerateTokenButton'
 import { getSystemSettings } from '@/lib/student-limits'
 // Heavy components: lazy-loaded to reduce initial bundle
@@ -280,10 +281,17 @@ export default async function StudentDetailPage({ params }) {
         </div>
       </div>
 
-      {/* /learn — parolă, plăți, acces module */}
+      {/* /learn — parolă, sesiune, plăți, acces module */}
       {canEdit.allowed && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-4">
           <StudentPasswordSetter studentId={id} hasPassword={!!student.password} />
+          <StudentSessionInfo
+            studentId={id}
+            activeSessionId={student.activeSessionId}
+            activeSessionAt={student.activeSessionAt}
+            activeSessionIp={student.activeSessionIp}
+            activeSessionUA={student.activeSessionUA}
+          />
           <StudentLearningPayments studentId={id} initialPayments={learningPayments} />
         </div>
       )}
