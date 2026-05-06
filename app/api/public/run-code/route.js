@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
 
-// Proxy către Piston API (https://emkc.org/api/v2/piston)
-// Rulează cod C, C++, Python, JavaScript, etc. pe servere externe gratuite.
-// Folosit de CodeRunner pentru limbaje care nu pot fi rulate în browser (C/C++).
+// Proxy către Judge0 CE (https://api.judge0.com) — API gratuit pentru compilare C/C++
+// Language IDs: https://api.judge0.com/languages
+// 50 = C (GCC 9.2), 54 = C++ (GCC 9.2)
 
-const PISTON_URL = 'https://emkc.org/api/v2/piston/execute'
+const JUDGE0_URL = 'https://api.judge0.com/submissions?wait=true&fields=stdout,stderr,compile_output,status,exit_code'
 
-// Versiunile cele mai stabile din Piston
 const LANGUAGE_MAP = {
-  cpp: { language: 'c++', version: '10.2.0' },
-  c:   { language: 'c',   version: '10.2.0' },
+  c:   50,
+  cpp: 54,
 }
 
 // Rate limit simplu per IP: 10 rulări/minut
@@ -29,11 +28,10 @@ export async function POST(req) {
   try { body = await req.json() } catch {}
   const { language, code, stdin } = body
 
-  const mapping = LANGUAGE_MAP[String(language).toLowerCase()]
-  if (!mapping) {
+  const languageId = LANGUAGE_MAP[String(language).toLowerCase()]
+  if (!languageId) {
     return NextResponse.json({ error: `Limbajul "${language}" nu e suportat pentru rulare server-side.` }, { status: 400 })
   }
-
   if (!code || !String(code).trim()) {
     return NextResponse.json({ error: 'Codul este gol.' }, { status: 400 })
   }
@@ -42,39 +40,43 @@ export async function POST(req) {
   }
 
   try {
-    const pistonRes = await fetch(PISTON_URL, {
+    const res = await fetch(JUDGE0_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Auth-Token': '', // not required for public endpoint
+      },
       body: JSON.stringify({
-        language: mapping.language,
-        version: mapping.version,
-        files: [{ name: language === 'c' ? 'main.c' : 'main.cpp', content: code }],
+        source_code: code,
+        language_id: languageId,
         stdin: stdin || '',
-        args: [],
-        compile_timeout: 10000,
-        run_timeout: 5000,
+        cpu_time_limit: 5,
+        wall_time_limit: 10,
+        memory_limit: 128000,
       }),
       signal: AbortSignal.timeout(20_000),
     })
 
-    if (!pistonRes.ok) {
-      const t = await pistonRes.text().catch(() => '')
-      return NextResponse.json({ error: `Piston error ${pistonRes.status}: ${t.slice(0, 200)}` }, { status: 502 })
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      return NextResponse.json({ error: `Judge0 error ${res.status}: ${t.slice(0, 300)}` }, { status: 502 })
     }
 
-    const data = await pistonRes.json()
-    // data.compile: { stdout, stderr, code, signal }
-    // data.run:     { stdout, stderr, code, signal }
-    const compileErr = data.compile?.stderr || ''
-    const compileOut = data.compile?.stdout || ''
-    const runOut = data.run?.stdout || ''
-    const runErr = data.run?.stderr || ''
-    const runCode = data.run?.code ?? null
+    const data = await res.json()
+    // data.compile_output — erori de compilare
+    // data.stdout — output program
+    // data.stderr — runtime stderr
+    // data.status.id: 3=Accepted, 4=Wrong Answer, 5=TLE, 6=CE, 11=RE, etc.
+    const compileErr = data.compile_output?.trim() || ''
+    const runOut = data.stdout?.trim() || ''
+    const runErr = data.stderr?.trim() || ''
+    const statusId = data.status?.id ?? 0
 
     return NextResponse.json({
       ok: true,
-      compile: { stdout: compileOut, stderr: compileErr },
-      run: { stdout: runOut, stderr: runErr, code: runCode },
+      compile: { stderr: compileErr },
+      run: { stdout: runOut, stderr: runErr, code: data.exit_code ?? (statusId === 3 ? 0 : 1) },
+      status: data.status?.description || '',
     })
   } catch (e) {
     if (e?.name === 'TimeoutError') {
