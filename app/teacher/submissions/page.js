@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import dynamic from 'next/dynamic'
+import lazy from 'next/dynamic'
 import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-const SubmissionsList = dynamic(() => import('@/components/teacher/SubmissionsList'))
+const SubmissionsList = lazy(() => import('@/components/teacher/SubmissionsList'))
 
 const PAGE_SIZE = 20
 

@@ -5,8 +5,8 @@ import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
-const SubmissionGrader = dynamic(() => import('@/components/teacher/SubmissionGrader'))
+import lazy from 'next/dynamic'
+const SubmissionGrader = lazy(() => import('@/components/teacher/SubmissionGrader'))
 import {
   InboxIcon, BookOpenIcon, PuzzlePieceIcon, ClockIcon,
   CheckCircleIcon, XCircleIcon, PencilSquareIcon, ChevronRightIcon,

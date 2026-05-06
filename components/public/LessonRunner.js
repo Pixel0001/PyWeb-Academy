@@ -615,7 +615,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   }
 
   // Deblochează și navighează la o problemă din toRevisit — apelabilă de oriunde
-  const goToNextRevisit = () => {
+  const goToNextRevisit = async () => {
     const nextRevisit = toRevisit[0]
     if (nextRevisit === undefined) return
     const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
@@ -626,10 +626,26 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     const remaining = toRevisit.length - 1
     toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { icon: '🔁', duration: 4000 })
     if (!isGuest) {
-      fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
-      }).catch(() => {})
+      try {
+        const res = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
+        })
+        if (!res.ok) {
+          // Reset-problem refused (e.g. student viewed solution) — re-lock local state
+          // so the submit guard works correctly and shows a clear message
+          const rl = [...locks]; rl[nextRevisit] = true; setLocks(rl)
+          const rs = [...submissions]; rs[nextRevisit] = ns[nextRevisit] ?? submissions[nextRevisit]; setSubmissions(rs)
+          const data = await res.json().catch(() => ({}))
+          toast.error(data.error || 'Problema nu poate fi resetată')
+          return
+        }
+      } catch {
+        // Network error — re-lock to stay consistent with server state
+        const rl = [...locks]; rl[nextRevisit] = true; setLocks(rl)
+        toast.error('Eroare la resetarea problemei. Încearcă din nou.')
+        return
+      }
       fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentProblemIndex: nextRevisit }),
