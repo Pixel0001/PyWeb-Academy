@@ -157,9 +157,47 @@ export default function CodeRunner({
     }
   }, [code, onOutput])
 
+  const runServerSide = useCallback(async () => {
+    setRunning(true); setOutput('⏳ Compilare și rulare pe server...')
+    try {
+      const r = await fetch('/api/public/run-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang, code: code || '' }),
+      })
+      const d = await r.json()
+      if (!r.ok) {
+        const msg = '❌ ' + (d.error || 'Eroare server')
+        setOutput(msg)
+        if (onOutput) onOutput(msg, false)
+        return
+      }
+      const compileErr = d.compile?.stderr?.trim()
+      const runOut = d.run?.stdout?.trim() || ''
+      const runErr = d.run?.stderr?.trim() || ''
+      const exitCode = d.run?.code ?? null
+
+      let out = ''
+      if (compileErr) out += '🔨 Erori compilare:\n' + compileErr + '\n'
+      if (runOut) out += runOut
+      if (runErr) out += (out ? '\n' : '') + '⚠️ Stderr:\n' + runErr
+      if (!out) out = exitCode === 0 ? '(fără output)' : `❌ Program terminat cu codul ${exitCode}`
+
+      setOutput(out)
+      if (onOutput) onOutput(out, !compileErr && exitCode === 0)
+    } catch (e) {
+      const msg = '❌ ' + (e?.message || 'Eroare rețea')
+      setOutput(msg)
+      if (onOutput) onOutput(msg, false)
+    } finally {
+      setRunning(false)
+    }
+  }, [code, lang, onOutput])
+
   const run = () => {
     if (lang === 'python') return runPython()
     if (lang === 'javascript' || lang === 'js') return runJs()
+    if (lang === 'c' || lang === 'cpp') return runServerSide()
     if (lang === 'html' || lang === 'css') {
       // pentru HTML/CSS doar refresh la preview
       setPreviewKey(k => k + 1)
@@ -208,6 +246,7 @@ export default function CodeRunner({
         <span className="text-xs text-slate-400 ml-auto hidden sm:inline">
           {lang === 'python' && '🐍 Python rulează în browser (Pyodide)'}
           {(lang === 'javascript' || lang === 'js') && '⚡ JS în Web Worker izolat'}
+          {(lang === 'c' || lang === 'cpp') && '⚙️ C/C++ compilat pe server (Piston)'}
           {isPreview && '🖼 Preview live (iframe sandbox)'}
         </span>
       </div>
