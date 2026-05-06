@@ -12,12 +12,14 @@ import {
   EyeIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
+import dynamic from 'next/dynamic'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
-import CodeRunner from '@/components/learn/CodeRunner'
-import AiFeedback from '@/components/learn/AiFeedback'
 import Markdown, { inlineFmt, reformatCode } from '@/lib/markdown'
-import AiChat from '@/components/learn/AiChat'
-import AiGradingLoader from '@/components/learn/AiGradingLoader'
+// Heavy sub-components: lazy-loaded so they don't block initial JS parse
+const CodeRunner = dynamic(() => import('@/components/learn/CodeRunner'), { ssr: false })
+const AiFeedback = dynamic(() => import('@/components/learn/AiFeedback'), { ssr: false })
+const AiChat = dynamic(() => import('@/components/learn/AiChat'), { ssr: false })
+const AiGradingLoader = dynamic(() => import('@/components/learn/AiGradingLoader'), { ssr: false })
 
 const DIFF_COLOR = {
   EASY: 'bg-emerald-100 text-emerald-700',

@@ -7,8 +7,8 @@ import { ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import DeleteTeacherButton from '@/components/admin/DeleteTeacherButton'
 import ImpersonateButton from '@/components/admin/ImpersonateButton'
 import PermissionGuard from '@/components/admin/PermissionGuard'
-import { checkPermission } from '@/lib/permissions'
-import { getCurrentUser } from '@/lib/session'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export default async function TeachersPage() {
   return (
@@ -19,15 +19,17 @@ export default async function TeachersPage() {
 }
 
 async function TeachersPageContent() {
-  const currentUser = await getCurrentUser()
+  // Read session once — permissions are in the JWT, no DB round-trips needed
+  const session = await getServerSession(authOptions)
+  const currentUser = session?.user
   const userIsSuperAdmin = currentUser?.role === 'SUPERADMIN'
-  
-  const [canCreate, canDelete, canImpersonate] = await Promise.all([
-    checkPermission('teachers.create'),
-    checkPermission('teachers.delete'),
-    checkPermission('teachers.impersonate'),
-  ])
-  
+  const perms = Array.isArray(currentUser?.permissions) ? currentUser.permissions : []
+  const has = (p) => userIsSuperAdmin || perms.includes(p)
+
+  const canCreate     = { allowed: has('teachers.create') }
+  const canDelete     = { allowed: has('teachers.delete') }
+  const canImpersonate = { allowed: has('teachers.impersonate') }
+
   // SUPERADMIN poate impersona ADMIN și TEACHER; ADMIN cu permisiune doar TEACHER
   const canImpersonateTarget = (teacherRole) => {
     if (!teacherRole) return false
@@ -35,12 +37,12 @@ async function TeachersPageContent() {
     if (canImpersonate.allowed) return teacherRole === 'TEACHER'
     return false
   }
-  
+
   // Administratorii văd doar profesorii, superadmin vede pe toți
-  const roleFilter = userIsSuperAdmin 
+  const roleFilter = userIsSuperAdmin
     ? { in: ['TEACHER', 'ADMIN'] }
     : { equals: 'TEACHER' }
-  
+
   const teachers = await prisma.user.findMany({
     where: { role: roleFilter },
     orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],

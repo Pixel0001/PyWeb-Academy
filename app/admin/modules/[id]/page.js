@@ -3,11 +3,12 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import PermissionGuard from '@/components/admin/PermissionGuard'
 import { checkPermission } from '@/lib/permissions'
-import ModuleEditor from '@/components/admin/ModuleEditor'
-import LessonsManager from '@/components/admin/LessonsManager'
-import ModuleAccessManager from '@/components/admin/ModuleAccessManager'
+const ModuleEditor = dynamic(() => import('@/components/admin/ModuleEditor'))
+const LessonsManager = dynamic(() => import('@/components/admin/LessonsManager'))
+const ModuleAccessManager = dynamic(() => import('@/components/admin/ModuleAccessManager'))
 
 export default async function ModuleDetailPage({ params }) {
   return (
