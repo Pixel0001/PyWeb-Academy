@@ -362,6 +362,12 @@ model Student {
   lastProblemSolvedAt DateTime? // pentru calcul cooldown
   lastSolvedLessonId  String?   // lecția în care s-a rezolvat ultima problemă (cooldown per lecție)
 
+  // Single-session enforcement: doar 1 browser activ per cont la /learn/[token]
+  activeSessionId  String?   // ID-ul ultimului browser care a făcut „claim"
+  activeSessionAt  DateTime? // când a fost ultima dată activ
+  activeSessionIp  String?   // IP-ul (informativ, pentru audit)
+  activeSessionUA  String?   // User-Agent (informativ, pentru audit)
+
   createdById  String?  @db.ObjectId // ID-ul userului care a creat elevul (profesor sau admin)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
