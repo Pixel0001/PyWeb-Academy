@@ -1,13 +1,24 @@
-import dynamic from 'next/dynamic'
+'use client'
 
-// Payments is a 1500-line 'use client' page with 2FA modals, charts, and tables.
-// Load it dynamically so hydration doesn't block user interaction on initial load.
-const PaymentsPageClient = dynamic(() => import('./PaymentsPageClient'), { ssr: false })
-
-export default function PaymentsPage() {
-  return <PaymentsPageClient />
-}
-
+import { useState, useEffect, Fragment } from 'react'
+import { useRouter } from 'next/navigation'
+import { 
+  BanknotesIcon, 
+  UsersIcon, 
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ArrowDownTrayIcon,
+  CurrencyDollarIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline'
+import { usePermissions } from '@/hooks/usePermissions'
+import TwoFactorModal from '@/components/admin/TwoFactorModal'
+import toast from 'react-hot-toast'
 
 export default function PaymentsPage() {
   const router = useRouter()

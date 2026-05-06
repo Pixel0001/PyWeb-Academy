@@ -1,14 +1,13 @@
-import dynamic from 'next/dynamic'
+'use client'
 
-// The students list is a heavy 'use client' page (API fetching, search, pagination).
-// Load it dynamically so the admin layout shell renders immediately,
-// the loading.js skeleton shows, then the client bundle loads separately.
-const StudentsPageClient = dynamic(() => import('./StudentsPageClient'), { ssr: false })
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import AddStudentButton from '@/components/admin/AddStudentButton'
+import DeleteStudentButton from '@/components/admin/DeleteStudentButton'
+import { usePermissions, PermissionGate } from '@/hooks/usePermissions'
 
 export default function StudentsPage() {
-  return <StudentsPageClient />
-}
-
   const router = useRouter()
   const { hasPermission, isSuperAdmin } = usePermissions()
   

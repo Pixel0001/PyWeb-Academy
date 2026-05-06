@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -177,6 +176,7 @@ export default function LoginPage() {
 
       // Credentials validated (including 2FA if enabled)! Now use NextAuth signIn with preValidated flag
       console.log('Calling NextAuth signIn...')
+      const { signIn } = await import('next-auth/react')
       const result = await signIn('credentials', {
         email: formData.email,
         preValidated: 'true', // Skip password re-check, API already validated everything

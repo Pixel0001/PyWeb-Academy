@@ -1,10 +1,11 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import dynamic from 'next/dynamic'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import StartSessionButton from '@/components/teacher/StartSessionButton'
-import EditGroupDetailsButton from '@/components/teacher/EditGroupDetailsButton'
+const StartSessionButton = dynamic(() => import('@/components/teacher/StartSessionButton'))
+const EditGroupDetailsButton = dynamic(() => import('@/components/teacher/EditGroupDetailsButton'))
 import CopyStudentsButton from '@/components/CopyStudentsButton'
 import { 
   AcademicCapIcon, 
