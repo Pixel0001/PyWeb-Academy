@@ -50,7 +50,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits, settings] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -91,6 +91,7 @@ async function DashboardContent({ token }) {
     prisma.moduleHidden.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
     prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
     getEffectiveLimits(student.id),
+    getSystemSettings(),
   ])
 
   // Cooldown state
@@ -160,10 +161,7 @@ async function DashboardContent({ token }) {
     }).catch(() => {})
   }
   const bonusXP = recentBonusPoints.reduce((s, bp) => s + bp.points, 0)
-  // totalXP needs ALL bonus points, not just recent — refetch all
-  const allBonusXP = await prisma.bonusPoint.aggregate({ where: { studentId: student.id }, _sum: { points: true } })
-  const totalXP = submissionXP + (allBonusXP._sum.points ?? 0)
-  const settings = await getSystemSettings()
+  const totalXP = submissionXP + bonusXP
   const LEVELS = buildLevels(settings.levelCurve, settings.levelNames)
   const currentLevel = getLevel(LEVELS, totalXP)
   const nextLevel = LEVELS[currentLevel.num] ?? null

@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
@@ -28,8 +29,7 @@ const STATUS_LABEL = {
   TRANSFERRED: { label: 'Transferat', cls: 'bg-purple-100 text-purple-800' },
 }
 
-export default async function StudentProfilePage({ params }) {
-  const { token } = await params
+async function ProfilContent({ token }) {
 
   const student = await prisma.student.findFirst({
     where: { accessToken: token },
@@ -401,5 +401,25 @@ export default async function StudentProfilePage({ params }) {
         )}
       </div>
     </div>
+  )
+}
+
+export default async function StudentProfilePage({ params }) {
+  const { token } = await params
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-100 animate-pulse">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+          <div className="h-10 w-48 bg-slate-200 rounded-xl" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-white rounded-2xl shadow-sm" />)}
+          </div>
+          <div className="h-64 bg-white rounded-2xl shadow-sm" />
+          <div className="h-48 bg-white rounded-2xl shadow-sm" />
+        </div>
+      </div>
+    }>
+      <ProfilContent token={token} />
+    </Suspense>
   )
 }

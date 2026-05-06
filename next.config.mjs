@@ -2,7 +2,17 @@
 const nextConfig = {
   // React Compiler for optimized builds
   reactCompiler: true,
-  
+
+  // Optimize package imports — tree-shake large icon/component libraries
+  experimental: {
+    optimizePackageImports: [
+      '@heroicons/react/24/outline',
+      '@heroicons/react/24/solid',
+      '@heroicons/react/20/solid',
+      'react-hot-toast',
+    ],
+  },
+
   // Image optimization
   images: {
     remotePatterns: [
