@@ -4,7 +4,8 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { getStudentByToken } from '@/lib/student-cache'
+import { getStudentByToken, preloadStudent } from '@/lib/student-cache'
+import ProfilLoading from './loading'
 import {
   ArrowLeftIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon,
   CurrencyDollarIcon, CalendarDaysIcon, CheckCircleIcon, XCircleIcon,
@@ -35,21 +36,39 @@ async function ProfilContent({ token }) {
   const student = await getStudentByToken(token)
   if (!student) notFound()
 
-  // ── BATCH 2: TOTUL în paralel (exclusiv payments — filtrate după gsIds) ──
-  const [groupStudents, learningPayments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs] = await Promise.all([
-    prisma.groupStudent.findMany({
-      where: { studentId: student.id },
-      include: {
-        group: {
-          include: {
-            course: { select: { title: true, slug: true } },
-            teacher: { select: { name: true } },
-            branch: { select: { name: true, address: true } },
-          },
+  // ── BATCH 2: groupStudents se pornește primul (necesar pentru gsIds la payments) ──
+  // Toate celelalte query-uri pornesc în paralel imediat; payments pornește imediat ce
+  // groupStudents se întoarce (race pattern — nu mai există BATCH 3 secvențial).
+  const groupStudentsPromise = prisma.groupStudent.findMany({
+    where: { studentId: student.id },
+    include: {
+      group: {
+        include: {
+          course: { select: { title: true, slug: true } },
+          teacher: { select: { name: true } },
+          branch: { select: { name: true, address: true } },
         },
       },
-      orderBy: { enrolledAt: 'desc' },
-    }),
+    },
+    orderBy: { enrolledAt: 'desc' },
+  })
+
+  // Pornim payments în paralel cu restul imediat ce avem gsIds
+  const paymentsPromise = groupStudentsPromise.then(gs => {
+    const gsIds = gs.map(g => g.id)
+    if (!gsIds.length) return []
+    return prisma.payment.findMany({
+      where: { groupStudentId: { in: gsIds } },
+      include: {
+        groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
+      },
+      orderBy: { paymentDate: 'desc' },
+      take: 30,
+    })
+  })
+
+  const [groupStudents, learningPayments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs, payments] = await Promise.all([
+    groupStudentsPromise,
     prisma.learningPayment.findMany({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -82,20 +101,8 @@ async function ProfilContent({ token }) {
     }),
     prisma.problemSubmission.count({ where: { studentId: student.id } }),
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'GRADED' } }),
+    paymentsPromise,
   ])
-
-  // ── BATCH 3: payments cu filter direct pe gsId (mai rapid decât nested relation filter) ──
-  const gsIds = groupStudents.map(gs => gs.id)
-  const payments = gsIds.length > 0
-    ? await prisma.payment.findMany({
-        where: { groupStudentId: { in: gsIds } },
-        include: {
-          groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
-        },
-        orderBy: { paymentDate: 'desc' },
-        take: 30,
-      })
-    : []
 
   const totalLessonsRemaining = groupStudents.reduce((sum, gs) => sum + (gs.lessonsRemaining || 0), 0)
   const activeGroups = groupStudents.filter(gs => gs.status === 'ACTIVE')
@@ -405,19 +412,10 @@ async function ProfilContent({ token }) {
 
 export default async function StudentProfilePage({ params }) {
   const { token } = await params
+  // Warm React cache — ProfilContent gets a cache hit on student (~0ms)
+  preloadStudent(token)
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-100 animate-pulse">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-4">
-          <div className="h-10 w-48 bg-slate-200 rounded-xl" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-white rounded-2xl shadow-sm" />)}
-          </div>
-          <div className="h-64 bg-white rounded-2xl shadow-sm" />
-          <div className="h-48 bg-white rounded-2xl shadow-sm" />
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<ProfilLoading />}>
       <ProfilContent token={token} />
     </Suspense>
   )

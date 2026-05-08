@@ -128,25 +128,9 @@ export default function ShopClient({ token, studentName, initialData = null }) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Link href={`/learn/${token}`}
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition shrink-0">
-              <ArrowLeftIcon className="w-5 h-5 text-white" />
-            </Link>
-            <div className="flex-1 min-w-0">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/15 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
-                <SparklesIcon className="w-3 h-3 text-yellow-300" /> Magazin
-              </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold leading-tight text-white">
-                Shop & <span className="text-yellow-300">Cufere</span>
-              </h1>
-              <p className="text-white/70 text-xs mt-0.5 truncate">{studentName}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 mt-4">
+      <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white">
+        <div className="max-w-6xl mx-auto px-4 pb-4">
+          <div className="grid grid-cols-3 gap-2">
             <Balance icon="🪙" label="Coins"  value={data.economy.coins}  accent="from-amber-400 to-yellow-500" text="text-amber-950" />
             <Balance icon="💎" label="Gems"   value={data.economy.gems}   accent="from-cyan-400 to-blue-500"    text="text-cyan-950" />
             <Balance icon="🔥" label="Streak" value={data.economy.streak} accent="from-orange-400 to-rose-500"  text="text-rose-950" suffix="zile" />
@@ -160,7 +144,7 @@ export default function ShopClient({ token, studentName, initialData = null }) {
             </div>
           )}
         </div>
-      </header>
+      </div>
 
       <div className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-2 sm:px-4 flex gap-1 overflow-x-auto">
