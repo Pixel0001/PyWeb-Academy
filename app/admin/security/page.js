@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { usePermissions } from '@/hooks/usePermissions'
 import TwoFactorModal from '@/components/admin/TwoFactorModal'
+import SecurityLoading from './loading'
 
 export default function SecurityPage() {
   const { data: session, update: updateSession } = useSession()
@@ -177,11 +178,7 @@ export default function SecurityPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    )
+    return <SecurityLoading />
   }
 
   // Afișează modalul 2FA dacă este necesar

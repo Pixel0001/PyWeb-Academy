@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import AdminLoading from './loading'
 import { 
   AcademicCapIcon, 
   UserGroupIcon, 
@@ -494,7 +495,7 @@ async function AdminDashboardContent() {
 
 export default function AdminDashboard() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<AdminLoading />}>
       <AdminDashboardContent />
     </Suspense>
   )

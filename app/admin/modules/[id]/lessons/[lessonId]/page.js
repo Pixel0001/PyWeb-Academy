@@ -10,11 +10,11 @@ import LessonEditor from '@/components/admin/LessonEditor'
 
 export default async function LessonEditPage({ params }) {
   return (
-    <PermissionGuard permission="modules.view">
-      <Suspense fallback={<div className="space-y-4 animate-pulse max-w-4xl mx-auto"><div className="h-4 w-64 bg-gray-200 rounded" /><div className="h-[600px] bg-white rounded-2xl border border-gray-200" /></div>}>
+    <Suspense fallback={<div className="space-y-4 animate-pulse max-w-4xl mx-auto"><div className="h-4 w-64 bg-gray-200 rounded" /><div className="h-[600px] bg-white rounded-2xl border border-gray-200" /></div>}>
+      <PermissionGuard permission="modules.view">
         <Content params={params} />
-      </Suspense>
-    </PermissionGuard>
+      </PermissionGuard>
+    </Suspense>
   )
 }
 
