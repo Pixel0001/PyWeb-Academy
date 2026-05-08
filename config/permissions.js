@@ -387,6 +387,13 @@ export const PERMISSIONS = {
     label: 'Setări sistem (Abonamente)',
     description: 'Configurează cooldown între probleme, cap zilnic XP și curba de niveluri',
     category: 'Sistem'
+  },
+
+  // Gamification
+  'gamification.manage': {
+    label: 'Gestionează Gamification',
+    description: 'Cosmetics, Themes, Chests, Leaderboard Events, Rewards',
+    category: 'Sistem'
   }
 }
 

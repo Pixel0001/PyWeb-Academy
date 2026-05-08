@@ -15,6 +15,8 @@ import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import { getSystemSettings, getEffectiveLimits } from '@/lib/student-limits'
 import { buildLevels, getLevel } from '@/lib/levels'
+import { getStudentEconomy } from '@/lib/economy'
+import { getStudentByToken } from '@/lib/student-cache'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
@@ -49,11 +51,8 @@ const MODULE_THEMES = [
 ]
 
 async function DashboardContent({ token }) {
-  // ── BATCH 1: student ──
-  const student = await prisma.student.findFirst({
-    where: { accessToken: token },
-    select: { id: true, fullName: true, superStudent: true, active: true },
-  })
+  // ── BATCH 1: student (React cache — deduplicat cu layout) ──
+  const student = await getStudentByToken(token)
   if (!student) notFound()
   if (student.active === false) {
     return (
@@ -68,7 +67,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits, settings] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits, settings, economy] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -99,6 +98,7 @@ async function DashboardContent({ token }) {
     prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
     getEffectiveLimits(student.id),
     getSystemSettings(),
+    getStudentEconomy(student.id),
   ])
 
   // Cooldown state
@@ -189,7 +189,7 @@ async function DashboardContent({ token }) {
               <SparklesIcon className="w-3 h-3 text-yellow-300" /> Spatiul tau
             </div>
             <h1 className="text-xl font-extrabold leading-tight">
-              Salut, <span className="text-yellow-300">{student.fullName.split(' ')[0]}</span>!
+              Salut, <span className="pyweb-me-name text-yellow-300">{student.fullName.split(' ')[0]}</span>!
             </h1>
             <p className="text-white/50 text-xs mt-0.5">{student.fullName}</p>
           </div>
@@ -253,6 +253,36 @@ async function DashboardContent({ token }) {
               <div className={`h-full ${currentLevel.bar} rounded-full transition-all duration-700`} style={{ width: `${levelPct}%` }} />
             </div>
             <div className="text-[10px] text-white/50 font-semibold pt-0.5">Vezi toate nivelurile →</div>
+          </Link>
+
+          {/* Coins / Gems / Streak — Economy */}
+          <Link href={`/learn/${token}/shop`} className="block bg-white/10 hover:bg-white/15 rounded-2xl p-3 transition active:scale-[0.99]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Economie</span>
+              <span className="text-[10px] font-bold text-amber-300">Shop →</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-lg p-2 text-amber-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80 flex items-center gap-1"><span>🪙</span></div>
+                <div className="text-base font-extrabold leading-none mt-0.5">{economy.coins}</div>
+                <div className="text-[8px] font-bold opacity-70 mt-0.5">Coins</div>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg p-2 text-cyan-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80 flex items-center gap-1"><span>💎</span></div>
+                <div className="text-base font-extrabold leading-none mt-0.5">{economy.gems}</div>
+                <div className="text-[8px] font-bold opacity-70 mt-0.5">Gems</div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-400 to-rose-500 rounded-lg p-2 text-rose-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80 flex items-center gap-1"><span>🔥</span></div>
+                <div className="text-base font-extrabold leading-none mt-0.5">{economy.streak}</div>
+                <div className="text-[8px] font-bold opacity-70 mt-0.5">Streak</div>
+              </div>
+            </div>
+            {economy.streak > 0 && (
+              <div className="text-[10px] text-white/60 mt-2 font-semibold">
+                ×{(economy.multiplier || 1).toFixed(2)} multiplier · azi {economy.problemsToday}/3
+              </div>
+            )}
           </Link>
 
           {/* Subscription status */}
@@ -320,6 +350,14 @@ async function DashboardContent({ token }) {
             <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
           </Link>
 
+          {/* Shop link */}
+          <Link href={`/learn/${token}/shop`}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-fuchsia-600/30 to-pink-600/30 hover:from-fuchsia-600/50 hover:to-pink-600/50 ring-1 ring-fuchsia-400/40 text-white transition shadow-lg shadow-fuchsia-500/20">
+            <span className="text-base shrink-0">✨</span>
+            <span className="flex-1">Shop & Cufere</span>
+            <ChevronRightIcon className="w-4 h-4 shrink-0 text-white/40" />
+          </Link>
+
           {/* AI Stats link */}
           <Link href={`/learn/${token}/ai-stats`}
             className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white transition">
@@ -380,7 +418,7 @@ async function DashboardContent({ token }) {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-lg font-bold">
-                  Salut, <span className="text-yellow-300">{student.fullName.split(' ')[0]}</span>!
+                  Salut, <span className="pyweb-me-name text-yellow-300">{student.fullName.split(' ')[0]}</span>!
                 </h1>
                 <p className="text-white/60 text-xs">{completedLessons}/{totalLessons} lectii &middot; {globalPct}%</p>
               </div>
@@ -412,6 +450,22 @@ async function DashboardContent({ token }) {
                 <ChevronRightIcon className="w-4 h-4 text-white/40 shrink-0" />
               </Link>
             </div>
+
+            {/* Coins/Gems/Streak — mobile */}
+            <Link href={`/learn/${token}/shop`} className="mt-2 grid grid-cols-3 gap-2 active:scale-[0.99] transition">
+              <div className="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl p-2 text-amber-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80">🪙 Coins</div>
+                <div className="text-base font-extrabold leading-tight">{economy.coins}</div>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl p-2 text-cyan-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80">💎 Gems</div>
+                <div className="text-base font-extrabold leading-tight">{economy.gems}</div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-400 to-rose-500 rounded-xl p-2 text-rose-950">
+                <div className="text-[9px] font-extrabold uppercase tracking-wider opacity-80">🔥 Streak</div>
+                <div className="text-base font-extrabold leading-tight">{economy.streak} <span className="text-[9px] font-bold opacity-70">zile</span></div>
+              </div>
+            </Link>
 
             {/* Cabinet + Mr. PyWeb row (mobile) */}
             <div className="grid grid-cols-2 gap-2 mt-2">

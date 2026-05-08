@@ -4,6 +4,7 @@ import { verifyAnswer } from '@/lib/problem-utils'
 import { getStudentLearningAccess, PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
 import { checkCooldown, computeXpAward, markProblemSolved } from '@/lib/student-limits'
+import { awardEconomy } from '@/lib/economy'
 
 // Trimite o submisie de problemă (din lecție sau random)
 // POST { problemId, lessonId?, answer?, code?, source: 'lesson'|'random', timeSpent? }
@@ -164,6 +165,18 @@ export async function POST(req, { params }) {
     await markProblemSolved(student.id, lessonId || null)
   }
 
+  // ── Gamification: Coins/Gems + Streak
+  let economy = null
+  if (status === 'GRADED') {
+    economy = await awardEconomy({
+      studentId: student.id,
+      baseXp: xpAwarded || 0,
+      problem: { type: problem.type, points: problem.points },
+      grade: grade ?? 0,
+      passed: (grade ?? 0) >= 60,
+    })
+  }
+
   // Marchează ca citite notificările REVISION_REQUEST pentru această problemă
   // (când elevul reia o problemă cerută la refacere, notificarea persistentă dispare)
   try {
@@ -204,5 +217,6 @@ export async function POST(req, { params }) {
     hintUsed,
     xpAwarded,
     xpInfo,
+    economy,
   }, { status: 201 })
 }

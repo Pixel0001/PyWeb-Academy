@@ -390,6 +390,16 @@ model Student {
   learningPayments     LearningPayment[]
   bonusPoints          BonusPoint[]
 
+  // Gamification 2.0
+  economy              StudentEconomy?
+  streak               StudentStreak?
+  inventory            CosmeticInventory[]
+  equipped             EquippedCosmetic[]
+  chestOpenings        ChestOpening[]
+  leaderboardEntries   LeaderboardEntry[]
+  rewardClaims         RewardClaim[]
+  activeThemeId        String?            @db.ObjectId
+
   @@index([createdById])
   @@index([accessToken])
   @@index([active])
@@ -1211,3 +1221,306 @@ model LearningPayment {
   @@index([expiresAt])
   @@map("learning_payments")
 }
+
+// ==================== GAMIFICATION 2.0 ====================
+// Economy: Coins (= XP mirror), Gems (premium, doar din coding)
+
+model StudentEconomy {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId           String   @unique @db.ObjectId
+  coins               Int      @default(0)
+  gems                Int      @default(0)
+  totalCoinsEarned    Int      @default(0)
+  totalGemsEarned     Int      @default(0)
+  totalCoinsSpent     Int      @default(0)
+  totalGemsSpent      Int      @default(0)
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("student_economy")
+}
+
+// Streak: minim 3 probleme/zi pentru a păstra streak-ul
+
+model StudentStreak {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId           String   @unique @db.ObjectId
+  current             Int      @default(0)        // streak curent (zile consecutive)
+  best                Int      @default(0)        // recordul personal
+  lastActiveDay       String?                     // YYYY-MM-DD (UTC) — ultima zi cu ≥3 probleme
+  problemsToday       Int      @default(0)        // contor probleme rezolvate azi
+  todayDay            String?                     // YYYY-MM-DD curent (resetat la schimbarea zilei)
+  freezesAvailable    Int      @default(0)        // streak freezes (cumpărate / oferite)
+  freezesUsed         Int      @default(0)
+  multiplier          Float    @default(1.0)      // multiplicator XP/Coins din streak
+  milestones          String[] @default([])       // ["7","30","100"] — ce milestone a atins
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("student_streaks")
+}
+
+// ==================== COSMETICS ====================
+
+enum CosmeticType {
+  THEME
+  PROFILE_BANNER
+  USERNAME_COLOR
+  ANIMATED_FRAME
+  LEADERBOARD_EFFECT
+  ENTRY_EFFECT
+  CODING_AURA
+  TITLE
+  PET
+  RARE_COSMETIC
+  ANIMATED_BACKGROUND
+  PARTICLE_EFFECT
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum Currency {
+  COINS
+  GEMS
+}
+
+model Cosmetic {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String?
+  type          CosmeticType
+  rarity        Rarity        @default(COMMON)
+  currency      Currency      @default(COINS)
+  price         Int           @default(0)         // 0 = gratuit / doar din chest
+  imageUrl      String?
+  previewUrl    String?
+  cssPayload    Json?         // pentru THEME/colors/animations: {primary, secondary, gradient, glow, css}
+  active        Boolean       @default(true)
+  shopVisible   Boolean       @default(true)      // false = doar din chest-uri
+  themeId       String?       @db.ObjectId        // dacă type=THEME, link la Theme
+  sortOrder     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  inventory     CosmeticInventory[]
+  equipped      EquippedCosmetic[]
+  chestRewards  ChestReward[]
+  theme         Theme?        @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
+  @@index([type, active])
+  @@index([rarity])
+  @@map("cosmetics")
+}
+
+model CosmeticInventory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String    @db.ObjectId
+  cosmeticId  String    @db.ObjectId
+  acquiredAt  DateTime  @default(now())
+  source      String?   // "shop" | "chest" | "leaderboard" | "admin"
+
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cosmetic    Cosmetic  @relation(fields: [cosmeticId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, cosmeticId])
+  @@index([studentId])
+  @@map("cosmetic_inventory")
+}
+
+model EquippedCosmetic {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String       @db.ObjectId
+  cosmeticId  String       @db.ObjectId
+  type        CosmeticType
+  equippedAt  DateTime     @default(now())
+
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cosmetic    Cosmetic     @relation(fields: [cosmeticId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, type])
+  @@index([studentId])
+  @@map("equipped_cosmetics")
+}
+
+// ==================== THEMES ====================
+
+model Theme {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String?
+  rarity        Rarity     @default(COMMON)
+  currency      Currency   @default(COINS)
+  price         Int        @default(0)
+  active        Boolean    @default(true)
+  // Tokens — culori CSS variables
+  primary       String     @default("#6366f1")
+  secondary     String     @default("#8b5cf6")
+  accent        String     @default("#ec4899")
+  bgGradient    String?    // ex: "linear-gradient(135deg, #1e3a8a, #6366f1)"
+  cardBg        String?    // ex: "rgba(255,255,255,0.05)"
+  textColor     String?
+  glowColor     String?
+  // Fancy
+  animationCss  String?    // CSS arbitrar pentru animații
+  previewUrl    String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  cosmetics     Cosmetic[]
+
+  @@index([active])
+  @@map("themes")
+}
+
+// ==================== CHESTS ====================
+
+enum ChestTier {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+model Chest {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  tier        ChestTier     @default(COMMON)
+  currency    Currency      @default(COINS)
+  price       Int           @default(100)
+  imageUrl    String?
+  active      Boolean       @default(true)
+  // Garanții (opțional): ex. minimum guaranteed rarity per opening
+  guaranteedRarity Rarity?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  rewards     ChestReward[]
+  openings    ChestOpening[]
+
+  @@map("chests")
+}
+
+model ChestReward {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  chestId     String    @db.ObjectId
+  cosmeticId  String?   @db.ObjectId         // nullable pentru reward de gems/coins
+  weight      Int       @default(10)         // probabilitate relativă
+  // Reward alternativ pentru currency drop
+  coinsAmount Int?
+  gemsAmount  Int?
+  createdAt   DateTime  @default(now())
+
+  chest       Chest     @relation(fields: [chestId], references: [id], onDelete: Cascade)
+  cosmetic    Cosmetic? @relation(fields: [cosmeticId], references: [id], onDelete: SetNull)
+
+  @@index([chestId])
+  @@map("chest_rewards")
+}
+
+model ChestOpening {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentId       String    @db.ObjectId
+  chestId         String    @db.ObjectId
+  rewardCosmeticId String?  @db.ObjectId
+  rewardCoins     Int?
+  rewardGems      Int?
+  createdAt       DateTime  @default(now())
+
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  chest           Chest     @relation(fields: [chestId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@map("chest_openings")
+}
+
+// ==================== LEADERBOARD EVENTS ====================
+
+enum LeaderboardType {
+  XP
+  CODING
+  GEMS
+  COINS
+}
+
+model LeaderboardEvent {
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  type        LeaderboardType     @default(XP)
+  startsAt    DateTime
+  endsAt      DateTime
+  active      Boolean             @default(true)
+  // Vizual
+  bannerUrl   String?
+  themeColor  String?             // hex
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  entries     LeaderboardEntry[]
+  rewards     LeaderboardReward[]
+
+  @@index([active, endsAt])
+  @@map("leaderboard_events")
+}
+
+model LeaderboardEntry {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  eventId     String           @db.ObjectId
+  studentId   String           @db.ObjectId
+  score       Int              @default(0)
+  rank        Int?
+  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime         @default(now())
+
+  event       LeaderboardEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+  @@index([eventId, score])
+  @@map("leaderboard_entries")
+}
+
+model LeaderboardReward {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  eventId     String           @db.ObjectId
+  rank        Int              // 1, 2, 3, ... sau 0 = top10, etc.
+  rankTo      Int?             // dacă vrei range (ex 4-10)
+  // Tipul de reward (oricare combinație)
+  coins       Int?
+  gems        Int?
+  cosmeticId  String?          @db.ObjectId
+  chestId     String?          @db.ObjectId
+  title       String?
+  createdAt   DateTime         @default(now())
+
+  event       LeaderboardEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  claims      RewardClaim[]
+
+  @@index([eventId, rank])
+  @@map("leaderboard_rewards")
+}
+
+model RewardClaim {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  studentId   String            @db.ObjectId
+  rewardId    String            @db.ObjectId
+  claimedAt   DateTime          @default(now())
+
+  student     Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reward      LeaderboardReward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, rewardId])
+  @@map("reward_claims")
+}
+

@@ -171,7 +171,7 @@ export default function RandomProblemsRunner({ token, student, modules = [] }) {
         const passed = finalGrade >= 60
         const earnedXP = Math.round((p.points ?? 10) * finalGrade / 100)
         if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} pct 🌟`)
-        else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        // detectare AI dezactivată — nu mai afișăm toast de plagiat
         else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} pct. Vezi feedback.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
       } catch (e) { toast.error(e.message) } finally {

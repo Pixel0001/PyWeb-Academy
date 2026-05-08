@@ -127,13 +127,16 @@ async function ProfilContent({ token }) {
         </div>
 
         {/* Profile card */}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 overflow-hidden mb-6">
+          {/* Banner area — primește background dacă PROFILE_BANNER e echipat */}
+          <div className="pyweb-profile-banner h-20 bg-gradient-to-r from-blue-500 to-indigo-600" />
+          <div className="p-5 -mt-8">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
+            <div className="pyweb-me-avatar w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 ring-4 ring-white">
               <UserCircleIcon className="w-10 h-10 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-slate-900 leading-tight">{student.fullName}</h2>
+            <div className="flex-1 min-w-0 pt-8">
+              <h2 className="pyweb-me-name text-xl font-bold text-slate-900 leading-tight">{student.fullName}</h2>
               <div className="flex flex-wrap gap-2 mt-1.5">
                 {student.superStudent && (
                   <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[11px] font-bold">⭐ Super Student</span>
@@ -149,6 +152,7 @@ async function ProfilContent({ token }) {
                 <div><span className="text-slate-400">Înscris la:</span> {fmtDate(student.createdAt)}</div>
               </div>
             </div>
+          </div>
           </div>
         </div>
 

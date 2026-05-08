@@ -53,7 +53,7 @@ const navigation = [
   { name: 'Module Învățare', href: '/admin/modules', icon: 'book', permission: 'modules.view' },
   { name: 'Submisii', href: '/admin/submissions', icon: 'clipboard', permission: 'submissions.view' },
   { name: 'Mr. PyWeb (AI)', href: '/admin/ai-usage', icon: 'puzzle', permission: 'submissions.view' },
-  { name: 'Abonamente', href: '/admin/abonamente', icon: 'shield', permission: 'system.settings' },
+  { name: '🎮 Gamification', href: '/admin/abonamente', icon: 'star', permission: 'system.settings' },
   { name: 'Securitate', href: '/admin/security', icon: 'shield', permission: 'security.manage' },
   { name: 'Alerte Securitate', href: '/admin/security-alerts', icon: 'exclamation', permission: 'security.view' },
   { name: 'Audit Logs', href: '/admin/audit-logs', icon: 'document', permission: 'audit.view' }

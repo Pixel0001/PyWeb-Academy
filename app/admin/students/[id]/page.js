@@ -31,6 +31,7 @@ import { getSystemSettings } from '@/lib/student-limits'
 const StudentModuleAccessTable = nextDynamic(() => import('@/components/admin/StudentModuleAccessTable'))
 const StudentLearningPayments = nextDynamic(() => import('@/components/admin/StudentLearningPayments'))
 const StudentBonusPoints = nextDynamic(() => import('@/components/admin/StudentBonusPoints'))
+const StudentEconomyAdmin = nextDynamic(() => import('@/components/admin/StudentEconomyAdmin'))
 
 const STATUS_LABELS = {
   ACTIVE: { label: 'Activ', color: 'bg-green-100 text-green-700' },
@@ -316,6 +317,8 @@ export default async function StudentDetailPage({ params }) {
           levelNames={settings.levelNames}
         />
       )}
+
+      {canEdit.allowed && <StudentEconomyAdmin studentId={id} />}
 
       {/* Statistici sumare */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4">

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { gradeCode, detectAiCode, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
+import { gradeCode, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
 import { assertAiAccess } from '@/lib/learning-access'
 import { checkCooldown, computeXpAward, markProblemSolved } from '@/lib/student-limits'
+import { awardEconomy } from '@/lib/economy'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30 // Vercel — extindem timeout pentru OpenAI
 
 // Penalty pentru cod detectat ca AI: scade din nota finală
-const AI_PENALTY = 50 // dacă isAi → scade 50 puncte (de obicei = 0p)
+const AI_PENALTY = 0 // detectare AI dezactivată — nu mai scădem puncte (prea multe false positives la elevi)
 
 // Limită hard pe input — protecție cost (un cod de 50KB ar costa ~$0.03 doar input)
 const MAX_CODE_LENGTH = 5000
@@ -142,20 +143,18 @@ export async function POST(req, { params }) {
     }
   }
 
-  // 4. Cere AI: grading + detection în paralel
-  let aiGrade, aiDetect
+  // 4. Cere AI: doar grading (detectare AI/plagiat dezactivată — prea multe false positives)
+  let aiGrade
+  const aiDetect = { isAi: false, score: 0, reason: '', tokensIn: 0, tokensOut: 0, costUsd: 0 }
   try {
-    [aiGrade, aiDetect] = await Promise.all([
-      gradeCode({
-        problemTitle: problem.title,
-        problemDescription: problem.description,
-        expectedSolution: problem.correctAnswer || '',
-        studentCode: code,
-        language: problem.language || 'python',
-        studentOutput: safeOutput,
-      }),
-      detectAiCode({ code, language: problem.language || 'python' }),
-    ])
+    aiGrade = await gradeCode({
+      problemTitle: problem.title,
+      problemDescription: problem.description,
+      expectedSolution: problem.correctAnswer || '',
+      studentCode: code,
+      language: problem.language || 'python',
+      studentOutput: safeOutput,
+    })
   } catch (e) {
     await logAiUsage({
       studentId: student.id, ip, endpoint: 'grade-code',
@@ -167,11 +166,8 @@ export async function POST(req, { params }) {
     }, { status: 503 })
   }
 
-  // 5. Aplică penalty dacă e AI-generated
-  let finalGrade = aiGrade.grade
-  if (aiDetect.isAi) {
-    finalGrade = Math.max(0, finalGrade - AI_PENALTY)
-  }
+  // 5. Nicio penalizare AI — folosim doar nota dată de gradeCode
+  const finalGrade = aiGrade.grade
 
   // 6. Loghează usage
   await logAiUsage({
@@ -233,6 +229,15 @@ export async function POST(req, { params }) {
     await markProblemSolved(student.id, lessonId || null)
   }
 
+  // ── Gamification: Coins/Gems + Streak (problemele de coding au gems garantate)
+  const economy = await awardEconomy({
+    studentId: student.id,
+    baseXp: xpAwarded || 0,
+    problem: { type: 'CODING', points: problem.points },
+    grade: finalGrade,
+    passed,
+  })
+
   const usage = await getStudentAiUsage(student.id)
 
   return NextResponse.json({
@@ -243,5 +248,6 @@ export async function POST(req, { params }) {
     usage,
     xpAwarded,
     xpInfo,
+    economy,
   })
 }

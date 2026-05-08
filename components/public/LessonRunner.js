@@ -556,7 +556,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         const passed = finalGrade >= 60
         const earnedXP = Math.round((cur.points ?? 10) * finalGrade / 100)
         if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} XP 🌟`)
-        else if (d.aiDetect?.isAi) toast.error('Mr. PyWeb a detectat AI — penalizare aplicată')
+        // detectare AI dezactivată — nu mai afișăm toast de plagiat
         else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} XP. Vezi feedback-ul AI.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
         // Dacă problema e acum blocată cu notă mică → adaugă la toRevisit și avansează automat

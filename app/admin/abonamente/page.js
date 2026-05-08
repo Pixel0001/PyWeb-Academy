@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import PermissionGuard from '@/components/admin/PermissionGuard'
 import { getSystemSettings } from '@/lib/student-limits'
-import AbonamenteForm from '@/components/admin/AbonamenteForm'
+import GamificationHub from '@/components/admin/gamification/GamificationHub'
 import Link from 'next/link'
 import { BanknotesIcon } from '@heroicons/react/24/outline'
 
@@ -17,13 +17,16 @@ export default async function AbonamentePage() {
 async function Content() {
   const settings = await getSystemSettings({ fresh: true })
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">⚙️ Abonamente · Limite globale</h1>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+              🎮 Gamification Hub
+            </span>
+          </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Cooldown între probleme, cap zilnic XP și curba de niveluri pentru toți elevii.
-            Aplică în mod global; poți suprascrie per grupă sau per elev.
+            Abonamente, cosmetice, theme-uri, cufere și leaderboard events.
           </p>
         </div>
         <Link
@@ -34,7 +37,8 @@ async function Content() {
           Conturi & Plăți elevi
         </Link>
       </div>
-      <AbonamenteForm initial={settings} />
+
+      <GamificationHub initialSettings={settings} />
     </div>
   )
 }
