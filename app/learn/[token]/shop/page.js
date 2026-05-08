@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { getStudentByToken, getShopCosmetics, getShopChests, getAllThemes, getStudentShopData } from '@/lib/student-cache'
+import { getStudentByToken, preloadStudent, getShopCosmetics, getShopChests, getAllThemes, getStudentShopData } from '@/lib/student-cache'
 import ShopClient from '@/components/public/ShopClient'
 
 // Skeleton shown while data loads — gives instant FCP
@@ -52,6 +52,8 @@ async function ShopDataFetcher({ token }) {
 
 export default async function ShopPage({ params }) {
   const { token } = await params
+  // Fire student query immediately — ShopDataFetcher gets React cache hit (0ms wait)
+  preloadStudent(token)
   return (
     <Suspense fallback={<ShopSkeleton />}>
       <ShopDataFetcher token={token} />

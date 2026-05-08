@@ -37,7 +37,10 @@ export default function ShopClient({ token, studentName, initialData = null }) {
     const r = await fetch(`/api/public/learn/${token}/shop`, { cache: 'no-store' })
     setData(await r.json())
   }
-  useEffect(() => { load() }, [])
+  // Only fetch on mount if server didn't pre-fetch data.
+  // When initialData is present (server-side pre-fetch), skip — avoids
+  // a redundant API round-trip and prevents content flicker on hydration.
+  useEffect(() => { if (!initialData) load() }, [])
 
   async function buy(cosmeticId) {
     setBusy(true)
