@@ -1,13 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-export default function ModuleAccessManager({ moduleId, accesses, students }) {
+export default function ModuleAccessManager({ moduleId, accesses }) {
   const router = useRouter()
+  const [students, setStudents] = useState([])
   const [studentId, setStudentId] = useState('')
   const [source, setSource] = useState('granted')
+
+  useEffect(() => {
+    fetch('/api/admin/students?all=true')
+      .then(r => r.json())
+      .then(data => setStudents(Array.isArray(data) ? data.map(s => ({ id: s.id, fullName: s.fullName })) : []))
+      .catch(() => {})
+  }, [])
 
   const grant = async () => {
     if (!studentId) return toast.error('Selectează elev')

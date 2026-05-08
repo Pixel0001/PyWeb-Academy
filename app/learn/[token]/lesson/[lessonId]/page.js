@@ -4,14 +4,15 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { getStudentByToken } from '@/lib/student-cache'
 import LessonRunner from '@/components/public/LessonRunner'
 import LessonLoading from './loading'
 import { LockClosedIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
 
 async function LessonContent({ token, lessonId }) {
-  // ── BATCH 1: student + lesson în PARALEL ──
+  // ── BATCH 1: student (React cache — deduplicat cu layout preload) + lesson în PARALEL ——
   const [student, lesson] = await Promise.all([
-    prisma.student.findFirst({ where: { accessToken: token } }),
+    getStudentByToken(token),
     prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {

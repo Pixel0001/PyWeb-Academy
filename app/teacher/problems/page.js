@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -16,6 +17,20 @@ export default async function TeacherProblemsPage({ searchParams }) {
   if (!session?.user) redirect('/login')
 
   const sp = (await searchParams) || {}
+  return (
+    <Suspense fallback={
+      <div className="space-y-4 animate-pulse">
+        <div className="h-8 w-48 bg-gray-200 rounded-lg" />
+        <div className="h-14 bg-white rounded-2xl border border-gray-100" />
+        <div className="h-64 bg-white rounded-2xl border border-gray-100" />
+      </div>
+    }>
+      <ProblemsContent searchParams={sp} />
+    </Suspense>
+  )
+}
+
+async function ProblemsContent({ searchParams: sp }) {
   const topic = sp.topic || undefined
   const difficulty = sp.difficulty || undefined
   const page = Math.max(1, parseInt(sp.page || '1', 10) || 1)

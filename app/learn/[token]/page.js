@@ -13,10 +13,10 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckSolid } from '@heroicons/react/24/solid'
 import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
-import { getSystemSettings, getEffectiveLimits } from '@/lib/student-limits'
+import { getSystemSettings } from '@/lib/student-limits'
 import { buildLevels, getLevel } from '@/lib/levels'
 import { getStudentEconomy } from '@/lib/economy'
-import { getStudentByToken } from '@/lib/student-cache'
+import { getStudentByToken, getCachedAllProblemPoints } from '@/lib/student-cache'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
@@ -67,7 +67,7 @@ async function DashboardContent({ token }) {
   }
 
   // ── BATCH 2: TOTUL în paralel ──
-  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, studentLimits, settings, economy] = await Promise.all([
+  const [latestPayment, modules, accesses, advances, progresses, pendingSubs, xpSubs, recentBonusPoints, revisionNotifs, hiddenModulesRaw, lessonAccessesRaw, groupOverrides, settings, economy, allProblemPoints] = await Promise.all([
     prisma.learningPayment.findFirst({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
@@ -82,7 +82,7 @@ async function DashboardContent({ token }) {
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'PENDING' } }),
     prisma.problemSubmission.findMany({
       where: { studentId: student.id, status: 'GRADED' },
-      select: { problemId: true, grade: true, problem: { select: { points: true } } },
+      select: { problemId: true, grade: true },
     }),
     prisma.bonusPoint.findMany({
       where: { studentId: student.id },
@@ -96,10 +96,49 @@ async function DashboardContent({ token }) {
     }),
     prisma.moduleHidden.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
     prisma.lessonAccess.findMany({ where: { studentId: student.id }, select: { lessonId: true } }),
-    getEffectiveLimits(student.id),
+    // Lightweight group-level overrides only (student scalar overrides come from getStudentByToken)
+    prisma.groupStudent.findMany({
+      where: { studentId: student.id },
+      select: {
+        group: {
+          select: {
+            cooldownOverrideMin: true, dailyXpCapOverride: true,
+            cooldownDisabled: true, xpCapDisabled: true, active: true,
+          },
+        },
+      },
+    }),
     getSystemSettings(),
     getStudentEconomy(student.id),
+    // Problem points cached 60s — runs in PARALLEL (no sequential round-trip after batch)
+    getCachedAllProblemPoints(),
   ])
+
+  const problemPointsMap = new Map(allProblemPoints.map(p => [p.id, p.points]))
+
+  // Compute effective limits inline (no extra DB call — student already fetched above)
+  const activeGroups = groupOverrides.map(gs => gs.group).filter(g => g?.active !== false)
+  const effectiveCooldownMin =
+    student.cooldownOverrideMin ??
+    activeGroups.find(g => g.cooldownOverrideMin != null)?.cooldownOverrideMin ??
+    settings.problemCooldownMin
+  const effectiveDailyXpCap =
+    student.dailyXpCapOverride ??
+    activeGroups.find(g => g.dailyXpCapOverride != null)?.dailyXpCapOverride ??
+    settings.dailyXpCap
+  const cooldownDisabled =
+    student.superStudent || student.cooldownDisabled ||
+    activeGroups.some(g => g.cooldownDisabled) || !settings.cooldownEnabled
+  const xpCapDisabled =
+    student.superStudent || student.xpCapDisabled ||
+    activeGroups.some(g => g.xpCapDisabled) || !settings.xpCapEnabled
+  const studentLimits = {
+    cooldownMin: effectiveCooldownMin, dailyXpCap: effectiveDailyXpCap,
+    cooldownDisabled, xpCapDisabled,
+    lastProblemSolvedAt: student.lastProblemSolvedAt,
+    lastSolvedLessonId: student.lastSolvedLessonId,
+    superStudent: student.superStudent, settings,
+  }
 
   // Cooldown state
   const cooldownActive = (() => {
@@ -141,7 +180,7 @@ async function DashboardContent({ token }) {
   for (const sub of xpSubs) {
     const cur = bestPerProblem.get(sub.problemId)
     if (!cur || (sub.grade ?? 0) > cur.grade) {
-      bestPerProblem.set(sub.problemId, { grade: sub.grade ?? 0, points: sub.problem?.points ?? 10 })
+      bestPerProblem.set(sub.problemId, { grade: sub.grade ?? 0, points: problemPointsMap.get(sub.problemId) ?? 10 })
     }
   }
   const submissionXP = [...bestPerProblem.values()].reduce(

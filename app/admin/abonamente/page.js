@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import PermissionGuard from '@/components/admin/PermissionGuard'
 import { getSystemSettings } from '@/lib/student-limits'
 import GamificationHub from '@/components/admin/gamification/GamificationHub'
@@ -9,7 +10,9 @@ import { BanknotesIcon } from '@heroicons/react/24/outline'
 export default async function AbonamentePage() {
   return (
     <PermissionGuard permission="system.settings">
-      <Content />
+      <Suspense fallback={<div className="space-y-4 animate-pulse"><div className="h-10 w-64 bg-gray-200 rounded-xl" /><div className="h-96 bg-white rounded-2xl border border-gray-200" /></div>}>
+        <Content />
+      </Suspense>
     </PermissionGuard>
   )
 }

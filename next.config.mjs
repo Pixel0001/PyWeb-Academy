@@ -44,7 +44,11 @@ const nextConfig = {
 
   // Production optimizations
   poweredByHeader: false, // Remove X-Powered-By header for security
-  compress: true, // Enable gzip compression
+  // compress: false — Vercel Edge handles brotli/gzip with streaming support.
+  // Node.js gzip (compress:true) buffers the full response before sending, which
+  // kills React Suspense streaming and causes high FCP. Vercel CDN applies
+  // streaming-compatible compression automatically.
+  compress: false,
   
   // Strict mode only in production (doubles renders in dev intentionally)
   reactStrictMode: process.env.NODE_ENV === 'production',

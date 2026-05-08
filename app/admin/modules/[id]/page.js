@@ -20,7 +20,7 @@ export default async function ModuleDetailPage({ params }) {
 
 async function Content({ params }) {
   const { id } = await params
-  const [m, students, canEdit, canAccess] = await Promise.all([
+  const [m, canEdit, canAccess] = await Promise.all([
     prisma.learningModule.findUnique({
       where: { id },
       include: {
@@ -34,7 +34,6 @@ async function Content({ params }) {
         },
       },
     }),
-    prisma.student.findMany({ select: { id: true, fullName: true }, orderBy: { fullName: 'asc' } }),
     checkPermission('modules.edit'),
     checkPermission('modules.access'),
   ])
@@ -53,7 +52,7 @@ async function Content({ params }) {
       <LessonsManager moduleId={m.id} lessons={m.lessons} canEdit={canEdit.allowed} />
 
       {canAccess.allowed && (
-        <ModuleAccessManager moduleId={m.id} accesses={m.accesses} students={students} />
+        <ModuleAccessManager moduleId={m.id} accesses={m.accesses} />
       )}
     </div>
   )

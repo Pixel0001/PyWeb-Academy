@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { getStudentByToken } from '@/lib/student-cache'
 import {
   ArrowLeftIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon,
   CurrencyDollarIcon, CalendarDaysIcon, CheckCircleIcon, XCircleIcon,
@@ -31,17 +32,11 @@ const STATUS_LABEL = {
 
 async function ProfilContent({ token }) {
 
-  const student = await prisma.student.findFirst({
-    where: { accessToken: token },
-    select: {
-      id: true, fullName: true, parentName: true, parentEmail: true, parentPhone: true,
-      age: true, notes: true, active: true, superStudent: true, createdAt: true,
-    },
-  })
+  const student = await getStudentByToken(token)
   if (!student) notFound()
 
-  // ── BATCH 2: TOTUL în paralel (inclusiv groupStudents + payments via relație) ──
-  const [groupStudents, learningPayments, payments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs] = await Promise.all([
+  // ── BATCH 2: TOTUL în paralel (exclusiv payments — filtrate după gsIds) ──
+  const [groupStudents, learningPayments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs] = await Promise.all([
     prisma.groupStudent.findMany({
       where: { studentId: student.id },
       include: {
@@ -59,14 +54,6 @@ async function ProfilContent({ token }) {
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
       take: 20,
-    }),
-    prisma.payment.findMany({
-      where: { groupStudent: { studentId: student.id } },
-      include: {
-        groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
-      },
-      orderBy: { paymentDate: 'desc' },
-      take: 30,
     }),
     prisma.lessonTransaction.findMany({
       where: { studentId: student.id },
@@ -96,6 +83,19 @@ async function ProfilContent({ token }) {
     prisma.problemSubmission.count({ where: { studentId: student.id } }),
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'GRADED' } }),
   ])
+
+  // ── BATCH 3: payments cu filter direct pe gsId (mai rapid decât nested relation filter) ──
+  const gsIds = groupStudents.map(gs => gs.id)
+  const payments = gsIds.length > 0
+    ? await prisma.payment.findMany({
+        where: { groupStudentId: { in: gsIds } },
+        include: {
+          groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
+        },
+        orderBy: { paymentDate: 'desc' },
+        take: 30,
+      })
+    : []
 
   const totalLessonsRemaining = groupStudents.reduce((sum, gs) => sum + (gs.lessonsRemaining || 0), 0)
   const activeGroups = groupStudents.filter(gs => gs.status === 'ACTIVE')

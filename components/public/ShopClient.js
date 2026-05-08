@@ -27,8 +27,8 @@ const TABS = [
   { id: 'events',    label: 'Events',    icon: TrophyIcon },
 ]
 
-export default function ShopClient({ token, studentName }) {
-  const [data, setData] = useState(null)
+export default function ShopClient({ token, studentName, initialData = null }) {
+  const [data, setData] = useState(initialData)
   const [tab, setTab] = useState('shop')
   const [busy, setBusy] = useState(false)
   const [reward, setReward] = useState(null)

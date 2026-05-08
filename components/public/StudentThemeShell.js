@@ -1,20 +1,20 @@
-export const dynamic = 'force-dynamic'
-
+import { Suspense } from 'react'
 import NoCopyPaste from './NoCopyPaste'
 import EquippedShowcase from './EquippedShowcase'
 import ThemeApplicator from './ThemeApplicator'
 import CosmeticEffects from './CosmeticEffects'
 import { getStudentByToken, getThemeById } from '@/lib/student-cache'
 
-export default async function StudentThemeShell({ token, children }) {
+/**
+ * Async inner component — loads theme & cosmetics in the background.
+ * Wrapped in Suspense so it never blocks the HTML shell from streaming.
+ */
+async function ThemeLoader({ token }) {
   let theme = null
   let equippedList = []
 
   try {
-    // getStudentByToken e deduplicat prin React cache() —
-    // dacă page.js l-a apelat deja în același render, NU se mai face un query nou
     const student = await getStudentByToken(token)
-
     if (student) {
       if (student.activeThemeId) {
         theme = await getThemeById(student.activeThemeId)
@@ -26,7 +26,7 @@ export default async function StudentThemeShell({ token, children }) {
       }))
     }
   } catch (e) {
-    console.error('[StudentThemeShell]', e)
+    console.error('[ThemeLoader]', e)
   }
 
   const themeData = theme ? {
@@ -42,8 +42,23 @@ export default async function StudentThemeShell({ token, children }) {
     <>
       <ThemeApplicator initialTheme={themeData} />
       <CosmeticEffects items={equippedList} />
-      <NoCopyPaste />
       <EquippedShowcase items={equippedList} themeName={theme?.name} />
+    </>
+  )
+}
+
+/**
+ * Synchronous shell — renders children immediately (no DB calls here).
+ * ThemeLoader streams in asynchronously inside Suspense, so the browser
+ * receives the first HTML byte without waiting for any DB round-trips.
+ */
+export default function StudentThemeShell({ token, children }) {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <ThemeLoader token={token} />
+      </Suspense>
+      <NoCopyPaste />
       {children}
     </>
   )

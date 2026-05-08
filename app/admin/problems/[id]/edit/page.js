@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import prisma from '@/lib/prisma'
 import PermissionGuard from '@/components/admin/PermissionGuard'
 import ProblemForm from '@/components/admin/ProblemForm'
@@ -9,7 +10,9 @@ import { notFound } from 'next/navigation'
 export default async function EditProblemPage({ params, searchParams }) {
   return (
     <PermissionGuard permission="problems.edit">
-      <Content params={params} searchParams={searchParams} />
+      <Suspense fallback={<div className="space-y-4 animate-pulse"><div className="h-6 w-32 bg-gray-200 rounded" /><div className="h-8 w-64 bg-gray-200 rounded" /><div className="h-96 bg-white rounded-2xl border border-gray-200" /></div>}>
+        <Content params={params} searchParams={searchParams} />
+      </Suspense>
     </PermissionGuard>
   )
 }
