@@ -27,8 +27,11 @@ export async function POST(req, { params }) {
         data: { activeThemeId: null },
       })
     }
+    revalidateTag('leaderboard')
     return NextResponse.json({ ok: true })
   }
+
+  const { cosmeticId } = body
   if (!cosmeticId) return NextResponse.json({ error: 'cosmeticId required' }, { status: 400 })
 
   const inv = await prisma.cosmeticInventory.findUnique({
@@ -52,16 +55,28 @@ export async function POST(req, { params }) {
         .replace(/^Tema\s+/i, '')  // scoate prefixul "Tema "
         .trim()
       const found = await prisma.theme.findFirst({
-        where: { name: { contains: themeName } },
+        where: { name: { contains: themeName, mode: 'insensitive' } },
         select: { id: true },
       })
-      themeId = found?.id || null
+      // Al doilea fallback: potrivire pe numele complet al cosmeticului
+      if (!found) {
+        const found2 = await prisma.theme.findFirst({
+          where: { name: { contains: inv.cosmetic.name, mode: 'insensitive' } },
+          select: { id: true },
+        })
+        themeId = found2?.id || null
+      } else {
+        themeId = found.id
+      }
     }
     if (themeId) {
       await prisma.student.update({
         where: { id: student.id },
         data: { activeThemeId: themeId },
       })
+    } else {
+      // Log pentru debugging pe production
+      console.error('[equip] THEME fără themeId găsit:', inv.cosmetic.name, inv.cosmetic.id)
     }
   }
 
