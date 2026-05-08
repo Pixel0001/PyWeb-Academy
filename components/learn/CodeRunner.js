@@ -2,8 +2,8 @@
 
 /**
  * CodeRunner — playground pentru rularea codului în browser.
- *  - Python  → Pyodide (WebAssembly, ~10MB la prima încărcare, apoi cache)
- *  - JavaScript → Web Worker izolat
+ *  - Python  → Pyodide în Web Worker izolat (timeout 10s — ciclu infinit = oprit safe)
+ *  - JavaScript → Web Worker izolat (timeout 5s)
  *  - HTML/CSS → iframe sandbox cu preview live
  *
  * Cost server: $0 (totul rulează în browser-ul elevului).
@@ -16,27 +16,58 @@ import { PlayIcon, ArrowPathIcon, EyeIcon } from '@heroicons/react/24/outline'
 const PYODIDE_VERSION = '0.26.4'
 const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 
-let pyodidePromise = null
-function loadPyodide() {
-  if (pyodidePromise) return pyodidePromise
-  pyodidePromise = new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') return reject(new Error('No window'))
-    if (window.loadPyodide) return resolve(window.loadPyodide({ indexURL: PYODIDE_CDN }))
-    const script = document.createElement('script')
-    script.src = `${PYODIDE_CDN}pyodide.js`
-    script.onload = async () => {
-      try {
-        const py = await window.loadPyodide({ indexURL: PYODIDE_CDN })
-        resolve(py)
-      } catch (e) { reject(e) }
-    }
-    script.onerror = () => reject(new Error('Nu pot încărca Pyodide'))
-    document.head.appendChild(script)
-  })
-  return pyodidePromise
+// ── Pyodide Web Worker ────────────────────────────────────────────────────────
+// Rulăm Pyodide într-un Worker separat — dacă apare un ciclu infinit,
+// terminate() îl omoară fără să blocheze / crasheze tab-ul principal.
+const PYODIDE_WORKER_SRC = `
+importScripts('https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js')
+
+let py = null
+
+async function initPy() {
+  if (py) return py
+  py = await loadPyodide({ indexURL: '${PYODIDE_CDN}' })
+  return py
 }
 
-// Web Worker source pentru JS — rulat ca Blob URL ca să fie complet izolat
+self.onmessage = async (e) => {
+  const { code } = e.data
+  const logs = []
+  try {
+    const pyodide = await initPy()
+
+    pyodide.setStdout({ batched: (s) => {
+      logs.push(s)
+      self.postMessage({ type: 'stdout', line: s })
+    }})
+    pyodide.setStderr({ batched: (s) => {
+      logs.push(s)
+      self.postMessage({ type: 'stdout', line: s })
+    }})
+
+    // input() — returnează '' în worker (nu avem prompt)
+    pyodide.globals.set('input', (msg) => {
+      self.postMessage({ type: 'stdout', line: '[input: ' + (msg || '') + '] ' })
+      return ''
+    })
+
+    await pyodide.runPythonAsync(code || '')
+    self.postMessage({ type: 'done', ok: true, output: logs.join('') })
+  } catch (err) {
+    self.postMessage({ type: 'done', ok: false, output: logs.join(''), error: String(err?.message || err) })
+  }
+}
+`
+
+let pyWorkerUrl = null
+function getPyWorkerUrl() {
+  if (pyWorkerUrl) return pyWorkerUrl
+  const blob = new Blob([PYODIDE_WORKER_SRC], { type: 'application/javascript' })
+  pyWorkerUrl = URL.createObjectURL(blob)
+  return pyWorkerUrl
+}
+
+// ── JS Web Worker ─────────────────────────────────────────────────────────────
 const JS_WORKER_SRC = `
 self.onmessage = async (e) => {
   const { code } = e.data
@@ -48,18 +79,15 @@ self.onmessage = async (e) => {
     return String(a)
   }).join(' '))
   const console = { log: _push, error: _push, warn: _push, info: _push }
-  // mock pentru prompt/alert într-un worker
-  const promptValues = []
   const prompt = (msg) => { _push('[prompt: ' + (msg||'') + ']'); return '' }
-  const alert = (msg) => _push('[alert: ' + (msg||'') + ']')
+  const alert  = (msg) => _push('[alert: '  + (msg||'') + ']')
   try {
-    // wrap în async ca să accepte await la nivel top
     const fn = new Function('console','prompt','alert', '"use strict";' + code)
     const r = fn(console, prompt, alert)
     if (r && typeof r.then === 'function') await r
     self.postMessage({ ok: true, output: logs.join('\\n') })
   } catch (err) {
-    self.postMessage({ ok: false, output: logs.join('\\n'), error: String(err && err.message || err) })
+    self.postMessage({ ok: false, output: logs.join('\\n'), error: String(err?.message || err) })
   }
 }
 `
@@ -83,7 +111,6 @@ export default function CodeRunner({
 }) {
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
-  const [pyLoading, setPyLoading] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
   const workerRef = useRef(null)
   const outputRef = useRef('')  // acumulator sync pentru onOutput
@@ -92,41 +119,67 @@ export default function CodeRunner({
   // cleanup worker
   useEffect(() => () => { if (workerRef.current) workerRef.current.terminate() }, [])
 
-  const runPython = useCallback(async () => {
+  const runPython = useCallback(() => {
     setRunning(true)
-    setOutput('')
+    setOutput('⏳ Se încarcă Python (~10MB prima dată, apoi e cache-uit)...')
     outputRef.current = ''
+
+    if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
+
+    let timedOut = false
+    const TIMEOUT_MS = 10000
+
+    const timeout = setTimeout(() => {
+      timedOut = true
+      if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
+      const out = outputRef.current + '\n⏱ Timp depășit (>10s) — posibil ciclu infinit. Codul a fost oprit.'
+      setOutput(out)
+      if (onOutput) onOutput(out, false)
+      setRunning(false)
+    }, TIMEOUT_MS)
+
     try {
-      setPyLoading(true)
-      const py = await loadPyodide()
-      setPyLoading(false)
-      // capturăm stdout + stderr în ref sincron + state pentru UI
-      py.setStdout({ batched: (s) => {
-        outputRef.current += s + '\n'
-        setOutput(outputRef.current)
-      }})
-      py.setStderr({ batched: (s) => {
-        outputRef.current += s + '\n'
-        setOutput(outputRef.current)
-      }})
-      // input() → folosește prompt() din browser
-      py.globals.set('input', (msg) => {
-        const r = window.prompt(typeof msg === 'string' ? msg : '')
-        return r == null ? '' : r
-      })
-      try {
-        await py.runPythonAsync(code || '')
-        if (onOutput) onOutput(outputRef.current, true)
-      } catch (e) {
-        const msg = String(e?.message || e)
-        outputRef.current += '\n\u274c ' + msg
-        setOutput(outputRef.current)
-        if (onOutput) onOutput(outputRef.current, false)
+      const w = new Worker(getPyWorkerUrl())
+      workerRef.current = w
+
+      w.onmessage = (ev) => {
+        if (timedOut) return
+        const { type, line, ok, output: finalOut, error } = ev.data
+
+        if (type === 'stdout') {
+          // output în timp real
+          outputRef.current += line
+          setOutput(outputRef.current || '⏳ Rulez...')
+          return
+        }
+
+        if (type === 'done') {
+          clearTimeout(timeout)
+          let text = finalOut || outputRef.current || ''
+          if (error) text += (text ? '\n' : '') + '❌ ' + error
+          if (!text) text = '(fără output)'
+          setOutput(text)
+          if (onOutput) onOutput(text, ok)
+          setRunning(false)
+          w.terminate(); workerRef.current = null
+        }
       }
+
+      w.onerror = (err) => {
+        if (timedOut) return
+        clearTimeout(timeout)
+        const msg = '❌ ' + (err.message || 'Eroare worker Python')
+        setOutput(msg)
+        if (onOutput) onOutput(msg, false)
+        setRunning(false)
+        workerRef.current = null
+      }
+
+      w.postMessage({ code: code || '' })
     } catch (e) {
-      setOutput('\u274c Nu pot încărca Python: ' + (e?.message || e))
-    } finally {
-      setRunning(false); setPyLoading(false)
+      clearTimeout(timeout)
+      setOutput('❌ ' + (e?.message || e))
+      setRunning(false)
     }
   }, [code, onOutput])
 
@@ -320,14 +373,14 @@ export default function CodeRunner({
         <button type="button" onClick={run} disabled={running}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition">
           {isPreview ? <EyeIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
-          {running ? (pyLoading ? 'Încarc Python (~10MB)...' : 'Rulez...') : (isPreview ? 'Preview' : 'Rulează')}
+          {running ? 'Rulez...' : (isPreview ? 'Preview' : 'Rulează')}
         </button>
         <button type="button" onClick={reset}
           className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
           <ArrowPathIcon className="w-4 h-4" /> Reset
         </button>
         <span className="text-xs text-slate-400 ml-auto hidden sm:inline">
-          {lang === 'python' && '🐍 Python rulează în browser (Pyodide)'}
+          {lang === 'python' && '🐍 Python în Worker izolat (timeout 10s)'}
           {(lang === 'javascript' || lang === 'js') && '⚡ JS în Web Worker izolat'}
           {(lang === 'c' || lang === 'cpp') && '⚙️ C/C++ compilat pe server (Judge0 CE)'}
           {isPreview && '🖼 Preview live (iframe sandbox)'}
