@@ -16,7 +16,7 @@ import { PAYMENT_LOCK_MESSAGE } from '@/lib/learning-access'
 import { getSystemSettings } from '@/lib/student-limits'
 import { buildLevels, getLevel } from '@/lib/levels'
 import { getStudentEconomy } from '@/lib/economy'
-import { getStudentByToken, getCachedAllProblemPoints } from '@/lib/student-cache'
+import { getStudentByToken, getCachedAllProblemPoints, getCachedStudentXpSubs } from '@/lib/student-cache'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
@@ -80,10 +80,7 @@ async function DashboardContent({ token }) {
       select: { lessonId: true, completedAt: true, theoryCompleted: true },
     }),
     prisma.problemSubmission.count({ where: { studentId: student.id, status: 'PENDING' } }),
-    prisma.problemSubmission.findMany({
-      where: { studentId: student.id, status: 'GRADED' },
-      select: { problemId: true, grade: true },
-    }),
+    getCachedStudentXpSubs(student.id),
     prisma.bonusPoint.findMany({
       where: { studentId: student.id },
       orderBy: { createdAt: 'desc' },

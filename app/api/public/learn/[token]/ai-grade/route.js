@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { gradeCode, checkAiQuota, logAiUsage, getStudentAiUsage } from '@/lib/ai-grader'
 import { assertAiAccess } from '@/lib/learning-access'
@@ -223,6 +224,9 @@ export async function POST(req, { params }) {
       xpAwarded,
     },
   })
+
+  // Invalidate cached xpSubs — dashboard picks up new grade on next load
+  revalidateTag('submissions')
 
   // ── Marchează cooldown după o rezolvare reușită
   if (passed) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import prisma from '@/lib/prisma'
 
 // POST { problemId, lessonId } - elevul cere să vadă rezolvarea
@@ -73,6 +74,8 @@ export async function POST(req, { params }) {
       locked: true,
     },
   })
+
+  revalidateTag('submissions')
 
   return NextResponse.json({
     ok: true,

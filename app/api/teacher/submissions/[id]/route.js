@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -129,6 +130,8 @@ export async function PATCH(req, { params }) {
       console.error('Failed to create REVISION_REQUEST notification:', e)
     }
   }
+
+  revalidateTag('submissions')
 
   return NextResponse.json({ submission: updated })
 }
