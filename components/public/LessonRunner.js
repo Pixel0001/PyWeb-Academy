@@ -14,6 +14,7 @@ import {
 import { CheckCircleIcon as CheckSolid, StarIcon } from '@heroicons/react/24/solid'
 import dynamic from 'next/dynamic'
 import { getMaxAttempts, gradeForAttempt, applyHintPenalty } from '@/lib/problem-scoring'
+import { verifyAnswerLocal } from '@/lib/problem-verify'
 import Markdown, { inlineFmt, reformatCode } from '@/lib/markdown'
 // Heavy sub-components: lazy-loaded so they don't block initial JS parse
 const CodeRunner = dynamic(() => import('@/components/learn/CodeRunner'), { ssr: false })
@@ -574,6 +575,51 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     }
 
     setSubmitting(true)
+    // ─── OPTIMISTIC UI pentru probleme NON-CODING ───────────────────────────
+    // Verificăm răspunsul local INSTANT (correctAnswer e deja în memoria clientului),
+    // afișăm feedback-ul imediat, și trimitem submisia în fundal pentru persistență.
+    // Avantaj: elevul vede „Corect!" / „Greșit" în aceeași milisecundă cu click-ul,
+    // fără să aștepte 200-800ms de network + DB writes.
+    const isNonCoding = cur.type !== 'CODING'
+    let optimisticToastId = null
+    if (isNonCoding) {
+      const { isCorrect } = verifyAnswerLocal(cur, answer)
+      const newAttempts = (attemptsCount[idx] || 0) + 1
+      const maxA = getMaxAttempts(cur)
+      const exhausted = !isCorrect && newAttempts >= maxA
+      const optimisticGrade = isCorrect
+        ? applyHintPenalty(gradeForAttempt(cur, newAttempts), curHintUsed)
+        : 0
+      const earnedXP = isCorrect ? Math.round((cur.points ?? 10) * (optimisticGrade / 100)) : 0
+      // Optimistic submission object — UI re-renderează cu rezultat instant
+      const optimisticSub = {
+        problemId: cur.id,
+        status: 'GRADED',
+        grade: optimisticGrade,
+        autoCorrect: isCorrect,
+        locked: isCorrect || exhausted,
+        answer: answer || null,
+        code: code || null,
+        attemptNumber: newAttempts,
+        _optimistic: true,
+      }
+      const next = [...submissions]; next[idx] = optimisticSub; setSubmissions(next)
+      const na = [...attemptsCount]; na[idx] = newAttempts; setAttemptsCount(na)
+      if (isCorrect || exhausted) {
+        const nl = [...locks]; nl[idx] = true; setLocks(nl)
+      }
+      // Toast instant — actualizat după ce serverul răspunde (cu gems reale, etc.)
+      if (isCorrect) {
+        optimisticToastId = toast.success(`Corect! +${earnedXP} XP`)
+      } else if (exhausted) {
+        optimisticToastId = toast.error('Greșit — încercări epuizate. 0 XP.')
+      } else {
+        const nextGrade = applyHintPenalty(gradeForAttempt(cur, newAttempts + 1), curHintUsed)
+        const nextXP = Math.round((cur.points ?? 10) * (nextGrade / 100))
+        optimisticToastId = toast.error(`Greșit. Următoarea încercare valorează maxim ${nextXP} XP.`)
+      }
+    }
+
     try {
       const r = await fetch(`/api/public/learn/${token}/submit`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -581,6 +627,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       })
       const d = await r.json()
       if (!r.ok) {
+        // Server a refuzat — rollback optimistic update și arată eroarea reală
+        if (isNonCoding) {
+          const next = [...submissions]; next[idx] = submissions[idx]; setSubmissions(next)
+          const na = [...attemptsCount]; na[idx] = (attemptsCount[idx] || 0); setAttemptsCount(na)
+          if (optimisticToastId) toast.dismiss(optimisticToastId)
+        }
         if (r.status === 429 && d.cooldown) {
           const h = Math.floor(d.remainingMin / 60); const m = d.remainingMin % 60
           toast(`Așteaptă ${h ? h + 'h ' : ''}${m}min până la următoarea problemă`, { duration: 5000, icon: <ClockIcon className="w-5 h-5 text-amber-500" /> })
@@ -590,28 +642,49 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         }
         throw new Error(d.error || 'Eroare')
       }
+      // Reconciliere cu răspunsul real al serverului — actualizează ID-ul real,
+      // economy (gems, coins reale), XP capped daily, etc.
       const next = [...submissions]; next[idx] = d.submission; setSubmissions(next)
-      const na = [...attemptsCount]; na[idx] = (na[idx] || 0) + 1; setAttemptsCount(na)
+      const na = [...attemptsCount]; na[idx] = (na[idx] || 0); setAttemptsCount(na)
       if (d.locked) {
         const nl = [...locks]; nl[idx] = true; setLocks(nl)
       }
-      if (d.autoCorrect === true) {
-        const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
-        const gemsEarned = d.economy?.gems || 0
-        toast.success(`Corect! +${earnedXP} XP${gemsEarned ? ` 💎 +${gemsEarned} gems` : ''}`)
-      } else if (d.locked) {
-        toast.error(`Greșit — încercări epuizate. 0 XP.`)
-        const capturedIdx = idx
-        toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
-        const currentLocks = [...locks]; currentLocks[capturedIdx] = true
-        const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !currentLocks[i])
-        if (nextUnlocked !== -1) {
-          setTimeout(() => setIdx(nextUnlocked), 3500)
+      // Pentru CODING (fără AI) sau dacă optimistic NU a rulat — afișează toast acum
+      if (!isNonCoding) {
+        if (d.autoCorrect === true) {
+          const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
+          const gemsEarned = d.economy?.gems || 0
+          toast.success(`Corect! +${earnedXP} XP${gemsEarned ? ` 💎 +${gemsEarned} gems` : ''}`)
+        } else if (d.locked) {
+          toast.error(`Greșit — încercări epuizate. 0 XP.`)
+          const capturedIdx = idx
+          toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
+          const currentLocks = [...locks]; currentLocks[capturedIdx] = true
+          const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !currentLocks[i])
+          if (nextUnlocked !== -1) {
+            setTimeout(() => setIdx(nextUnlocked), 3500)
+          }
+        } else {
+          const nextGrade = applyHintPenalty(gradeForAttempt(cur, d.attemptNumber + 1), curHintUsed || d.hintUsed)
+          const nextXP = Math.round((cur.points ?? 10) * (nextGrade / 100))
+          toast.error(`Greșit. Următoarea încercare valorează maxim ${nextXP} XP.`)
         }
       } else {
-        const nextGrade = applyHintPenalty(gradeForAttempt(cur, d.attemptNumber + 1), curHintUsed || d.hintUsed)
-        const nextXP = Math.round((cur.points ?? 10) * (nextGrade / 100))
-        toast.error(`Greșit. Următoarea încercare valorează maxim ${nextXP} XP.`)
+        // NON-CODING: optimistic toast deja afișat. Adaugă info gems dacă există.
+        const gemsEarned = d.economy?.gems || 0
+        if (d.autoCorrect === true && gemsEarned > 0) {
+          toast.success(`💎 +${gemsEarned} gems`, { duration: 2500 })
+        }
+        // Dacă serverul a blocat & avansăm la următoarea problemă
+        if (d.locked && (d.submission.grade ?? 0) < 60) {
+          const capturedIdx = idx
+          toast('Încercări epuizate — continuăm și revenim la această problemă la final', { icon: '🔁', duration: 4000 })
+          const currentLocks = [...locks]; currentLocks[capturedIdx] = true
+          const nextUnlocked = problems.findIndex((_, i) => i > capturedIdx && !currentLocks[i])
+          if (nextUnlocked !== -1) {
+            setTimeout(() => setIdx(nextUnlocked), 3500)
+          }
+        }
       }
     } catch (e) { toast.error(e.message) } finally { setSubmitting(false) }
   }
