@@ -757,24 +757,23 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     }
   }
 
-  const finishLesson = async () => {
+  const finishLesson = () => {
     setFinishing(true)
     if (isGuest) {
       toast.success('Bravo! Ai terminat lecția (mod demo). Înscrie-te ca să salvezi progresul!')
       setTimeout(() => router.push('/learn/guest'), 900)
       return
     }
-    try {
-      await fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: true }),
-      })
-      toast.success('Lectie finalizata! Bravo!')
-      setTimeout(() => router.push(`/learn/${token}`), 700)
-    } catch (e) {
-      toast.error('Eroare la finalizare')
-      setFinishing(false)
-    }
+    // OPTIMISTIC: arată toast-ul și navighează instant, fără să așteptăm serverul
+    toast.success('Lecție finalizată! Bravo! 🎉')
+    router.push(`/learn/${token}`)
+    // Trimite PATCH în fundal pentru persistență — nu mai blocăm navigarea
+    fetch(`/api/public/learn/${token}/lesson/${lesson.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: true }),
+    }).catch(() => {
+      // Eroare silențioasă — progresul se va resincroniza la reîncărcare
+    })
   }
 
   // ── SIDEBAR CONTENT (shared between desktop + mobile overlay) ──
