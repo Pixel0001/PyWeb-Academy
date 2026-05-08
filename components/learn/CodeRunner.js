@@ -246,7 +246,7 @@ export default function CodeRunner({
         <span className="text-xs text-slate-400 ml-auto hidden sm:inline">
           {lang === 'python' && '🐍 Python rulează în browser (Pyodide)'}
           {(lang === 'javascript' || lang === 'js') && '⚡ JS în Web Worker izolat'}
-          {(lang === 'c' || lang === 'cpp') && '⚙️ C/C++ compilat pe server (Piston)'}
+          {(lang === 'c' || lang === 'cpp') && '⚙️ C/C++ compilat pe server (Judge0 CE)'}
           {isPreview && '🖼 Preview live (iframe sandbox)'}
         </span>
       </div>

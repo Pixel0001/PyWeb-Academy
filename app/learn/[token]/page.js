@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
+import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
@@ -20,6 +21,23 @@ import LogoutButton from '@/components/public/LogoutButton'
 import CooldownTimer from '@/components/public/CooldownTimer'
 import LearnLoading from './loading'
 import ModuleAccordion from '@/components/learn/ModuleAccordion'
+
+const getModules = unstable_cache(
+  () => prisma.learningModule.findMany({
+    where: { active: true },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true, title: true, description: true, language: true, order: true,
+      lessons: {
+        where: { active: true },
+        orderBy: { order: 'asc' },
+        select: { id: true, title: true, slug: true, order: true, isFree: true, _count: { select: { problems: true } } },
+      },
+    },
+  }),
+  ['learn-modules'],
+  { revalidate: 300, tags: ['modules'] }
+)
 
 const MODULE_THEMES = [
   { from: 'from-amber-400', to: 'to-orange-500', soft: 'from-amber-50 to-orange-50', ring: 'ring-amber-200' },
@@ -55,18 +73,7 @@ async function DashboardContent({ token }) {
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
     }),
-    prisma.learningModule.findMany({
-      where: { active: true },
-      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true, title: true, description: true, language: true, order: true,
-        lessons: {
-          where: { active: true },
-          orderBy: { order: 'asc' },
-          select: { id: true, title: true, slug: true, order: true, isFree: true, _count: { select: { problems: true } } },
-        },
-      },
-    }),
+    getModules(),
     prisma.moduleAccess.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
     prisma.moduleAdvance.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
     prisma.lessonProgress.findMany({

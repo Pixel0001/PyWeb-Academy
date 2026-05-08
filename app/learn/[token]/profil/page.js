@@ -40,39 +40,34 @@ async function ProfilContent({ token }) {
   })
   if (!student) notFound()
 
-  // Fetch groupStudents first to get their IDs for Payment filtering
-  const groupStudents = await prisma.groupStudent.findMany({
-    where: { studentId: student.id },
-    include: {
-      group: {
-        include: {
-          course: { select: { title: true, slug: true } },
-          teacher: { select: { name: true } },
-          branch: { select: { name: true, address: true } },
+  // ── BATCH 2: TOTUL în paralel (inclusiv groupStudents + payments via relație) ──
+  const [groupStudents, learningPayments, payments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs] = await Promise.all([
+    prisma.groupStudent.findMany({
+      where: { studentId: student.id },
+      include: {
+        group: {
+          include: {
+            course: { select: { title: true, slug: true } },
+            teacher: { select: { name: true } },
+            branch: { select: { name: true, address: true } },
+          },
         },
       },
-    },
-    orderBy: { enrolledAt: 'desc' },
-  })
-
-  const groupStudentIds = groupStudents.map(gs => gs.id)
-
-  const [learningPayments, payments, transactions, attendances, lessonProgresses, totalSubs, gradedSubs] = await Promise.all([
+      orderBy: { enrolledAt: 'desc' },
+    }),
     prisma.learningPayment.findMany({
       where: { studentId: student.id },
       orderBy: { paymentDate: 'desc' },
       take: 20,
     }),
-    groupStudentIds.length > 0
-      ? prisma.payment.findMany({
-          where: { groupStudentId: { in: groupStudentIds } },
-          include: {
-            groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
-          },
-          orderBy: { paymentDate: 'desc' },
-          take: 30,
-        })
-      : Promise.resolve([]),
+    prisma.payment.findMany({
+      where: { groupStudent: { studentId: student.id } },
+      include: {
+        groupStudent: { include: { group: { include: { course: { select: { title: true } } } } } },
+      },
+      orderBy: { paymentDate: 'desc' },
+      take: 30,
+    }),
     prisma.lessonTransaction.findMany({
       where: { studentId: student.id },
       include: { group: { select: { name: true } } },
