@@ -555,9 +555,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
         const finalGrade = (d.aiGrade?.finalGrade ?? d.aiGrade?.grade ?? 0)
         const passed = finalGrade >= 60
         const earnedXP = Math.round((cur.points ?? 10) * finalGrade / 100)
-        if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} XP 🌟`)
+        const gemsEarned = d.economy?.gems || 0
+        if (passed) toast.success(`Mr. PyWeb spune: bravo! +${earnedXP} XP${gemsEarned ? ` 💎 +${gemsEarned} gems` : ''} 🌟`)
         // detectare AI dezactivată — nu mai afișăm toast de plagiat
-        else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} XP. Vezi feedback-ul AI.`, { icon: '✨' })
+        else if (earnedXP > 0) toast(`Parțial corect: +${earnedXP} XP${gemsEarned ? ` 💎 +${gemsEarned} gems` : ''}. Vezi feedback-ul AI.`, { icon: '✨' })
         else toast('Mr. PyWeb ți-a lăsat feedback', { icon: '✨' })
         // Dacă problema e acum blocată cu notă mică → adaugă la toRevisit și avansează automat
         if (d.submission.locked && finalGrade < 60) {
@@ -596,7 +597,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
       }
       if (d.autoCorrect === true) {
         const earnedXP = Math.round((cur.points ?? 10) * (d.submission.grade / 100))
-        toast.success(`Corect! +${earnedXP} XP`)
+        const gemsEarned = d.economy?.gems || 0
+        toast.success(`Corect! +${earnedXP} XP${gemsEarned ? ` 💎 +${gemsEarned} gems` : ''}`)
       } else if (d.locked) {
         toast.error(`Greșit — încercări epuizate. 0 XP.`)
         const capturedIdx = idx
@@ -1262,6 +1264,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                             />
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-xs text-slate-400 flex-1 min-w-[180px]">💡 Apasă „Rulează" ca să testezi codul. Apoi apasă „Trimite"{canUseAi ? ' — Mr. PyWeb te va nota cu AI.' : '.'}</p>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-xs font-bold">
+                                💎 până la {Math.max(1, Math.round((cur.points || 10) / 5))} gems
+                              </span>
                               {canUseAi && !chatOpen[cur.id] && (
                                 <button
                                   type="button"
