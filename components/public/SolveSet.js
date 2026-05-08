@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 
 const DIFF = { EASY: { label: '🟢 Ușor', color: 'bg-green-100 text-green-700' },
@@ -25,6 +25,52 @@ export default function SolveSet({ token }) {
   const [feedback, setFeedback] = useState(null) // { isCorrect, explanation, correctAnswer }
   const [timer, setTimer] = useState(0) // secunde elapsed pe problema curentă
   const startRef = useRef(Date.now())
+  const codeAreaRef = useRef(null)
+
+  const handleCodeKeyDown = useCallback((e) => {
+    const ta = e.target
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    const val   = ta.value
+
+    const apply = (newVal, cursorPos, cursorEnd) => {
+      e.preventDefault()
+      setAnswer(newVal)
+      requestAnimationFrame(() => {
+        if (!codeAreaRef.current) return
+        codeAreaRef.current.setSelectionRange(cursorPos, cursorEnd ?? cursorPos)
+      })
+    }
+
+    if (e.key === 'Tab') {
+      apply(val.slice(0, start) + '    ' + val.slice(end), start + 4)
+      return
+    }
+
+    if (e.key === 'Enter') {
+      const lineStart  = val.lastIndexOf('\n', start - 1) + 1
+      const linePrefix = val.slice(lineStart, start)
+      const indent     = linePrefix.match(/^([ \t]*)/)[1]
+      const extra      = linePrefix.trimEnd().endsWith(':') ? '    ' : ''
+      apply(val.slice(0, start) + '\n' + indent + extra + val.slice(end), start + 1 + indent.length + extra.length)
+      return
+    }
+
+    const PAIRS = { '(': ')', '[': ']', '{': '}', "'": "'", '"': '"' }
+    if (PAIRS[e.key]) {
+      const close = PAIRS[e.key]
+      const selected = val.slice(start, end)
+      const newVal = val.slice(0, start) + e.key + selected + close + val.slice(end)
+      start !== end ? apply(newVal, start + 1, end + 1) : apply(newVal, start + 1)
+      return
+    }
+
+    if (['}', ']', ')'].includes(e.key) && start === end && val[start] === e.key) {
+      e.preventDefault()
+      requestAnimationFrame(() => codeAreaRef.current?.setSelectionRange(start + 1, start + 1))
+      return
+    }
+  }, [setAnswer])
 
   // Fetch set
   const load = async () => {
@@ -271,12 +317,19 @@ export default function SolveSet({ token }) {
               </div>
             ) : current.type === 'CODING' ? (
               <textarea
+                ref={codeAreaRef}
                 value={answer}
                 onChange={e => setAnswer(e.target.value)}
+                onKeyDown={handleCodeKeyDown}
                 disabled={current.attempt?.isCorrect}
                 rows={10}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="off"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
                 placeholder="Scrie codul aici..."
+                style={{ tabSize: 4, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
               />
             ) : (
               <input

@@ -35,19 +35,17 @@ export default function NoCopyPaste() {
     }
 
     // Capture-phase ca să prindem înainte de Monaco etc.
-    document.addEventListener('copy', blockClipboard, true)
     document.addEventListener('cut', blockClipboard, true)
     document.addEventListener('paste', blockClipboard, true)
     document.addEventListener('contextmenu', blockContextMenu, true)
     document.addEventListener('dragstart', blockAlways, true)
 
-    // Blocăm și combinațiile de taste (Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A)
+    // Blocăm Ctrl+V / Ctrl+X / Ctrl+A / Ctrl+S / Ctrl+P — Ctrl+C permis
     const blockKeys = (e) => {
       const ctrl = e.ctrlKey || e.metaKey
       if (!ctrl) return
       const k = (e.key || '').toLowerCase()
-      if (k === 'c' || k === 'v' || k === 'x' || k === 'a' || k === 's' || k === 'p') {
-        // permitem ștergere (backspace), Enter, Tab etc — doar blocăm clipboard / select all / save / print
+      if (k === 'v' || k === 'x' || k === 'a' || k === 's' || k === 'p') {
         e.preventDefault()
         e.stopPropagation()
         return false
@@ -56,7 +54,6 @@ export default function NoCopyPaste() {
     document.addEventListener('keydown', blockKeys, true)
 
     return () => {
-      document.removeEventListener('copy', blockClipboard, true)
       document.removeEventListener('cut', blockClipboard, true)
       document.removeEventListener('paste', blockClipboard, true)
       document.removeEventListener('contextmenu', blockContextMenu, true)

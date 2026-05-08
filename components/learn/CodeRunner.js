@@ -86,20 +86,29 @@ export default function CodeRunner({
   const [pyLoading, setPyLoading] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
   const workerRef = useRef(null)
+  const outputRef = useRef('')  // acumulator sync pentru onOutput
   const lang = (language || 'python').toLowerCase()
 
   // cleanup worker
   useEffect(() => () => { if (workerRef.current) workerRef.current.terminate() }, [])
 
   const runPython = useCallback(async () => {
-    setRunning(true); setOutput('')
+    setRunning(true)
+    setOutput('')
+    outputRef.current = ''
     try {
       setPyLoading(true)
       const py = await loadPyodide()
       setPyLoading(false)
-      // capturăm stdout + stderr
-      py.setStdout({ batched: (s) => setOutput(o => o + s + '\n') })
-      py.setStderr({ batched: (s) => setOutput(o => o + s + '\n') })
+      // capturăm stdout + stderr în ref sincron + state pentru UI
+      py.setStdout({ batched: (s) => {
+        outputRef.current += s + '\n'
+        setOutput(outputRef.current)
+      }})
+      py.setStderr({ batched: (s) => {
+        outputRef.current += s + '\n'
+        setOutput(outputRef.current)
+      }})
       // input() → folosește prompt() din browser
       py.globals.set('input', (msg) => {
         const r = window.prompt(typeof msg === 'string' ? msg : '')
@@ -107,21 +116,24 @@ export default function CodeRunner({
       })
       try {
         await py.runPythonAsync(code || '')
-        if (onOutput) onOutput(output, true)
+        if (onOutput) onOutput(outputRef.current, true)
       } catch (e) {
         const msg = String(e?.message || e)
-        setOutput(o => o + '\n❌ ' + msg)
-        if (onOutput) onOutput(msg, false)
+        outputRef.current += '\n\u274c ' + msg
+        setOutput(outputRef.current)
+        if (onOutput) onOutput(outputRef.current, false)
       }
     } catch (e) {
-      setOutput('❌ Nu pot încărca Python: ' + (e?.message || e))
+      setOutput('\u274c Nu pot încărca Python: ' + (e?.message || e))
     } finally {
       setRunning(false); setPyLoading(false)
     }
-  }, [code, onOutput, output])
+  }, [code, onOutput])
 
   const runJs = useCallback(() => {
-    setRunning(true); setOutput('')
+    setRunning(true)
+    setOutput('')
+    outputRef.current = ''
     if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
     let timedOut = false
     const timeout = setTimeout(() => {
@@ -206,6 +218,75 @@ export default function CodeRunner({
 
   const reset = () => { setCode(starter || ''); setOutput('') }
 
+  const taRef = useRef(null)
+
+  const handleKeyDown = useCallback((e) => {
+    if (readOnly) return
+    const ta = e.target
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    const val   = ta.value
+
+    // helper: aplică modificarea și setează cursorul după re-render React
+    const apply = (newVal, cursorPos, cursorEnd) => {
+      e.preventDefault()
+      setCode(newVal)
+      requestAnimationFrame(() => {
+        if (!taRef.current) return
+        taRef.current.setSelectionRange(cursorPos, cursorEnd ?? cursorPos)
+      })
+    }
+
+    // Tab → 4 spații
+    if (e.key === 'Tab') {
+      if (start !== end) {
+        // indent linii selectate
+        const lineStart = val.lastIndexOf('\n', start - 1) + 1
+        const lineEnd   = val.indexOf('\n', end)
+        const block = val.slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
+        const indented = block.replace(/^/gm, '    ')
+        const newVal = val.slice(0, lineStart) + indented + (lineEnd === -1 ? '' : val.slice(lineEnd))
+        apply(newVal, start + 4, end + indented.split('\n').length * 4)
+      } else {
+        apply(val.slice(0, start) + '    ' + val.slice(end), start + 4)
+      }
+      return
+    }
+
+    // Enter → păstrează indentarea curentă + adaugă extra indentare după ':'
+    if (e.key === 'Enter') {
+      const lineStart  = val.lastIndexOf('\n', start - 1) + 1
+      const linePrefix = val.slice(lineStart, start)
+      const indent     = linePrefix.match(/^([ \t]*)/)[1]
+      const extra      = linePrefix.trimEnd().endsWith(':') ? '    ' : ''
+      const newVal     = val.slice(0, start) + '\n' + indent + extra + val.slice(end)
+      apply(newVal, start + 1 + indent.length + extra.length)
+      return
+    }
+
+    // Auto-close perechi
+    const PAIRS = { '(': ')', '[': ']', '{': '}', "'": "'", '"': '"' }
+    if (PAIRS[e.key]) {
+      const close = PAIRS[e.key]
+      const selected = val.slice(start, end)
+      const newVal = val.slice(0, start) + e.key + selected + close + val.slice(end)
+      // dacă e selecție → înconjoară, cursor după selecție
+      if (start !== end) {
+        apply(newVal, start + 1, end + 1)
+      } else {
+        apply(newVal, start + 1)
+      }
+      return
+    }
+
+    // Skip peste closing bracket dacă urmează exact acel caracter
+    if (['}', ']', ')'].includes(e.key) && start === end && val[start] === e.key) {
+      e.preventDefault()
+      requestAnimationFrame(() => taRef.current?.setSelectionRange(start + 1, start + 1))
+      return
+    }
+  }, [readOnly, setCode])
+
   // Pentru HTML/CSS preview-ul e un iframe sandbox
   const isPreview = lang === 'html' || lang === 'css'
   const previewSrc = (() => {
@@ -218,8 +299,10 @@ export default function CodeRunner({
     <div className="space-y-2">
       <div className="relative">
         <textarea
+          ref={taRef}
           value={code ?? ''}
           onChange={e => setCode(e.target.value)}
+          onKeyDown={handleKeyDown}
           rows={rows}
           readOnly={readOnly}
           spellCheck={false}
@@ -228,7 +311,7 @@ export default function CodeRunner({
           autoComplete="off"
           className="w-full px-4 py-3 border-2 border-slate-700 rounded-xl font-mono text-sm bg-slate-900 text-slate-100 focus:border-blue-500 outline-none resize-y"
           placeholder={starter || `// scrie cod ${lang}`}
-          style={{ tabSize: 2, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+          style={{ tabSize: 4, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
         />
         <div className="absolute top-2 right-2 text-[10px] uppercase tracking-wider font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded">{lang}</div>
       </div>
