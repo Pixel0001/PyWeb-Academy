@@ -306,14 +306,16 @@ export default function CodeRunner({
       return
     }
 
-    // Enter → păstrează indentarea curentă + adaugă extra indentare după ':'
+    // Enter → păstrează indentarea curentă + adaugă extra după ':' / scade după break/continue/return/pass
     if (e.key === 'Enter') {
       const lineStart  = val.lastIndexOf('\n', start - 1) + 1
       const linePrefix = val.slice(lineStart, start)
       const indent     = linePrefix.match(/^([ \t]*)/)[1]
-      const extra      = linePrefix.trimEnd().endsWith(':') ? '    ' : ''
-      const newVal     = val.slice(0, start) + '\n' + indent + extra + val.slice(end)
-      apply(newVal, start + 1 + indent.length + extra.length)
+      const trimmed    = linePrefix.trim()
+      const deindent   = /^(break|continue|return|pass)(\s.*)?$/.test(trimmed)
+      const extraIndent = !deindent && linePrefix.trimEnd().endsWith(':') ? '    ' : ''
+      const newIndent  = deindent && indent.length >= 4 ? indent.slice(4) : indent
+      apply(val.slice(0, start) + '\n' + newIndent + extraIndent + val.slice(end), start + 1 + newIndent.length + extraIndent.length)
       return
     }
 
@@ -330,6 +332,15 @@ export default function CodeRunner({
         apply(newVal, start + 1)
       }
       return
+    }
+
+    // Backspace — dacă înainte de cursor sunt exact 4 spații (fără selecție), le șterge pe toate
+    if (e.key === 'Backspace' && start === end) {
+      const before = val.slice(0, start)
+      if (before.endsWith('    ')) {
+        apply(val.slice(0, start - 4) + val.slice(end), start - 4)
+        return
+      }
     }
 
     // Skip peste closing bracket dacă urmează exact acel caracter
