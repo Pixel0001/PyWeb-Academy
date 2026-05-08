@@ -4,22 +4,16 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { getStudentByToken } from '@/lib/student-cache'
+import { getStudentByToken, preloadStudent, getLesson, preloadLesson, getCachedModuleLessons } from '@/lib/student-cache'
 import LessonRunner from '@/components/public/LessonRunner'
 import LessonLoading from './loading'
 import { LockClosedIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
 
 async function LessonContent({ token, lessonId }) {
-  // ── BATCH 1: student (React cache — deduplicat cu layout preload) + lesson în PARALEL ——
+  // Both queries preloaded by LessonPage — React cache hits, effectively 0ms wait
   const [student, lesson] = await Promise.all([
     getStudentByToken(token),
-    prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: {
-        module: { select: { id: true, title: true, slug: true } },
-        problems: { orderBy: { lessonOrder: 'asc' } },
-      },
-    }),
+    getLesson(lessonId),
   ])
 
   if (!student || !lesson) notFound()
@@ -39,7 +33,9 @@ async function LessonContent({ token, lessonId }) {
   const moduleId = lesson.module.id
   const problemIds = lesson.problems.map(p => p.id)
 
-  // ── BATCH 2: TOATE restul în PARALEL (8 query-uri deodată) ──
+  // ── BATCH 2: ALL remaining queries in PARALLEL ──
+  // getCachedModuleLessons — 120s unstable_cache, no DB hit on warm cache
+  // allProgresses — simple studentId filter (no nested $lookup join)
   const [latestPayment, manualAccesses, manualLessonAccesses, subs, progress, advance, moduleLessons, allProgresses] = await Promise.all([
     prisma.learningPayment.findFirst({ where: { studentId: student.id }, orderBy: { paymentDate: 'desc' } }),
     prisma.moduleAccess.findMany({ where: { studentId: student.id }, select: { moduleId: true } }),
@@ -54,13 +50,11 @@ async function LessonContent({ token, lessonId }) {
     prisma.moduleAdvance.findUnique({
       where: { studentId_moduleId: { studentId: student.id, moduleId } },
     }),
-    prisma.lesson.findMany({
-      where: { moduleId, active: true },
-      orderBy: { order: 'asc' },
-      select: { id: true, title: true, order: true, isFree: true, _count: { select: { problems: true } } },
-    }),
+    // Cached 120s — sidebar lesson list changes rarely
+    getCachedModuleLessons(moduleId),
+    // Simple indexed filter (studentId) — no $lookup join
     prisma.lessonProgress.findMany({
-      where: { studentId: student.id, lesson: { moduleId } },
+      where: { studentId: student.id },
       select: { lessonId: true, completedAt: true, theoryCompleted: true },
     }),
   ])
@@ -134,6 +128,12 @@ async function LessonContent({ token, lessonId }) {
 
 export default async function LessonPage({ params }) {
   const { token, lessonId } = await params
+  // Preload BOTH queries immediately — before Suspense even renders LessonContent.
+  // By the time LessonContent calls getStudentByToken/getLesson, the promises
+  // are already in-flight or resolved (React cache dedup). Eliminates BATCH 1
+  // from the critical path — LessonContent can go straight to BATCH 2.
+  preloadStudent(token)
+  preloadLesson(lessonId)
   return (
     <Suspense fallback={<LessonLoading />}>
       <LessonContent token={token} lessonId={lessonId} />
