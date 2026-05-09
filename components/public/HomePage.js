@@ -884,7 +884,7 @@ export default function HomePage({ courses = [], reviews = [] }) {
               Accesul la aplicație este inclus gratuit pentru toți elevii înscriși.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/learn" style={{
+              <a href="/learn/guest" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                 backgroundColor: 'var(--color-primary)', color: '#fff',
                 fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem',
