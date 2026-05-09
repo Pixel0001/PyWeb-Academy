@@ -87,6 +87,17 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // COOP/COEP pentru /learn/* — necesare pentru SharedArrayBuffer + Atomics,
+        // ca să putem face input() interactiv în Pyodide (worker pauzat sincron pe Atomics.wait).
+        // Folosim `credentialless` (în loc de `require-corp`) ca să nu rupem CDN-urile
+        // care nu trimit `Cross-Origin-Resource-Policy` (Cloudinary, jsDelivr fără CORP, etc.).
+        source: '/learn/:path*',
+        headers: [
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
+        ],
+      },
     ];
   },
 

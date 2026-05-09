@@ -19,6 +19,12 @@ const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 // ── Pyodide Web Worker ────────────────────────────────────────────────────────
 // Rulăm Pyodide într-un Worker separat — dacă apare un ciclu infinit,
 // terminate() îl omoară fără să blocheze / crasheze tab-ul principal.
+//
+// input() INTERACTIV: folosim SharedArrayBuffer + Atomics.wait. Când Python
+// apelează input(), worker-ul trimite postMessage('needsInput') și BLOCHEAZĂ
+// pe Atomics.wait. UI-ul afișează un câmp inline; când utilizatorul apasă
+// Enter, scriem string-ul în SAB + Atomics.notify → worker se trezește.
+// Necesită COOP/COEP headers (configurat în next.config.mjs pentru /learn/*).
 const PYODIDE_WORKER_SRC = `
 importScripts('https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js')
 
@@ -31,8 +37,14 @@ async function initPy() {
 }
 
 self.onmessage = async (e) => {
-  const { code } = e.data
+  const { code, sab } = e.data
   const logs = []
+
+  // SAB layout: [0]=status (0=waiting,1=ready), [1]=length, bytes 8.. = utf-8
+  const header = sab ? new Int32Array(sab, 0, 2) : null
+  const dataView = sab ? new Uint8Array(sab, 8) : null
+  const decoder = new TextDecoder()
+
   try {
     const pyodide = await initPy()
 
@@ -45,17 +57,29 @@ self.onmessage = async (e) => {
       self.postMessage({ type: 'stdout', line: s })
     }})
 
-    // input() — citește din coada stdin trimisă de UI
-    const stdinQueue = (e.data.stdin || []).slice()
+    // input() — INTERACTIV via SAB+Atomics, sau fallback dacă SAB lipsește
     pyodide.globals.set('input', (msg) => {
-      const prompt = msg ? '[' + msg + '] ' : ''
-      if (stdinQueue.length === 0) {
-        self.postMessage({ type: 'stdout', line: prompt + '\n' })
-        throw new Error('EOFError: Nu ai introdus destule valori în câmpul Stdin.')
+      const promptMsg = msg ? String(msg) : ''
+      // Afișează prompt-ul în output ca un terminal real
+      if (promptMsg) {
+        logs.push(promptMsg)
+        self.postMessage({ type: 'stdout', line: promptMsg })
       }
-      const val = stdinQueue.shift()
-      self.postMessage({ type: 'stdout', line: prompt + val + '\n' })
-      return val
+      if (!header) {
+        throw new Error('input() interactiv indisponibil (SharedArrayBuffer lipsește). Reîncarcă pagina.')
+      }
+      // Cere UI-ului o valoare
+      Atomics.store(header, 0, 0)
+      self.postMessage({ type: 'needsInput', prompt: promptMsg })
+      // Blochează aici până când UI scrie valoarea și face Atomics.notify
+      Atomics.wait(header, 0, 0)
+      const len = Atomics.load(header, 1)
+      const bytes = new Uint8Array(dataView.buffer, dataView.byteOffset, len)
+      const value = decoder.decode(bytes)
+      // Afișează valoarea introdusă (echo) ca într-un terminal
+      logs.push(value + '\\n')
+      self.postMessage({ type: 'stdout', line: value + '\\n' })
+      return value
     })
 
     await pyodide.runPythonAsync(code || '')
@@ -119,34 +143,80 @@ export default function CodeRunner({
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
-  const [stdin, setStdin] = useState('')
+  // Input interactiv: când worker-ul cere input, afișăm un câmp și-l populăm cu fonctus
+  const [waitingInput, setWaitingInput] = useState(false)
+  const [inputPrompt, setInputPrompt] = useState('')
+  const [inputValue, setInputValue] = useState('')
+  const sabRef = useRef(null) // SharedArrayBuffer reutilizabil
+  const inputFieldRef = useRef(null)
   const workerRef = useRef(null)
   const outputRef = useRef('')  // acumulator sync pentru onOutput
   const lang = (language || 'python').toLowerCase()
 
-  // Pentru Python afișăm mereu câmpul stdin (input poate fi adăugat oricând)
-  const needsStdin = lang === 'python'
+  // Detectăm dacă SharedArrayBuffer e disponibil (necesită COOP/COEP headers)
+  const sabSupported = typeof SharedArrayBuffer !== 'undefined' && typeof Atomics !== 'undefined' && (typeof crossOriginIsolated === 'undefined' || crossOriginIsolated)
 
   // cleanup worker
   useEffect(() => () => { if (workerRef.current) workerRef.current.terminate() }, [])
 
+  // Focus pe inputul interactiv când apare
+  useEffect(() => {
+    if (waitingInput && inputFieldRef.current) {
+      inputFieldRef.current.focus()
+    }
+  }, [waitingInput])
+
+  // Trimite valoarea introdusă către worker prin SAB + Atomics.notify
+  const submitInteractiveInput = useCallback(() => {
+    if (!waitingInput || !sabRef.current) return
+    const sab = sabRef.current
+    const header = new Int32Array(sab, 0, 2)
+    const dataView = new Uint8Array(sab, 8)
+    const bytes = new TextEncoder().encode(inputValue)
+    if (bytes.length > dataView.byteLength) {
+      // Truncăm dacă e prea mare (foarte rar)
+      dataView.set(bytes.subarray(0, dataView.byteLength))
+      Atomics.store(header, 1, dataView.byteLength)
+    } else {
+      dataView.set(bytes)
+      Atomics.store(header, 1, bytes.length)
+    }
+    Atomics.store(header, 0, 1)
+    Atomics.notify(header, 0)
+    setWaitingInput(false)
+    setInputValue('')
+    setInputPrompt('')
+  }, [waitingInput, inputValue])
+
   const runPython = useCallback(() => {
+    if (!sabSupported) {
+      setOutput('❌ Browser-ul nu permite input() interactiv (SharedArrayBuffer indisponibil). Reîncarcă pagina sau folosește Chrome/Edge/Firefox actualizat.')
+      return
+    }
     setRunning(true)
     setOutput('⏳ Se încarcă Python (~10MB prima dată, apoi e cache-uit)...')
     outputRef.current = ''
+    setWaitingInput(false)
+    setInputValue('')
+    setInputPrompt('')
 
     if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
 
+    // Creăm un nou SAB pentru fiecare rulare (16KB pentru valoare input — destul pt orice)
+    const sab = new SharedArrayBuffer(8 + 16384)
+    sabRef.current = sab
+
     let timedOut = false
-    const TIMEOUT_MS = 10000
+    const TIMEOUT_MS = 60000 // 60s — interactiv, lăsăm timp pt input uman
 
     const timeout = setTimeout(() => {
       timedOut = true
       if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
-      const out = outputRef.current + '\n⏱ Timp depășit (>10s) — posibil ciclu infinit. Codul a fost oprit.'
+      const out = outputRef.current + '\n⏱ Timp depășit (>60s). Codul a fost oprit.'
       setOutput(out)
       if (onOutput) onOutput(out, false)
       setRunning(false)
+      setWaitingInput(false)
     }, TIMEOUT_MS)
 
     try {
@@ -155,12 +225,20 @@ export default function CodeRunner({
 
       w.onmessage = (ev) => {
         if (timedOut) return
-        const { type, line, ok, output: finalOut, error } = ev.data
+        const { type, line, ok, output: finalOut, error, prompt } = ev.data
 
         if (type === 'stdout') {
           // output în timp real
           outputRef.current += line
           setOutput(outputRef.current || '⏳ Rulez...')
+          return
+        }
+
+        if (type === 'needsInput') {
+          // Worker așteaptă input — afișăm câmpul interactiv
+          setInputPrompt(prompt || '')
+          setInputValue('')
+          setWaitingInput(true)
           return
         }
 
@@ -172,6 +250,7 @@ export default function CodeRunner({
           setOutput(text)
           if (onOutput) onOutput(text, ok)
           setRunning(false)
+          setWaitingInput(false)
           w.terminate(); workerRef.current = null
         }
       }
@@ -183,16 +262,18 @@ export default function CodeRunner({
         setOutput(msg)
         if (onOutput) onOutput(msg, false)
         setRunning(false)
+        setWaitingInput(false)
         workerRef.current = null
       }
 
-      w.postMessage({ code: code || '', stdin: stdin.split('\n').map(s => s.trimEnd()) })
+      w.postMessage({ code: code || '', sab })
     } catch (e) {
       clearTimeout(timeout)
       setOutput('❌ ' + (e?.message || e))
       setRunning(false)
+      setWaitingInput(false)
     }
-  }, [code, stdin, onOutput])
+  }, [code, onOutput, sabSupported])
 
   const runJs = useCallback(() => {
     setRunning(true)
@@ -409,23 +490,44 @@ export default function CodeRunner({
         </span>
       </div>
 
-      {/* Stdin — pentru programe care folosesc input() */}
-      {needsStdin && (
-        <div className="space-y-1.5 bg-amber-50 border-2 border-amber-300 rounded-xl p-3">
+      {/* Stdin pre-populat (fallback dacă SAB indisponibil) */}
+      {lang === 'python' && !sabSupported && (
+        <div className="bg-rose-50 border-2 border-rose-300 rounded-xl p-3 text-xs text-rose-900">
+          ⚠️ Browser-ul nu suportă input() interactiv. Reîncarcă pagina sau folosește Chrome/Edge/Firefox actualizat.
+        </div>
+      )}
+
+      {/* Input interactiv inline — apare când programul cere input() */}
+      {waitingInput && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-3 space-y-2 animate-pulse-once" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           <label className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-            <span>⌨️ Valori pentru input()</span>
+            ⌨️ Programul așteaptă input
           </label>
-          <p className="text-[11px] text-amber-800">
-            Dacă codul tău folosește <code className="bg-amber-200 px-1 rounded font-mono">input()</code>, scrie aici valorile — câte o valoare pe linie, în ordinea în care le cere programul.
-          </p>
-          <textarea
-            value={stdin}
-            onChange={e => setStdin(e.target.value)}
-            rows={3}
-            spellCheck={false}
-            placeholder={"5\n10\nSalut"}
-            className="w-full px-3 py-2 border-2 border-amber-400 rounded-lg font-mono text-sm bg-white text-slate-900 focus:border-amber-600 outline-none resize-y placeholder:text-slate-400"
-          />
+          {inputPrompt && (
+            <div className="font-mono text-sm text-slate-700 bg-white border border-amber-300 rounded-lg px-3 py-2">
+              {inputPrompt}
+            </div>
+          )}
+          <form onSubmit={(e) => { e.preventDefault(); submitInteractiveInput() }} className="flex gap-2">
+            <input
+              ref={inputFieldRef}
+              type="text"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="Scrie valoarea și apasă Enter..."
+              className="flex-1 px-3 py-2 border-2 border-amber-400 rounded-lg font-mono text-sm bg-white text-slate-900 focus:border-amber-600 outline-none placeholder:text-slate-400"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition shadow"
+            >
+              Trimite
+            </button>
+          </form>
         </div>
       )}
 
