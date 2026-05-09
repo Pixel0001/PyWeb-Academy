@@ -331,12 +331,14 @@ function ChestsGrid({ chests, onOpen, busy, economy }) {
 }
 
 function InventoryGrid({ items, equipped, onEquip, onUnequip, themesByName }) {
-  if (!items.length) return <Empty msg="Inventarul este gol. Cumpără din shop sau deschide cufere!" />
+  // Themes have their own dedicated tab — exclude them here to avoid duplicates
+  const nonThemeItems = items.filter(it => it.type !== 'THEME')
+  if (!nonThemeItems.length) return <Empty msg="Inventarul este gol. Cumpără din shop sau deschide cufere!" />
   const equippedIds = new Set(equipped.map(e => e.cosmeticId))
   const equippedByType = Object.fromEntries(equipped.map(e => [e.type, e.cosmeticId]))
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-      {items.map(it => {
+      {nonThemeItems.map(it => {
         const r = RARITY_STYLES[it.rarity] || RARITY_STYLES.COMMON
         const isEq = equippedIds.has(it.id)
         const isTheme = it.type === 'THEME'

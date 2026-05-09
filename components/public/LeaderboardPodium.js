@@ -2,6 +2,7 @@
 
 import CosmeticArt from '@/components/public/CosmeticArt'
 import TitleBadge from '@/components/public/TitleBadge'
+import { getBannerStyle } from '@/lib/banner-presets'
 
 const RANK_BG   = ['bg-yellow-400', 'bg-slate-300', 'bg-amber-600']
 const RANK_RING = ['ring-yellow-300','ring-slate-200','ring-amber-400']
@@ -49,6 +50,12 @@ export default function LeaderboardPodium({ top3 }) {
                 rarity={s.titleRarity || 'COMMON'}
               />
             )}
+            {s.bannerName && (() => {
+              const bs = getBannerStyle(s.bannerName)
+              return bs ? (
+                <div className="h-2.5 w-14 rounded-full shrink-0" style={bs} title={s.bannerName} />
+              ) : null
+            })()}
             <div className={
               'w-full rounded-t-xl text-center ' + barPy + ' ' +
               (isFirst ? 'bg-yellow-500/20 border border-yellow-400/20' : 'bg-white/10')

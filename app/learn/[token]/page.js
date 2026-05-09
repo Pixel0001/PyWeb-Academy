@@ -17,6 +17,7 @@ import { getSystemSettings } from '@/lib/student-limits'
 import { buildLevels, getLevel } from '@/lib/levels'
 import { getStudentEconomy } from '@/lib/economy'
 import { getStudentByToken, getCachedAllProblemPoints, getCachedStudentXpSubs } from '@/lib/student-cache'
+import { getBannerStyle } from '@/lib/banner-presets'
 import LockedLessonCard from '@/components/public/LockedLessonCard'
 import BonusPointsHistory from '@/components/public/BonusPointsHistory'
 import LogoutButton from '@/components/public/LogoutButton'
@@ -228,6 +229,17 @@ async function DashboardContent({ token }) {
               Salut, <span className="pyweb-me-name text-yellow-300">{student.fullName.split(' ')[0]}</span>!
             </h1>
             <p className="text-white/50 text-xs mt-0.5">{student.fullName}</p>
+            {(() => {
+              const equippedBanner = student.equipped?.find(e => e.cosmetic?.type === 'PROFILE_BANNER')
+              const bannerStyle = getBannerStyle(equippedBanner?.cosmetic?.name)
+              if (!bannerStyle) return null
+              return (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-4 w-20 rounded-full shadow-inner opacity-90" style={bannerStyle} />
+                  <span className="text-[10px] text-white/50 truncate">{equippedBanner.cosmetic.name}</span>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Progress ring */}
@@ -457,6 +469,12 @@ async function DashboardContent({ token }) {
                   Salut, <span className="pyweb-me-name text-yellow-300">{student.fullName.split(' ')[0]}</span>!
                 </h1>
                 <p className="text-white/60 text-xs">{completedLessons}/{totalLessons} lectii &middot; {globalPct}%</p>
+                {(() => {
+                  const equippedBanner = student.equipped?.find(e => e.cosmetic?.type === 'PROFILE_BANNER')
+                  const bannerStyle = getBannerStyle(equippedBanner?.cosmetic?.name)
+                  if (!bannerStyle) return null
+                  return <div className="h-3 w-16 rounded-full mt-1 opacity-80" style={bannerStyle} />
+                })()}
               </div>
               <Link href={`/learn/${token}/random`}
                 className="flex items-center gap-1.5 px-3 py-2 bg-amber-400 text-amber-900 rounded-xl font-bold text-xs shrink-0">
