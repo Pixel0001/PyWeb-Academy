@@ -149,8 +149,7 @@ function GlobalList({ ranked, me, token, theme }) {
             const isMe  = student.id === me.id
             const isTop = rank <= 3
             return (
-              <div
-                key={student.id}
+              <div key={student.id}
                 className={'pyweb-leaderboard-row px-4 py-3 flex items-center gap-3 transition-colors ' + (isMe ? 'pyweb-me-row' : 'hover:bg-gray-50/80')}
                 style={isMe && tp && ts
                   ? { background: `linear-gradient(135deg, ${tp}22 0%, ${ts}33 50%, ${tp}22 100%)`, borderLeft: `4px solid ${tp}` }
@@ -163,23 +162,37 @@ function GlobalList({ ranked, me, token, theme }) {
                     ? <TrophySolid className={'w-5 h-5 ' + RANK_COLOR[idx]} />
                     : <span className="text-sm font-bold text-gray-400 tabular-nums">{rank}</span>}
                 </div>
-                <div className={'w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 shadow-sm ring-2 ' + (isMe ? 'pyweb-me-avatar ' : '') +
+                <div className={'relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 shadow-sm ring-2 ' + (isMe ? 'pyweb-me-avatar ' : '') +
                     (isTop
                       ? RANK_BG[idx] + ' ' + RANK_RING[idx] + ' ' + RANK_TEXT[idx]
                       : isMe
                         ? 'bg-gradient-to-br from-blue-900 to-blue-700 text-white ring-blue-200'
                         : 'bg-slate-100 text-slate-600 ring-slate-100')}
                 >
-                  {student.fullName.charAt(0).toUpperCase()}
+                  {student.titleIcon
+                    ? <img src={student.titleIcon} alt="" className="w-full h-full rounded-full object-cover" />
+                    : student.fullName.charAt(0).toUpperCase()}
+                  {student.titleIcon && (
+                    <span className="absolute -top-1 -right-1 text-[10px] leading-none">
+                      {student.titleName ? '' : ''}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className={'text-sm font-semibold truncate ' + (isMe ? 'pyweb-me-name text-blue-900' : 'text-gray-900')}>
                     {isMe ? student.fullName + ' (tu)' : student.fullName}
                   </div>
-                  <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + level.badge}>
-                    <level.Icon className="w-2.5 h-2.5" />
-                    {'Nv.' + level.num + ' ' + level.name}
-                  </Link>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + level.badge}>
+                      <level.Icon className="w-2.5 h-2.5" />
+                      {'Nv.' + level.num + ' ' + level.name}
+                    </Link>
+                    {student.titleName && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 bg-amber-50 text-amber-700 border-amber-200">
+                        ✨ {student.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"]$/, '')}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className={'text-base font-extrabold tabular-nums ' + (isMe ? 'text-blue-900' : isTop ? RANK_COLOR[idx] : 'text-gray-800')}>{student.xp}</div>

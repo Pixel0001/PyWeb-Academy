@@ -64,9 +64,11 @@ export default async function LeaderboardPage({ params }) {
               return (
                 <div key={s.id} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
                   {isFirst && <span className="text-yellow-400 text-lg">🏆</span>}
-                  <div className="relative">
-                    <div className={'rounded-full flex items-center justify-center font-extrabold shadow-lg ring-2 ' + (isFirst ? 'w-16 h-16 text-xl ' : 'w-12 h-12 text-base ') + RANK_BG2[pos] + ' ' + RANK_RING2[pos] + ' ' + RANK_TEXT2[pos]}>
-                      {s.fullName.charAt(0).toUpperCase()}
+                    <div className="relative">
+                    <div className={'rounded-full flex items-center justify-center font-extrabold shadow-lg ring-2 overflow-hidden ' + (isFirst ? 'w-16 h-16 text-xl ' : 'w-12 h-12 text-base ') + RANK_BG2[pos] + ' ' + RANK_RING2[pos] + ' ' + RANK_TEXT2[pos]}>
+                      {s.titleIcon
+                        ? <img src={s.titleIcon} alt="" className="w-full h-full object-cover" />
+                        : s.fullName.charAt(0).toUpperCase()}
                     </div>
                     <span className={'absolute -bottom-1 -right-1 rounded-full flex items-center justify-center font-black ring-2 ring-white ' + (isFirst ? 'w-6 h-6 text-[10px] ' : 'w-5 h-5 text-[9px] ') + RANK_BG2[pos] + ' ' + RANK_TEXT2[pos]}>
                       {pos + 1}
@@ -75,6 +77,11 @@ export default async function LeaderboardPage({ params }) {
                   <span className="text-[11px] font-bold text-white/80 text-center leading-tight truncate w-full px-1">
                     {s.fullName.split(' ')[0]}
                   </span>
+                  {s.titleName && (
+                    <span className="text-[9px] font-bold text-amber-300 text-center leading-tight truncate w-full px-1">
+                      ✨ {s.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"']$/, '')}
+                    </span>
+                  )}
                   <div className={'w-full rounded-t-xl text-center ' + barPy + ' ' + (isFirst ? 'bg-yellow-500/20 border border-yellow-400/20' : 'bg-white/10')}>
                     <div className={'font-extrabold text-sm ' + (isFirst ? 'text-yellow-300' : 'text-white')}>{s.xp}</div>
                     <div className={'text-[9px] ' + (isFirst ? 'text-yellow-300/60' : 'text-white/40')}>XP</div>
