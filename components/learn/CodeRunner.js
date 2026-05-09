@@ -101,9 +101,19 @@ function getPyWorkerUrl() {
 }
 
 // ── JS Web Worker ─────────────────────────────────────────────────────────────
+// Abordare async: prompt() → await __prompt__() via mesaje între worker și UI.
+// Nu necesită SAB/COOP/COEP — funcționează oriunde.
 const JS_WORKER_SRC = `
+let __pendingResolve = null
+
 self.onmessage = async (e) => {
-  const { code, sab } = e.data
+  // Răspuns la prompt din UI → deblocăm promisiunea
+  if (e.data && e.data.type === 'inputReply') {
+    if (__pendingResolve) { __pendingResolve(e.data.value ?? ''); __pendingResolve = null }
+    return
+  }
+
+  const { code } = e.data
   const logs = []
   const _push = (...args) => {
     const line = args.map(a => {
@@ -115,37 +125,27 @@ self.onmessage = async (e) => {
     logs.push(line)
     self.postMessage({ type: 'stdout', line })
   }
-  const console = { log: _push, error: _push, warn: _push, info: _push }
+  const _console = { log: _push, error: _push, warn: _push, info: _push }
 
-  // SAB layout: [0]=status (0=waiting,1=ready), [1]=length, bytes 8.. = utf-8
-  const header = sab ? new Int32Array(sab, 0, 2) : null
-  const dataView = sab ? new Uint8Array(sab, 8) : null
-  const decoder = new TextDecoder()
-
-  const prompt = (msg) => {
+  const __prompt__ = (msg) => {
     const promptMsg = msg != null ? String(msg) : ''
     if (promptMsg) {
       logs.push(promptMsg)
       self.postMessage({ type: 'stdout', line: promptMsg })
     }
-    if (!header) return ''
-    Atomics.store(header, 0, 0)
-    self.postMessage({ type: 'needsInput', prompt: promptMsg })
-    Atomics.wait(header, 0, 0)
-    const len = Atomics.load(header, 1)
-    const copy = new Uint8Array(new ArrayBuffer(len))
-    for (let i = 0; i < len; i++) copy[i] = dataView[i]
-    const value = decoder.decode(copy)
-    logs.push(value + '\\n')
-    self.postMessage({ type: 'stdout', line: value + '\\n' })
-    return value
+    return new Promise(resolve => {
+      __pendingResolve = resolve
+      self.postMessage({ type: 'needsInput', prompt: promptMsg })
+    })
   }
-  const alert = (msg) => _push('[alert: ' + (msg||'') + ']')
+  const _alert = (msg) => _push('[alert: ' + (msg||'') + ']')
 
   try {
-    const fn = new Function('console','prompt','alert', '"use strict";' + code)
-    const r = fn(console, prompt, alert)
-    if (r && typeof r.then === 'function') await r
+    // Transformăm prompt( → await __prompt__( pentru a suporta input sincron aparent
+    const transformed = (code || '').replace(/\\bprompt\\s*\\(/g, 'await __prompt__(')
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor
+    const fn = new AsyncFunction('console', '__prompt__', 'alert', '"use strict";\\n' + transformed)
+    await fn(_console, __prompt__, _alert)
     self.postMessage({ type: 'done', ok: true, output: logs.join('\\n') })
   } catch (err) {
     self.postMessage({ type: 'done', ok: false, output: logs.join('\\n'), error: String(err?.message || err) })
@@ -155,7 +155,8 @@ self.onmessage = async (e) => {
 
 let jsWorkerUrl = null
 function getJsWorkerUrl() {
-  if (jsWorkerUrl) return jsWorkerUrl
+  // Nu cache-uim URL-ul — orice schimbare în worker trebuie să fie reflectată imediat
+  if (jsWorkerUrl) { URL.revokeObjectURL(jsWorkerUrl); jsWorkerUrl = null }
   const blob = new Blob([JS_WORKER_SRC], { type: 'application/javascript' })
   jsWorkerUrl = URL.createObjectURL(blob)
   return jsWorkerUrl
@@ -196,15 +197,29 @@ export default function CodeRunner({
     }
   }, [waitingInput])
 
-  // Trimite valoarea introdusă către worker prin SAB + Atomics.notify
+  // Trimite valoarea introdusă către worker:
+  // - Python → SAB + Atomics.notify (blocking worker)
+  // - JS → postMessage inputReply (async worker)
   const submitInteractiveInput = useCallback(() => {
-    if (!waitingInput || !sabRef.current) return
+    if (!waitingInput) return
+    const isJs = lang === 'javascript' || lang === 'js'
+    if (isJs) {
+      // JS worker: trimitem mesaj direct
+      if (workerRef.current) {
+        workerRef.current.postMessage({ type: 'inputReply', value: inputValue })
+      }
+      setWaitingInput(false)
+      setInputValue('')
+      setInputPrompt('')
+      return
+    }
+    // Python: SAB + Atomics
+    if (!sabRef.current) return
     const sab = sabRef.current
     const header = new Int32Array(sab, 0, 2)
     const dataView = new Uint8Array(sab, 8)
     const bytes = new TextEncoder().encode(inputValue)
     if (bytes.length > dataView.byteLength) {
-      // Truncăm dacă e prea mare (foarte rar)
       dataView.set(bytes.subarray(0, dataView.byteLength))
       Atomics.store(header, 1, dataView.byteLength)
     } else {
@@ -216,7 +231,7 @@ export default function CodeRunner({
     setWaitingInput(false)
     setInputValue('')
     setInputPrompt('')
-  }, [waitingInput, inputValue])
+  }, [waitingInput, inputValue, lang])
 
   const runPython = useCallback(() => {
     if (!sabSupported) {
@@ -320,10 +335,6 @@ export default function CodeRunner({
       setOutput(o => o + '\n⏱ Cod prea lent (>30s) — posibil buclă infinită. Oprit.')
       setRunning(false); setWaitingInput(false)
     }, 30000)
-    // SAB pentru prompt() interactiv
-    const sab = sabRef.current
-    const sabHeader = sab ? new Int32Array(sab, 0, 2) : null
-    const sabData   = sab ? new Uint8Array(sab, 8)   : null
     try {
       const w = new Worker(getJsWorkerUrl())
       workerRef.current = w
@@ -331,7 +342,7 @@ export default function CodeRunner({
         if (timedOut) return
         const msg = ev.data
         if (msg.type === 'stdout') {
-          outputRef.current += msg.line
+          outputRef.current += msg.line + '\n'
           setOutput(outputRef.current)
           return
         }
@@ -357,7 +368,7 @@ export default function CodeRunner({
         setOutput('❌ ' + (err.message || 'Eroare necunoscută'))
         setRunning(false); setWaitingInput(false)
       }
-      w.postMessage({ code: code || '', sab })
+      w.postMessage({ code: code || '' })
     } catch (e) {
       clearTimeout(timeout)
       setOutput('❌ ' + (e?.message || e))
@@ -450,11 +461,24 @@ export default function CodeRunner({
     }
 
     // Enter → păstrează indentarea curentă + adaugă extra după ':' / scade după break/continue/return/pass
+    // + dacă suntem între { } sau [ ] → inserează rând indentat + acolada/paranteza pe rând nou
     if (e.key === 'Enter') {
       const lineStart  = val.lastIndexOf('\n', start - 1) + 1
       const linePrefix = val.slice(lineStart, start)
       const indent     = linePrefix.match(/^([ \t]*)/)[1]
       const trimmed    = linePrefix.trim()
+
+      // Detectează perechi bracket în jurul cursorului (fără selecție)
+      const BRACKET_PAIRS = { '{': '}', '[': ']' }
+      const charBefore = start > 0 ? val[start - 1] : ''
+      const charAfter  = val[start] || ''
+      if (start === end && BRACKET_PAIRS[charBefore] === charAfter) {
+        const innerIndent = indent + '    '
+        const newVal = val.slice(0, start) + '\n' + innerIndent + '\n' + indent + val.slice(end)
+        apply(newVal, start + 1 + innerIndent.length)
+        return
+      }
+
       const deindent   = /^(break|continue|return|pass)(\s.*)?$/.test(trimmed)
       const extraIndent = !deindent && linePrefix.trimEnd().endsWith(':') ? '    ' : ''
       const newIndent  = deindent && indent.length >= 4 ? indent.slice(4) : indent
