@@ -544,7 +544,7 @@ export default function CodeRunner({
         />
       ) : (output || running) && (
         <div className="bg-slate-950 border-2 border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 whitespace-pre-wrap min-h-[60px] max-h-72 overflow-auto">
-          {output || (pyLoading ? '⏳ Se încarcă Python (prima dată ~10MB, apoi e cache-uit)...' : '⏳ Rulez...')}
+          {output || '⏳ Rulez...'}
         </div>
       )}
     </div>

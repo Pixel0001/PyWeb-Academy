@@ -321,7 +321,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const curSolutionViewed = solutionViewed[idx]
   const curMaxAttempts = cur ? getMaxAttempts(cur) : 3
   // Probleme blocate cu notă mică — derivat din submissions+locks, persistent la reload
-  const toRevisit = problems.map((_, i) => i).filter(i => locks[i] && (submissions[i]?.grade ?? 0) < 60)
+  // permanentlyBlocked = indecși unde serverul a refuzat reset (e.g. soluție văzută) → nu pot fi reîncercate
+  const [permanentlyBlocked, setPermanentlyBlocked] = useState(new Set())
+  const toRevisit = problems.map((_, i) => i).filter(i => locks[i] && (submissions[i]?.grade ?? 0) < 60 && !permanentlyBlocked.has(i))
 
   // O problemă e „terminată" dacă e rezolvată corect sau blocată cu notă ≥60
   const isProblemDone = (i) => {
@@ -715,12 +717,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
           body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
         })
         if (!res.ok) {
-          // Reset-problem refused (e.g. student viewed solution) — re-lock local state
-          // so the submit guard works correctly and shows a clear message
+          // Reset-problem refused (e.g. student viewed solution) — mark as permanently blocked
+          // so it's excluded from toRevisit and we can advance past it
           const rl = [...locks]; rl[nextRevisit] = true; setLocks(rl)
-          const rs = [...submissions]; rs[nextRevisit] = ns[nextRevisit] ?? submissions[nextRevisit]; setSubmissions(rs)
           const data = await res.json().catch(() => ({}))
-          toast.error(data.error || 'Problema nu poate fi resetată')
+          toast(data.error || 'Problema nu poate fi resetată — sari peste ea', { icon: '⚠️', duration: 4000 })
+          setPermanentlyBlocked(prev => new Set([...prev, nextRevisit]))
+          // Continuă automat cu următoarea problemă blocată (dacă există)
+          setTimeout(() => goToNextRevisit(), 300)
           return
         }
       } catch {
