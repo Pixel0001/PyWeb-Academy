@@ -416,7 +416,7 @@ export default function CodeRunner({
   const run = () => {
     if (lang === 'python') return runPython()
     if (lang === 'javascript' || lang === 'js') return runJs()
-    if (lang === 'c' || lang === 'cpp') return runServerSide()
+    if (lang === 'c' || lang === 'cpp' || lang === 'c++' || lang === 'csharp' || lang === 'c#' || lang === 'cs') return runServerSide()
     if (lang === 'html' || lang === 'css') {
       // pentru HTML/CSS doar refresh la preview
       setPreviewKey(k => k + 1)
@@ -560,7 +560,7 @@ export default function CodeRunner({
         <span className="text-xs text-slate-400 ml-auto hidden sm:inline">
           {lang === 'python' && '🐍 Python în Worker izolat (timeout 10s)'}
           {(lang === 'javascript' || lang === 'js') && '⚡ JS în Web Worker izolat'}
-          {(lang === 'c' || lang === 'cpp') && '⚙️ C/C++ compilat pe server (Judge0 CE)'}
+          {(lang === 'c' || lang === 'cpp' || lang === 'c++' || lang === 'csharp' || lang === 'c#' || lang === 'cs') && '⚙️ Cod compilat pe server (Piston CE)'}
           {isPreview && '🖼 Preview live (iframe sandbox)'}
         </span>
       </div>
