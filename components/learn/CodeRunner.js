@@ -103,24 +103,52 @@ function getPyWorkerUrl() {
 // ── JS Web Worker ─────────────────────────────────────────────────────────────
 const JS_WORKER_SRC = `
 self.onmessage = async (e) => {
-  const { code } = e.data
+  const { code, sab } = e.data
   const logs = []
-  const _push = (...args) => logs.push(args.map(a => {
-    if (a === null) return 'null'
-    if (a === undefined) return 'undefined'
-    if (typeof a === 'object') { try { return JSON.stringify(a) } catch { return String(a) } }
-    return String(a)
-  }).join(' '))
+  const _push = (...args) => {
+    const line = args.map(a => {
+      if (a === null) return 'null'
+      if (a === undefined) return 'undefined'
+      if (typeof a === 'object') { try { return JSON.stringify(a) } catch { return String(a) } }
+      return String(a)
+    }).join(' ')
+    logs.push(line)
+    self.postMessage({ type: 'stdout', line })
+  }
   const console = { log: _push, error: _push, warn: _push, info: _push }
-  const prompt = (msg) => { _push('[prompt: ' + (msg||'') + ']'); return '' }
-  const alert  = (msg) => _push('[alert: '  + (msg||'') + ']')
+
+  // SAB layout: [0]=status (0=waiting,1=ready), [1]=length, bytes 8.. = utf-8
+  const header = sab ? new Int32Array(sab, 0, 2) : null
+  const dataView = sab ? new Uint8Array(sab, 8) : null
+  const decoder = new TextDecoder()
+
+  const prompt = (msg) => {
+    const promptMsg = msg != null ? String(msg) : ''
+    if (promptMsg) {
+      logs.push(promptMsg)
+      self.postMessage({ type: 'stdout', line: promptMsg })
+    }
+    if (!header) return ''
+    Atomics.store(header, 0, 0)
+    self.postMessage({ type: 'needsInput', prompt: promptMsg })
+    Atomics.wait(header, 0, 0)
+    const len = Atomics.load(header, 1)
+    const copy = new Uint8Array(new ArrayBuffer(len))
+    for (let i = 0; i < len; i++) copy[i] = dataView[i]
+    const value = decoder.decode(copy)
+    logs.push(value + '\\n')
+    self.postMessage({ type: 'stdout', line: value + '\\n' })
+    return value
+  }
+  const alert = (msg) => _push('[alert: ' + (msg||'') + ']')
+
   try {
     const fn = new Function('console','prompt','alert', '"use strict";' + code)
     const r = fn(console, prompt, alert)
     if (r && typeof r.then === 'function') await r
-    self.postMessage({ ok: true, output: logs.join('\\n') })
+    self.postMessage({ type: 'done', ok: true, output: logs.join('\\n') })
   } catch (err) {
-    self.postMessage({ ok: false, output: logs.join('\\n'), error: String(err?.message || err) })
+    self.postMessage({ type: 'done', ok: false, output: logs.join('\\n'), error: String(err?.message || err) })
   }
 }
 `
@@ -281,34 +309,55 @@ export default function CodeRunner({
     setRunning(true)
     setOutput('')
     outputRef.current = ''
+    setWaitingInput(false)
+    setInputPrompt('')
+    setInputValue('')
     if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
     let timedOut = false
     const timeout = setTimeout(() => {
       timedOut = true
       if (workerRef.current) { workerRef.current.terminate(); workerRef.current = null }
-      setOutput(o => o + '\n⏱ Cod prea lent (>5s) — posibil buclă infinită. Oprit.')
-      setRunning(false)
-    }, 5000)
+      setOutput(o => o + '\n⏱ Cod prea lent (>30s) — posibil buclă infinită. Oprit.')
+      setRunning(false); setWaitingInput(false)
+    }, 30000)
+    // SAB pentru prompt() interactiv
+    const sab = sabRef.current
+    const sabHeader = sab ? new Int32Array(sab, 0, 2) : null
+    const sabData   = sab ? new Uint8Array(sab, 8)   : null
     try {
       const w = new Worker(getJsWorkerUrl())
       workerRef.current = w
       w.onmessage = (ev) => {
         if (timedOut) return
+        const msg = ev.data
+        if (msg.type === 'stdout') {
+          outputRef.current += msg.line
+          setOutput(outputRef.current)
+          return
+        }
+        if (msg.type === 'needsInput') {
+          setInputPrompt(msg.prompt || '')
+          setWaitingInput(true)
+          return
+        }
+        // type === 'done'
         clearTimeout(timeout)
-        const { ok, output: out, error } = ev.data
-        const text = (out || '') + (error ? '\n❌ ' + error : '')
-        setOutput(text || '(fără output)')
+        const { ok, error } = msg
+        let text = outputRef.current
+        if (error) text += '\n❌ ' + error
+        if (!text) text = '(fără output)'
+        setOutput(text)
         if (onOutput) onOutput(text, ok)
-        setRunning(false)
+        setRunning(false); setWaitingInput(false)
         w.terminate(); workerRef.current = null
       }
       w.onerror = (err) => {
         if (timedOut) return
         clearTimeout(timeout)
         setOutput('❌ ' + (err.message || 'Eroare necunoscută'))
-        setRunning(false)
+        setRunning(false); setWaitingInput(false)
       }
-      w.postMessage({ code: code || '' })
+      w.postMessage({ code: code || '', sab })
     } catch (e) {
       clearTimeout(timeout)
       setOutput('❌ ' + (e?.message || e))
