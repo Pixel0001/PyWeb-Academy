@@ -178,6 +178,7 @@ export default function CodeRunner({
   const [waitingInput, setWaitingInput] = useState(false)
   const [inputPrompt, setInputPrompt] = useState('')
   const [inputValue, setInputValue] = useState('')
+  const [stdinValue, setStdinValue] = useState('')
   const sabRef = useRef(null) // SharedArrayBuffer reutilizabil
   const inputFieldRef = useRef(null)
   const workerRef = useRef(null)
@@ -382,7 +383,7 @@ export default function CodeRunner({
       const r = await fetch('/api/public/run-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: lang, code: code || '' }),
+        body: JSON.stringify({ language: lang, code: code || '', stdin: stdinValue || '' }),
       })
       const d = await r.json()
       if (!r.ok) {
@@ -411,7 +412,7 @@ export default function CodeRunner({
     } finally {
       setRunning(false)
     }
-  }, [code, lang, onOutput])
+  }, [code, lang, onOutput, stdinValue])
 
   const run = () => {
     if (lang === 'python') return runPython()
@@ -560,10 +561,26 @@ export default function CodeRunner({
         <span className="text-xs text-slate-400 ml-auto hidden sm:inline">
           {lang === 'python' && '🐍 Python în Worker izolat (timeout 10s)'}
           {(lang === 'javascript' || lang === 'js') && '⚡ JS în Web Worker izolat'}
-          {(lang === 'c' || lang === 'cpp' || lang === 'c++' || lang === 'csharp' || lang === 'c#' || lang === 'cs') && '⚙️ Cod compilat pe server (Piston CE)'}
+          {(lang === 'c' || lang === 'cpp' || lang === 'c++' || lang === 'csharp' || lang === 'c#' || lang === 'cs') && '⚙️ Cod compilat pe server (Wandbox)'}
           {isPreview && '🖼 Preview live (iframe sandbox)'}
         </span>
       </div>
+
+      {/* Stdin pentru C/C++/C# — date de intrare trimise la compilare */}
+      {(lang === 'c' || lang === 'cpp' || lang === 'c++' || lang === 'csharp' || lang === 'c#' || lang === 'cs') && (
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            ⌨️ Date de intrare (stdin) — <span className="font-normal normal-case">ce ar tasta utilizatorul, câte un rând</span>
+          </label>
+          <textarea
+            value={stdinValue}
+            onChange={e => setStdinValue(e.target.value)}
+            rows={3}
+            placeholder={`ex:\n5\n1 2 3 4 5`}
+            className="w-full px-3 py-2 border-2 border-slate-300 rounded-xl font-mono text-xs bg-white text-slate-800 focus:border-blue-400 outline-none resize-y placeholder:text-slate-400"
+          />
+        </div>
+      )}
 
       {/* Stdin pre-populat (fallback dacă SAB indisponibil) */}
       {lang === 'python' && !sabSupported && (
