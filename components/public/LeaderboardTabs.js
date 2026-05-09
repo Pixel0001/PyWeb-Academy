@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import CosmeticArt from '@/components/public/CosmeticArt'
 import {
   TrophyIcon, Bars3BottomLeftIcon, ChevronRightIcon,
   SparklesIcon, MagnifyingGlassIcon, WrenchScrewdriverIcon,
@@ -171,8 +172,8 @@ function GlobalList({ ranked, me, token, theme }) {
                 >
                   {student.titleIcon
                     ? <img src={student.titleIcon} alt="" className="w-full h-full rounded-full object-cover" />
-                    : student.titleName
-                      ? <span className="text-lg leading-none">{[...student.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"]$/, '')][0]}</span>
+                    : student.titleRarity
+                      ? <CosmeticArt type="TITLE" rarity={student.titleRarity} className="w-7 h-7" />
                       : student.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
