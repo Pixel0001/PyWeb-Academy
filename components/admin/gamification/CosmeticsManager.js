@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { COSMETIC_TYPES, RARITY_STYLES, RarityBadge, CurrencyBadge } from './shared'
+import { TITLE_EFFECTS } from '@/components/public/TitleBadge'
+import dynamic from 'next/dynamic'
+const TitleBadgePreview = dynamic(() => import('@/components/public/TitleBadge'), { ssr: false })
 
 export default function CosmeticsManager() {
   const [items, setItems] = useState([])
@@ -140,6 +143,7 @@ function CosmeticModal({ item, onClose, onSave }) {
     active: item.active ?? true,
     shopVisible: item.shopVisible ?? true,
     sortOrder: item.sortOrder ?? 0,
+    titleEffect: item.cssPayload?.titleEffect || 'none',
   })
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -177,6 +181,19 @@ function CosmeticModal({ item, onClose, onSave }) {
           <Field label="URL imagine">
             <input className={inp} value={form.imageUrl} onChange={e=>set('imageUrl', e.target.value)} placeholder="/cosmetics/banner-1.png" />
           </Field>
+          {form.type === 'TITLE' && (
+            <Field label="Efect vizual titlu">
+              <select className={inp} value={form.titleEffect} onChange={e=>set('titleEffect', e.target.value)}>
+                {TITLE_EFFECTS.map(ef => <option key={ef.value} value={ef.value}>{ef.label}</option>)}
+              </select>
+              {form.titleEffect !== 'none' && (
+                <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Preview:</span>
+                  <TitleBadgePreview name={form.name || 'Titlu Test'} effect={form.titleEffect} rarity={form.rarity} />
+                </div>
+              )}
+            </Field>
+          )}
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.active} onChange={e=>set('active', e.target.checked)} /> Activ
@@ -189,7 +206,12 @@ function CosmeticModal({ item, onClose, onSave }) {
         <div className="px-5 py-3 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white rounded-b-2xl">
           <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 rounded-lg">Anulează</button>
           <button
-            onClick={() => onSave(form)}
+            onClick={() => onSave({
+            ...form,
+            cssPayload: form.type === 'TITLE'
+              ? { ...(item.cssPayload || {}), titleEffect: form.titleEffect }
+              : (item.cssPayload || null),
+          })}
             className="px-4 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white rounded-lg text-sm font-semibold shadow"
           >Salvează</button>
         </div>

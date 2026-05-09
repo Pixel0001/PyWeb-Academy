@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import CosmeticArt from '@/components/public/CosmeticArt'
+import TitleBadge from '@/components/public/TitleBadge'
 import {
   TrophyIcon, Bars3BottomLeftIcon, ChevronRightIcon,
   SparklesIcon, MagnifyingGlassIcon, WrenchScrewdriverIcon,
@@ -186,9 +187,12 @@ function GlobalList({ ranked, me, token, theme }) {
                       {'Nv.' + level.num + ' ' + level.name}
                     </Link>
                     {student.titleName && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 bg-amber-50 text-amber-700 border-amber-200">
-                        ✨ {student.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"]$/, '')}
-                      </span>
+                      <TitleBadge
+                        name={student.titleName}
+                        effect={student.titleEffect || 'none'}
+                        rarity={student.titleRarity || 'COMMON'}
+                        className="mt-0.5"
+                      />
                     )}
                   </div>
                 </div>

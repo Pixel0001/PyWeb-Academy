@@ -7,6 +7,7 @@ import { TrophyIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 import { getStudentByToken, getThemeById, getLeaderboardRanking } from '@/lib/student-cache'
 import LeaderboardTabs from '@/components/public/LeaderboardTabs'
 import CosmeticArt from '@/components/public/CosmeticArt'
+import TitleBadge from '@/components/public/TitleBadge'
 
 export default async function LeaderboardPage({ params }) {
   const { token } = await params
@@ -81,9 +82,12 @@ export default async function LeaderboardPage({ params }) {
                     {s.fullName.split(' ')[0]}
                   </span>
                   {s.titleName && (
-                    <span className="text-[9px] font-bold text-amber-300 text-center leading-tight truncate w-full px-1">
-                      ✨ {s.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"']$/, '')}
-                    </span>
+                    <TitleBadge
+                      name={s.titleName}
+                      effect={s.titleEffect || 'none'}
+                      rarity={s.titleRarity || 'COMMON'}
+                      className="text-[9px]"
+                    />
                   )}
                   <div className={'w-full rounded-t-xl text-center ' + barPy + ' ' + (isFirst ? 'bg-yellow-500/20 border border-yellow-400/20' : 'bg-white/10')}>
                     <div className={'font-extrabold text-sm ' + (isFirst ? 'text-yellow-300' : 'text-white')}>{s.xp}</div>

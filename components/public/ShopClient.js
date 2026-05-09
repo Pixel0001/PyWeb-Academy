@@ -8,6 +8,7 @@ import {
   TrophyIcon, CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import CosmeticArt from '@/components/public/CosmeticArt'
+import TitleBadge from '@/components/public/TitleBadge'
 import ChestArt from '@/components/public/ChestArt'
 import ThemePreview from '@/components/public/ThemePreview'
 
@@ -215,8 +216,15 @@ function CosmeticCard({ item, owned, onBuy, busy, economy }) {
   const canAfford = balance >= item.price
   return (
     <div className={`bg-white rounded-2xl overflow-hidden ring-1 ${r.ring} ${r.shadow} hover:-translate-y-0.5 transition`}>
-      <div className={`relative h-32 sm:h-36 ${r.bg} flex items-center justify-center p-3`}>
-        <CosmeticArt type={item.type} rarity={item.rarity} className="w-full h-full drop-shadow-md" />
+      <div className={`relative h-32 sm:h-36 ${r.bg} flex flex-col items-center justify-center p-3 gap-2`}>
+        <CosmeticArt type={item.type} rarity={item.rarity} className={item.type === 'TITLE' ? 'w-16 h-16 drop-shadow-md' : 'w-full h-full drop-shadow-md'} />
+        {item.type === 'TITLE' && (
+          <TitleBadge
+            name={item.name}
+            effect={item.cssPayload?.titleEffect || 'none'}
+            rarity={item.rarity}
+          />
+        )}
         <span className={`absolute top-1.5 left-1.5 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${r.chip}`}>
           {item.rarity}
         </span>
