@@ -2,7 +2,7 @@
   "name": "PyWeb Academy — Learn",
   "short_name": "PyWeb Learn",
   "description": "Învață Python, JavaScript, HTML și CSS interactiv. Lecții cu teorie + exerciții.",
-  "start_url": "/learn",
+  "start_url": "/learn/guest",
   "scope": "/learn",
   "display": "standalone",
   "orientation": "portrait-primary",
