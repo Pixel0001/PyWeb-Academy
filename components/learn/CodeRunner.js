@@ -124,8 +124,8 @@ export default function CodeRunner({
   const outputRef = useRef('')  // acumulator sync pentru onOutput
   const lang = (language || 'python').toLowerCase()
 
-  // Detectăm dacă codul folosește input() — afișăm câmpul stdin
-  const needsStdin = lang === 'python' && /\binput\s*\(/.test(code || '')
+  // Pentru Python afișăm mereu câmpul stdin (input poate fi adăugat oricând)
+  const needsStdin = lang === 'python'
 
   // cleanup worker
   useEffect(() => () => { if (workerRef.current) workerRef.current.terminate() }, [])
@@ -409,20 +409,22 @@ export default function CodeRunner({
         </span>
       </div>
 
-      {/* Stdin — apare doar dacă codul conține input() */}
+      {/* Stdin — pentru programe care folosesc input() */}
       {needsStdin && (
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>⌨️ Valori de intrare (stdin)</span>
-            <span className="font-normal text-slate-500">— câte o valoare pe linie, în ordinea în care le cere programul</span>
+        <div className="space-y-1.5 bg-amber-50 border-2 border-amber-300 rounded-xl p-3">
+          <label className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+            <span>⌨️ Valori pentru input()</span>
           </label>
+          <p className="text-[11px] text-amber-800">
+            Dacă codul tău folosește <code className="bg-amber-200 px-1 rounded font-mono">input()</code>, scrie aici valorile — câte o valoare pe linie, în ordinea în care le cere programul.
+          </p>
           <textarea
             value={stdin}
             onChange={e => setStdin(e.target.value)}
             rows={3}
             spellCheck={false}
-            placeholder={"ex:\n5\n10\nSalut"}
-            className="w-full px-3 py-2 border-2 border-slate-600 rounded-lg font-mono text-sm bg-slate-800 text-slate-200 focus:border-blue-400 outline-none resize-y placeholder:text-slate-600"
+            placeholder={"5\n10\nSalut"}
+            className="w-full px-3 py-2 border-2 border-amber-400 rounded-lg font-mono text-sm bg-white text-slate-900 focus:border-amber-600 outline-none resize-y placeholder:text-slate-400"
           />
         </div>
       )}
