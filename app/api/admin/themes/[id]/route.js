@@ -20,6 +20,33 @@ export async function PATCH(req, { params }) {
       if (body[k] !== undefined) data[k] = (k === 'price') ? Number(body[k]) : body[k]
     }
     const updated = await prisma.theme.update({ where: { id }, data })
+
+    // Sync cosmeticul asociat (dacă există)
+    const cosmeticData = {}
+    if (data.name !== undefined) cosmeticData.name = data.name
+    if (data.description !== undefined) cosmeticData.description = data.description
+    if (data.rarity !== undefined) cosmeticData.rarity = data.rarity
+    if (data.currency !== undefined) cosmeticData.currency = data.currency
+    if (data.price !== undefined) cosmeticData.price = data.price
+    if (data.active !== undefined) cosmeticData.active = data.active
+    if (data.previewUrl !== undefined) cosmeticData.previewUrl = data.previewUrl
+    const cssFields = ['primary','secondary','accent','bgGradient','cardBg','textColor','glowColor','animationCss']
+    if (cssFields.some(f => data[f] !== undefined)) {
+      cosmeticData.cssPayload = {
+        primary: updated.primary,
+        secondary: updated.secondary,
+        accent: updated.accent,
+        bgGradient: updated.bgGradient,
+        cardBg: updated.cardBg,
+        textColor: updated.textColor,
+        glowColor: updated.glowColor,
+        animationCss: updated.animationCss,
+      }
+    }
+    if (Object.keys(cosmeticData).length > 0) {
+      await prisma.cosmetic.updateMany({ where: { themeId: id }, data: cosmeticData })
+    }
+
     revalidateTag('themes')
     revalidateTag('cosmetics')
     return NextResponse.json(updated)

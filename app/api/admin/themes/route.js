@@ -43,6 +43,32 @@ export async function POST(req) {
         previewUrl: body.previewUrl || null,
       },
     })
+
+    // Creează automat și Cosmeticul corespunzător (cel afișat în shop)
+    await prisma.cosmetic.create({
+      data: {
+        name: created.name,
+        description: created.description,
+        type: 'THEME',
+        rarity: created.rarity,
+        currency: created.currency,
+        price: created.price,
+        active: created.active,
+        shopVisible: true,
+        themeId: created.id,
+        previewUrl: created.previewUrl,
+        cssPayload: {
+          primary: created.primary,
+          secondary: created.secondary,
+          accent: created.accent,
+          bgGradient: created.bgGradient,
+          cardBg: created.cardBg,
+          textColor: created.textColor,
+          glowColor: created.glowColor,
+          animationCss: created.animationCss,
+        },
+      },
+    })
     revalidateTag('themes')
     revalidateTag('cosmetics')
     return NextResponse.json(created, { status: 201 })
