@@ -169,7 +169,7 @@ function GlobalList({ ranked, me, token, theme }) {
                   : {}}
               >
                 {bannerStyle && (
-                  <span aria-hidden className="absolute inset-0 pointer-events-none" style={{ ...bannerStyle, opacity: 0.22 }} />
+                  <span aria-hidden className="absolute inset-0 pointer-events-none" style={{ ...bannerStyle, opacity: 0.55 }} />
                 )}
                 <div className="w-7 shrink-0 flex items-center justify-center">
                   {isTop
@@ -194,7 +194,7 @@ function GlobalList({ ranked, me, token, theme }) {
                     {isMe ? student.fullName + ' (tu)' : student.fullName}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + (bannerStyle ? 'bg-white/20 text-white border-white/30' : level.badge)}>
+                    <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + (bannerStyle ? 'bg-white/80 text-gray-900 border-white/60' : level.badge)}>
                       <level.Icon className="w-2.5 h-2.5" />
                       {'Nv.' + level.num + ' ' + level.name}
                     </Link>

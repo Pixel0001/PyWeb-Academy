@@ -21,7 +21,7 @@ export default function LeaderboardPodium({ top3 }) {
         return (
           <div key={s.id} className="relative flex flex-col items-center gap-1.5 flex-1 min-w-0 rounded-2xl overflow-hidden">
             {bannerStyle && (
-              <span aria-hidden className="absolute inset-0 pointer-events-none rounded-2xl" style={{ ...bannerStyle, opacity: 0.28 }} />
+              <span aria-hidden className="absolute inset-0 pointer-events-none rounded-2xl" style={{ ...bannerStyle, opacity: 0.55 }} />
             )}
             {isFirst && <span className="text-yellow-400 text-lg">🏆</span>}
             <div className="relative">
