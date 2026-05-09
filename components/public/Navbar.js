@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { RocketLaunchIcon } from '@heroicons/react/24/solid'
 
 const navLinks = [
   { label: 'Cursuri', href: '/#cursuri' },
@@ -92,11 +93,12 @@ export default function Navbar({ forceOpaque = false }) {
               Înregistrează-te
             </a>
             <Link href="/learn/guest"
-              style={{ fontFamily: 'var(--font-heading)', fontSize: '0.875rem', fontWeight: 700, color: '#1a0a00', textDecoration: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.625rem', background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', boxShadow: '0 2px 12px rgba(239,68,68,0.35)', transition: 'opacity 0.2s, transform 0.2s', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}
+              style={{ fontFamily: 'var(--font-heading)', fontSize: '0.875rem', fontWeight: 700, color: '#1a0a00', textDecoration: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.625rem', background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', boxShadow: '0 2px 12px rgba(239,68,68,0.35)', transition: 'opacity 0.2s, transform 0.2s', letterSpacing: '-0.01em', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               onMouseOver={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseOut={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'none' }}
             >
-              🚀 Deschide aplicația gratuit
+              <RocketLaunchIcon style={{ width: 15, height: 15, flexShrink: 0 }} />
+              Deschide aplicația gratuit
             </Link>
           </div>
         )}
@@ -167,7 +169,8 @@ export default function Navbar({ forceOpaque = false }) {
                 boxShadow: '0 2px 12px rgba(239,68,68,0.3)',
               }}
             >
-              🚀 Deschide aplicația gratuit
+              <RocketLaunchIcon style={{ width: 18, height: 18, flexShrink: 0 }} />
+              Deschide aplicația gratuit
             </Link>
           </div>
         </div>
