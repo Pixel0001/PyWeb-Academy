@@ -234,13 +234,14 @@ export async function POST(req, { params }) {
   }
 
   // ── Gamification: Coins/Gems + Streak (problemele de coding au gems garantate)
-  const economy = await awardEconomy({
+  // acordat o singură dată — doar la prima trecere (alreadyPassed = false)
+  const economy = (passed && !alreadyPassed) ? await awardEconomy({
     studentId: student.id,
     baseXp: xpAwarded || 0,
     problem: { type: 'CODING', points: problem.points },
     grade: finalGrade,
     passed,
-  })
+  }) : null
 
   const usage = await getStudentAiUsage(student.id)
 
