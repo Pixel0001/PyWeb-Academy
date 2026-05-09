@@ -7,12 +7,12 @@ const WANDBOX_URL = 'https://wandbox.org/api/compile.json'
 
 // Mapare limbaj intern → { compiler, compilerOptionRaw }
 const LANGUAGE_MAP = {
-  c:      { compiler: 'gcc-head',            compilerOptionRaw: '-x c -std=c11 -O2' },
-  cpp:    { compiler: 'gcc-head',            compilerOptionRaw: '-std=c++17 -O2' },
-  'c++':  { compiler: 'gcc-head',            compilerOptionRaw: '-std=c++17 -O2' },
-  csharp: { compiler: 'mono-6.12.0.122',     compilerOptionRaw: '' },
-  'c#':   { compiler: 'mono-6.12.0.122',     compilerOptionRaw: '' },
-  cs:     { compiler: 'mono-6.12.0.122',     compilerOptionRaw: '' },
+  c:      { compiler: 'gcc-head',        compilerOptionRaw: '-x\nc\n-std=c11\n-O2' },
+  cpp:    { compiler: 'gcc-head',        compilerOptionRaw: '-std=c++17\n-O2' },
+  'c++':  { compiler: 'gcc-head',        compilerOptionRaw: '-std=c++17\n-O2' },
+  csharp: { compiler: 'mono-6.12.0.122', compilerOptionRaw: '' },
+  'c#':   { compiler: 'mono-6.12.0.122', compilerOptionRaw: '' },
+  cs:     { compiler: 'mono-6.12.0.122', compilerOptionRaw: '' },
 }
 
 // Rate limit simplu per IP: 10 rulări/minut
