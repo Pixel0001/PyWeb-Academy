@@ -74,8 +74,10 @@ self.onmessage = async (e) => {
       // Blochează aici până când UI scrie valoarea și face Atomics.notify
       Atomics.wait(header, 0, 0)
       const len = Atomics.load(header, 1)
-      const bytes = new Uint8Array(dataView.buffer, dataView.byteOffset, len)
-      const value = decoder.decode(bytes)
+      // TextDecoder nu poate decoda direct din SAB — copiem în buffer normal
+      const copy = new Uint8Array(new ArrayBuffer(len))
+      for (let i = 0; i < len; i++) copy[i] = dataView[i]
+      const value = decoder.decode(copy)
       // Afișează valoarea introdusă (echo) ca într-un terminal
       logs.push(value + '\\n')
       self.postMessage({ type: 'stdout', line: value + '\\n' })
