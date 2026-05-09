@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import CosmeticArt from '@/components/public/CosmeticArt'
 import TitleBadge from '@/components/public/TitleBadge'
-import { getBannerStyle } from '@/lib/banner-presets'
+import { getBannerStyle, getLeaderboardEffectPreset } from '@/lib/banner-presets'
 import {
   TrophyIcon, Bars3BottomLeftIcon, ChevronRightIcon,
   SparklesIcon, MagnifyingGlassIcon, WrenchScrewdriverIcon,
@@ -206,6 +206,16 @@ function GlobalList({ ranked, me, token, theme }) {
                         className="mt-0.5"
                       />
                     )}
+                    {student.leaderboardEffectName && (() => {
+                      const p = getLeaderboardEffectPreset(student.leaderboardEffectName)
+                      return p ? (
+                        <span
+                          className="mt-0.5 text-base leading-none"
+                          title={student.leaderboardEffectName}
+                          style={{ filter: `drop-shadow(0 0 5px ${p.glow})` }}
+                        >{p.icon}</span>
+                      ) : null
+                    })()}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
