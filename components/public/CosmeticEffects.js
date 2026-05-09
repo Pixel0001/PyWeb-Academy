@@ -93,6 +93,10 @@ function buildCSS(items) {
   25%      { transform: translateY(-8px) translateX(4px); }
   75%      { transform: translateY(-4px) translateX(-4px); }
 }
+@keyframes pyweb-bg-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(2%, -2%) scale(1.05); }
+}
 `
 
   // ─── ANIMATED_FRAME ───
@@ -145,6 +149,7 @@ function buildCSS(items) {
   top: 50%;
   transform: translateY(-50%);
   font-size: 20px;
+  z-index: 20;
   filter: drop-shadow(0 0 6px ${p.glow});
   pointer-events: none;
   animation: pyweb-icon-bounce 1.2s ease-in-out infinite;
@@ -189,26 +194,7 @@ function buildCSS(items) {
 `
   }
 
-  // ─── ANIMATED_BACKGROUND ───
-  const bg = items.find(i => i.type === 'ANIMATED_BACKGROUND')
-  if (bg) {
-    const overlay = BG_PRESETS[bg.name] || BG_PRESETS['Fundal Cosmic']
-    css += `
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: ${overlay};
-  animation: pyweb-bg-drift 18s ease-in-out infinite alternate;
-}
-@keyframes pyweb-bg-drift {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(2%, -2%) scale(1.05); }
-}
-`
-  }
+  // ─── ANIMATED_BACKGROUND — rendered as fixed div in component, not here ───
 
   return css
 }
@@ -248,8 +234,23 @@ export default function CosmeticEffects({ items: initialItems = [] }) {
   const particle = items.find(i => i.type === 'PARTICLE_EFFECT')
   const particlePreset = particle && (PARTICLE_PRESETS[particle.name] || PARTICLE_PRESETS['Efect Stele'])
 
+  // ─── ANIMATED_BACKGROUND ───
+  const bgItem = items.find(i => i.type === 'ANIMATED_BACKGROUND')
+  const bgOverlay = bgItem ? (BG_PRESETS[bgItem.name] || BG_PRESETS['Fundal Cosmic']) : null
+
   return (
     <>
+      {bgOverlay && (
+        <div
+          aria-hidden
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            zIndex: 5,
+            background: bgOverlay,
+            animation: 'pyweb-bg-drift 18s ease-in-out infinite alternate',
+          }}
+        />
+      )}
       {petPreset && (
         <div
           className="fixed bottom-20 left-3 z-40 pointer-events-none select-none"
