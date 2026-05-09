@@ -45,10 +45,17 @@ self.onmessage = async (e) => {
       self.postMessage({ type: 'stdout', line: s })
     }})
 
-    // input() — returnează '' în worker (nu avem prompt)
+    // input() — citește din coada stdin trimisă de UI
+    const stdinQueue = (e.data.stdin || []).slice()
     pyodide.globals.set('input', (msg) => {
-      self.postMessage({ type: 'stdout', line: '[input: ' + (msg || '') + '] ' })
-      return ''
+      const prompt = msg ? '[' + msg + '] ' : ''
+      if (stdinQueue.length === 0) {
+        self.postMessage({ type: 'stdout', line: prompt + '\n' })
+        throw new Error('EOFError: Nu ai introdus destule valori în câmpul Stdin.')
+      }
+      const val = stdinQueue.shift()
+      self.postMessage({ type: 'stdout', line: prompt + val + '\n' })
+      return val
     })
 
     await pyodide.runPythonAsync(code || '')
@@ -112,9 +119,13 @@ export default function CodeRunner({
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
   const [previewKey, setPreviewKey] = useState(0)
+  const [stdin, setStdin] = useState('')
   const workerRef = useRef(null)
   const outputRef = useRef('')  // acumulator sync pentru onOutput
   const lang = (language || 'python').toLowerCase()
+
+  // Detectăm dacă codul folosește input() — afișăm câmpul stdin
+  const needsStdin = lang === 'python' && /\binput\s*\(/.test(code || '')
 
   // cleanup worker
   useEffect(() => () => { if (workerRef.current) workerRef.current.terminate() }, [])
@@ -175,13 +186,13 @@ export default function CodeRunner({
         workerRef.current = null
       }
 
-      w.postMessage({ code: code || '' })
+      w.postMessage({ code: code || '', stdin: stdin.split('\n').map(s => s.trimEnd()) })
     } catch (e) {
       clearTimeout(timeout)
       setOutput('❌ ' + (e?.message || e))
       setRunning(false)
     }
-  }, [code, onOutput])
+  }, [code, stdin, onOutput])
 
   const runJs = useCallback(() => {
     setRunning(true)
@@ -397,6 +408,24 @@ export default function CodeRunner({
           {isPreview && '🖼 Preview live (iframe sandbox)'}
         </span>
       </div>
+
+      {/* Stdin — apare doar dacă codul conține input() */}
+      {needsStdin && (
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span>⌨️ Valori de intrare (stdin)</span>
+            <span className="font-normal text-slate-500">— câte o valoare pe linie, în ordinea în care le cere programul</span>
+          </label>
+          <textarea
+            value={stdin}
+            onChange={e => setStdin(e.target.value)}
+            rows={3}
+            spellCheck={false}
+            placeholder={"ex:\n5\n10\nSalut"}
+            className="w-full px-3 py-2 border-2 border-slate-600 rounded-lg font-mono text-sm bg-slate-800 text-slate-200 focus:border-blue-400 outline-none resize-y placeholder:text-slate-600"
+          />
+        </div>
+      )}
 
       {/* Output / Preview */}
       {isPreview ? (
