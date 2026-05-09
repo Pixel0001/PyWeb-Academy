@@ -7,7 +7,6 @@ import Image from 'next/image'
 const navLinks = [
   { label: 'Cursuri', href: '/#cursuri' },
   { label: 'Cum funcționează', href: '/#cum-functioneaza' },
-  { label: 'Aplicație', href: '/learn' },
   { label: 'Blog', href: '/blog' },
   { label: 'Recenzii', href: '/#testimoniale' },
   { label: 'Contact', href: '/#contact' },
@@ -85,16 +84,20 @@ export default function Navbar({ forceOpaque = false }) {
         {/* Desktop Actions */}
         {!isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Link href="/learn/login"
+            <a href="#contact"
               style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)', textDecoration: 'none', padding: '0.5rem 0.875rem', borderRadius: '0.5rem', transition: 'var(--transition)' }}
               onMouseOver={e => { e.currentTarget.style.color = transparent ? '#fff' : 'var(--color-primary)' }}
               onMouseOut={e => { e.currentTarget.style.color = transparent ? 'rgba(255,255,255,0.9)' : 'var(--text-body)' }}
             >
-              Autentificare
-            </Link>
-            <a href="#contact" className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.6rem 1.4rem' }}>
               Înregistrează-te
             </a>
+            <Link href="/learn/guest"
+              style={{ fontFamily: 'var(--font-heading)', fontSize: '0.875rem', fontWeight: 700, color: '#1a0a00', textDecoration: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.625rem', background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', boxShadow: '0 2px 12px rgba(239,68,68,0.35)', transition: 'opacity 0.2s, transform 0.2s', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}
+              onMouseOver={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseOut={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'none' }}
+            >
+              🚀 Deschide aplicația gratuit
+            </Link>
           </div>
         )}
 
@@ -154,16 +157,17 @@ export default function Navbar({ forceOpaque = false }) {
             >
               Înregistrează-te gratuit
             </a>
-            <Link href="/learn/login" onClick={() => setMenuOpen(false)}
+            <Link href="/learn/guest" onClick={() => setMenuOpen(false)}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'transparent', color: 'var(--text-body)',
-                fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: '0.875rem',
-                padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                textDecoration: 'none', border: '1.5px solid var(--border-light)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', color: '#1a0a00',
+                fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.9375rem',
+                padding: '0.875rem 1rem', borderRadius: '0.75rem',
+                textDecoration: 'none', letterSpacing: '-0.01em',
+                boxShadow: '0 2px 12px rgba(239,68,68,0.3)',
               }}
             >
-              Autentificare
+              🚀 Deschide aplicația gratuit
             </Link>
           </div>
         </div>
