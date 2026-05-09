@@ -17,8 +17,12 @@ export default function LeaderboardPodium({ top3 }) {
         const s = top3[pos]
         const isFirst = pos === 0
         const barPy = pos === 0 ? 'py-5' : pos === 1 ? 'py-3' : 'py-2'
+        const bannerStyle = getBannerStyle(s.bannerName)
         return (
-          <div key={s.id} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+          <div key={s.id} className="relative flex flex-col items-center gap-1.5 flex-1 min-w-0 rounded-2xl overflow-hidden">
+            {bannerStyle && (
+              <span aria-hidden className="absolute inset-0 pointer-events-none rounded-2xl" style={{ ...bannerStyle, opacity: 0.28 }} />
+            )}
             {isFirst && <span className="text-yellow-400 text-lg">🏆</span>}
             <div className="relative">
               <div className={
@@ -50,12 +54,6 @@ export default function LeaderboardPodium({ top3 }) {
                 rarity={s.titleRarity || 'COMMON'}
               />
             )}
-            {s.bannerName && (() => {
-              const bs = getBannerStyle(s.bannerName)
-              return bs ? (
-                <div className="h-2.5 w-14 rounded-full shrink-0" style={bs} title={s.bannerName} />
-              ) : null
-            })()}
             <div className={
               'w-full rounded-t-xl text-center ' + barPy + ' ' +
               (isFirst ? 'bg-yellow-500/20 border border-yellow-400/20' : 'bg-white/10')

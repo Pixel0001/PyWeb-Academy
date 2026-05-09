@@ -156,15 +156,21 @@ function GlobalList({ ranked, me, token, theme }) {
             const level = getLevel(student.xp)
             const isMe  = student.id === me.id
             const isTop = rank <= 3
+            const bannerStyle = getBannerStyle(student.bannerName)
             return (
               <div key={student.id}
-                className={'pyweb-leaderboard-row px-4 py-3 flex items-center gap-3 transition-colors ' + (isMe ? 'pyweb-me-row' : 'hover:bg-gray-50/80')}
-                style={isMe && tp && ts
-                  ? { background: `linear-gradient(135deg, ${tp}22 0%, ${ts}33 50%, ${tp}22 100%)`, borderLeft: `4px solid ${tp}` }
-                  : isMe
-                    ? { background: '#eff6ff', borderLeft: '4px solid #2563eb' }
-                    : {}}
+                className={'pyweb-leaderboard-row relative px-4 py-3 flex items-center gap-3 transition-colors ' + (isMe ? 'pyweb-me-row' : '')}
+                style={!bannerStyle
+                  ? (isMe && tp && ts
+                      ? { background: `linear-gradient(135deg, ${tp}22 0%, ${ts}33 50%, ${tp}22 100%)`, borderLeft: `4px solid ${tp}` }
+                      : isMe
+                        ? { background: '#eff6ff', borderLeft: '4px solid #2563eb' }
+                        : {})
+                  : {}}
               >
+                {bannerStyle && (
+                  <span aria-hidden className="absolute inset-0 pointer-events-none" style={{ ...bannerStyle, opacity: 0.22 }} />
+                )}
                 <div className="w-7 shrink-0 flex items-center justify-center">
                   {isTop
                     ? <TrophySolid className={'w-5 h-5 ' + RANK_COLOR[idx]} />
@@ -184,11 +190,11 @@ function GlobalList({ ranked, me, token, theme }) {
                       : student.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={'text-sm font-semibold truncate ' + (isMe ? 'pyweb-me-name text-blue-900' : 'text-gray-900')}>
+                  <div className={'text-sm font-semibold truncate ' + (isMe ? 'pyweb-me-name text-blue-900' : bannerStyle ? 'text-white drop-shadow' : 'text-gray-900')}>
                     {isMe ? student.fullName + ' (tu)' : student.fullName}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + level.badge}>
+                    <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border mt-0.5 hover:opacity-75 transition ' + (bannerStyle ? 'bg-white/20 text-white border-white/30' : level.badge)}>
                       <level.Icon className="w-2.5 h-2.5" />
                       {'Nv.' + level.num + ' ' + level.name}
                     </Link>
@@ -200,17 +206,11 @@ function GlobalList({ ranked, me, token, theme }) {
                         className="mt-0.5"
                       />
                     )}
-                    {student.bannerName && (() => {
-                      const bs = getBannerStyle(student.bannerName)
-                      return bs ? (
-                        <div className="h-2.5 w-12 rounded-full mt-0.5 shrink-0" style={bs} title={student.bannerName} />
-                      ) : null
-                    })()}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className={'text-base font-extrabold tabular-nums ' + (isMe ? 'text-blue-900' : isTop ? RANK_COLOR[idx] : 'text-gray-800')}>{student.xp}</div>
-                  <div className="text-[10px] text-gray-400">XP</div>
+                  <div className={'text-base font-extrabold tabular-nums ' + (isMe ? 'text-blue-900' : bannerStyle ? 'text-white drop-shadow' : isTop ? RANK_COLOR[idx] : 'text-gray-800')}>{student.xp}</div>
+                  <div className={'text-[10px] ' + (bannerStyle ? 'text-white/70' : 'text-gray-400')}>XP</div>
                 </div>
               </div>
             )
