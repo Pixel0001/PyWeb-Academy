@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
+import { revalidateTag } from 'next/cache'
 
 // Atașează / detașează probleme de o lecție
 // POST { problemIds: [], orderStart?: number } - atașează (cu ordinea automată)
@@ -28,6 +29,8 @@ export async function POST(req, { params }) {
       data: { lessonId, lessonOrder: nextOrder++ },
     })
   }
+  revalidateTag('lessons')
+  revalidateTag('problems')
   return NextResponse.json({ ok: true, attached: ids.length })
 }
 
@@ -43,5 +46,7 @@ export async function DELETE(req, { params }) {
     where: { id: problemId },
     data: { lessonId: null, lessonOrder: null },
   })
+  revalidateTag('lessons')
+  revalidateTag('problems')
   return NextResponse.json({ ok: true })
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
+import { revalidateTag } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,8 @@ export async function PATCH(request, { params }) {
     if ('courseId' in data && !data.courseId) data.courseId = null
 
     const problem = await prisma.problem.update({ where: { id }, data })
+    revalidateTag('problems')
+    revalidateTag('lessons')
     return NextResponse.json(problem)
   } catch (e) {
     console.error('Problem update error:', e)
@@ -58,6 +61,8 @@ export async function DELETE(_req, { params }) {
   const { id } = await params
   try {
     await prisma.problem.delete({ where: { id } })
+    revalidateTag('problems')
+    revalidateTag('lessons')
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('Problem delete error:', e)

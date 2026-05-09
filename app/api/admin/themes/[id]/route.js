@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
+import { revalidateTag } from 'next/cache'
 
 async function guard() {
   await requireAdmin()
@@ -19,6 +20,8 @@ export async function PATCH(req, { params }) {
       if (body[k] !== undefined) data[k] = (k === 'price') ? Number(body[k]) : body[k]
     }
     const updated = await prisma.theme.update({ where: { id }, data })
+    revalidateTag('themes')
+    revalidateTag('cosmetics')
     return NextResponse.json(updated)
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 500 })
@@ -30,6 +33,8 @@ export async function DELETE(_req, { params }) {
     await guard()
     const { id } = await params
     await prisma.theme.delete({ where: { id } })
+    revalidateTag('themes')
+    revalidateTag('cosmetics')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 500 })

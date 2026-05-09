@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
+import { revalidateTag } from 'next/cache'
 
 export async function GET(req, { params }) {
   const { allowed } = await checkPermission('modules.view')
@@ -32,6 +33,8 @@ export async function PATCH(req, { params }) {
   for (const f of allowedFields) if (body[f] !== undefined) data[f] = body[f]
 
   const updated = await prisma.learningModule.update({ where: { id }, data })
+  revalidateTag('modules')
+  revalidateTag('lessons')
   return NextResponse.json({ module: updated })
 }
 
@@ -41,5 +44,7 @@ export async function DELETE(req, { params }) {
 
   const { id } = await params
   await prisma.learningModule.delete({ where: { id } })
+  revalidateTag('modules')
+  revalidateTag('lessons')
   return NextResponse.json({ ok: true })
 }

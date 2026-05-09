@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
+import { revalidateTag } from 'next/cache'
 
 async function guard() {
   await requireAdmin()
@@ -42,6 +43,8 @@ export async function POST(req) {
         previewUrl: body.previewUrl || null,
       },
     })
+    revalidateTag('themes')
+    revalidateTag('cosmetics')
     return NextResponse.json(created, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 500 })

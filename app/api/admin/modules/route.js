@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
 import { slugify } from '@/lib/problem-utils'
+import { revalidateTag } from 'next/cache'
 
 export async function GET() {
   const { allowed } = await checkPermission('modules.view')
@@ -43,5 +44,7 @@ export async function POST(req) {
       createdById: user?.id || null,
     },
   })
+  revalidateTag('modules')
+  revalidateTag('lessons')
   return NextResponse.json({ module: created }, { status: 201 })
 }
