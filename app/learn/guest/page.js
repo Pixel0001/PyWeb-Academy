@@ -114,7 +114,7 @@ export default async function GuestDashboard() {
       {/* Top bar */}
       <header className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-3">
-          <Link href="/learn" className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-medium transition shrink-0 p-1.5 rounded-lg hover:bg-white/10">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-medium transition shrink-0 p-1.5 rounded-lg hover:bg-white/10">
             <ChevronLeftIcon className="w-4 h-4" />
             <span className="hidden sm:inline">Înapoi</span>
           </Link>
