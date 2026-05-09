@@ -70,7 +70,7 @@ export default async function LeaderboardPage({ params }) {
                       {s.titleIcon
                         ? <img src={s.titleIcon} alt="" className="w-full h-full object-cover" />
                         : s.titleRarity
-                          ? <CosmeticArt type="TITLE" rarity={s.titleRarity} className={isFirst ? 'w-10 h-10' : 'w-7 h-7'} />
+                          ? <CosmeticArt type="TITLE" rarity={s.titleRarity} className="w-full h-full" />
                           : s.fullName.charAt(0).toUpperCase()}
                     </div>
                     <span className={'absolute -bottom-1 -right-1 rounded-full flex items-center justify-center font-black ring-2 ring-white ' + (isFirst ? 'w-6 h-6 text-[10px] ' : 'w-5 h-5 text-[9px] ') + RANK_BG2[pos] + ' ' + RANK_TEXT2[pos]}>

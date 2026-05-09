@@ -173,7 +173,7 @@ function GlobalList({ ranked, me, token, theme }) {
                   {student.titleIcon
                     ? <img src={student.titleIcon} alt="" className="w-full h-full rounded-full object-cover" />
                     : student.titleRarity
-                      ? <CosmeticArt type="TITLE" rarity={student.titleRarity} className="w-7 h-7" />
+                      ? <CosmeticArt type="TITLE" rarity={student.titleRarity} className="w-full h-full" />
                       : student.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
