@@ -171,12 +171,9 @@ function GlobalList({ ranked, me, token, theme }) {
                 >
                   {student.titleIcon
                     ? <img src={student.titleIcon} alt="" className="w-full h-full rounded-full object-cover" />
-                    : student.fullName.charAt(0).toUpperCase()}
-                  {student.titleIcon && (
-                    <span className="absolute -top-1 -right-1 text-[10px] leading-none">
-                      {student.titleName ? '' : ''}
-                    </span>
-                  )}
+                    : student.titleName
+                      ? <span className="text-lg leading-none">{[...student.titleName.replace(/^Titlu\s+[„"']?/, '').replace(/["„'"]$/, '')][0]}</span>
+                      : student.fullName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className={'text-sm font-semibold truncate ' + (isMe ? 'pyweb-me-name text-blue-900' : 'text-gray-900')}>
