@@ -80,11 +80,16 @@ function GlobalList({ ranked, me, token, theme }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className={`pyweb-me-name font-extrabold text-sm ${themeGrad ? 'text-white' : 'text-gray-900'}`}>{'Tu · ' + me.fullName}</div>
-            {myTitle && (
-              <div className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${themeGrad ? 'text-white/80' : 'text-amber-600'}`}>
-                ✨ {myTitle}
-              </div>
-            )}
+            {myTitle && (() => {
+              const myTitleEntry = (me.equipped || []).find(e => e.type === 'TITLE')
+              const myTitleEffect = myTitleEntry?.cosmetic?.cssPayload?.titleEffect || 'none'
+              const myTitleRarity = myTitleEntry?.cosmetic?.rarity || 'COMMON'
+              return (
+                <div className="mt-0.5">
+                  <TitleBadge name={myTitleEntry?.cosmetic?.name || myTitle} effect={myTitleEffect} rarity={myTitleRarity} />
+                </div>
+              )
+            })()}
             <Link href={'/learn/' + token + '/levels'} className={'inline-flex items-center gap-1 text-xs font-bold hover:underline mt-0.5 ' + (themeGrad ? 'text-white/90' : myLevel.color)}>
               <myLevel.Icon className={'w-3 h-3 ' + (themeGrad ? 'text-white/80' : myLevel.iconColor)} />
               {'Nivel ' + myLevel.num + ' — ' + myLevel.name}
