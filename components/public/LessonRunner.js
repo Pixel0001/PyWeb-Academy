@@ -1439,10 +1439,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                               <EyeIcon className="w-4 h-4" /> {solutionLoading ? '...' : 'Vezi rezolvarea (0p)'}
                             </button>
                           )}
-                          <button onClick={submit} disabled={submitting}
+                          <button onClick={submit} disabled={submitting || solutionLoading}
                             className="ml-auto inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-800 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition disabled:opacity-50 shadow text-sm">
                             <PaperAirplaneIcon className="w-4 h-4" />
-                            {submitting ? 'Se trimite...' : 'Trimite raspunsul'}
+                            {submitting ? 'Se trimite...' : solutionLoading ? 'Se încarcă...' : 'Trimite raspunsul'}
                           </button>
                         </div>
                         {showHint && cur.hint && curHintUsed && (
