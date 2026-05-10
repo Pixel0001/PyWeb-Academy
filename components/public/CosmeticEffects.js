@@ -1,4 +1,5 @@
 'use client'
+import CosmeticArt from '@/components/public/CosmeticArt'
 /**
  * CosmeticEffects — render-uri și CSS-uri globale pentru toate cosmeticele echipate.
  *
@@ -251,13 +252,13 @@ export default function CosmeticEffects({ items: initialItems = [] }) {
           }}
         />
       )}
-      {petPreset && (
+      {pet && petPreset && (
         <div
-          className="fixed bottom-20 left-3 z-40 pointer-events-none select-none"
-          style={{ fontSize: 36, animation: `${petPreset.anim} 2.4s ease-in-out infinite`, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+          className="fixed bottom-20 left-3 z-40 pointer-events-none select-none w-14 h-14"
+          style={{ animation: `${petPreset.anim} 2.4s ease-in-out infinite`, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
           aria-hidden
         >
-          {petPreset.emoji}
+          <CosmeticArt type="PET" name={pet.name} rarity={pet.rarity || 'COMMON'} className="w-full h-full" />
         </div>
       )}
 

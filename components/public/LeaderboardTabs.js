@@ -210,10 +210,12 @@ function GlobalList({ ranked, me, token, theme }) {
                       const p = getLeaderboardEffectPreset(student.leaderboardEffectName)
                       return p ? (
                         <span
-                          className="mt-0.5 text-base leading-none"
+                          className="mt-0.5 w-5 h-5 inline-block shrink-0"
                           title={student.leaderboardEffectName}
                           style={{ filter: `drop-shadow(0 0 5px ${p.glow})` }}
-                        >{p.icon}</span>
+                        >
+                          <CosmeticArt type="LEADERBOARD_EFFECT" name={student.leaderboardEffectName} rarity={student.leaderboardEffectRarity || 'LEGENDARY'} className="w-full h-full" />
+                        </span>
                       ) : null
                     })()}
                   </div>
