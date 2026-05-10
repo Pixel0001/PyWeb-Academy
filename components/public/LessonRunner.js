@@ -712,7 +712,14 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
     const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
     const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
+    const nv = [...solutionViewed]; nv[nextRevisit] = false; setSolutionViewed(nv)
+    setSolutionData(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
     setAiFeedback(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
+    // Reset input fields if we're staying on this problem
+    if (nextRevisit === idx) {
+      setAnswer('')
+      setCode(problems[nextRevisit]?.starterCode || '')
+    }
     setIdx(nextRevisit)
     const remaining = toRevisit.filter(i => !skipSet.has(i)).length - 1
     toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { id: 'revisit-nav', icon: '🔁', duration: 4000 })
