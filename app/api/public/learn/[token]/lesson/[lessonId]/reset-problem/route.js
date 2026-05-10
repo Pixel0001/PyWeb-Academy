@@ -31,14 +31,6 @@ export async function POST(req, { params }) {
   })
   if (!problem) return NextResponse.json({ error: 'Problema nu aparține lecției' }, { status: 403 })
 
-  // Nu permite reset dacă a văzut soluția (protejează împotriva farm-ului)
-  const subWithSolution = await prisma.problemSubmission.findFirst({
-    where: { studentId: student.id, problemId, lessonId, solutionViewed: true },
-  })
-  if (subWithSolution) {
-    return NextResponse.json({ error: 'Nu poți reîncerca după ce ai văzut soluția' }, { status: 403 })
-  }
-
   // Șterge submisiile pentru această problemă
   const deleted = await prisma.problemSubmission.deleteMany({
     where: { studentId: student.id, problemId, lessonId },
