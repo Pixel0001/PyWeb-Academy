@@ -1266,7 +1266,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                                 )}
                                 {/* Dacă nu mai sunt probleme deblocate dar sunt revisit-uri */}
                                 {!allDone && nextToGo === -1 && nextRevisitIdx !== undefined && (
-                                  <button onClick={goToNextRevisit}
+                                  <button onClick={() => goToNextRevisit()}
                                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition active:scale-95">
                                     <ArrowPathIcon className="w-4 h-4" /> Reia blocată ({toRevisit.length})
                                   </button>
@@ -1505,7 +1505,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
                           Reia greșite ({wrongCount}) <ArrowPathIcon className="w-4 h-4" />
                         </button>
                       ) : toRevisit.length > 0 ? (
-                        <button onClick={goToNextRevisit}
+                        <button onClick={() => goToNextRevisit()}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-700">
                           <ArrowPathIcon className="w-4 h-4" /> Reia blocate ({toRevisit.length})
                         </button>
