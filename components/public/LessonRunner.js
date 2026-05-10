@@ -322,10 +322,8 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const curMaxAttempts = cur ? getMaxAttempts(cur) : 3
   // Probleme blocate cu notă mică — derivat din submissions+locks, persistent la reload
   // permanentlyBlocked = indecși unde serverul a refuzat reset (e.g. soluție văzută) → nu pot fi reîncercate
-  // permanentlyBlocked include și problemele cu soluția deja văzută (din sesiuni anterioare)
-  const [permanentlyBlocked, setPermanentlyBlocked] = useState(
-    () => new Set(problems.map((p, i) => p.solutionViewed ? i : null).filter(i => i !== null))
-  )
+  // permanentlyBlocked = indecși unde serverul a refuzat reset (e.g. soluție văzută) — populat dinamic la runtime
+  const [permanentlyBlocked, setPermanentlyBlocked] = useState(new Set)
   const toRevisit = problems.map((_, i) => i).filter(i => locks[i] && (submissions[i]?.grade ?? 0) < 60 && !permanentlyBlocked.has(i))
 
   // O problemă e „terminată" dacă e rezolvată corect sau blocată cu notă ≥60
@@ -705,7 +703,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   // Deblochează și navighează la o problemă din toRevisit — apelabilă de oriunde
   const goToNextRevisit = async (skipSet = new Set()) => {
     const nextRevisit = toRevisit.find(i => !skipSet.has(i))
-    if (nextRevisit === undefined) return
+    if (nextRevisit === undefined) {
+      if (skipSet.size > 0) toast('Toate problemele blocate au soluția văzută — nu pot fi reîncercate.', { icon: 'ℹ️', id: 'all-blocked', duration: 5000 })
+      return
+    }
     const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
     const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
     const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
