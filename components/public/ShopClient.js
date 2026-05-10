@@ -251,12 +251,13 @@ function CosmeticCard({ item, owned, onBuy, busy, economy }) {
 }
 
 function ThemeGrid({ themeCosmetics, themesByName, ownedIds, onBuy, busy, economy }) {
-  if (!themeCosmetics.length) return <Empty msg="Nicio temă disponibilă momentan." />
+  // Arată doar temele NECUMPăRATE — cele cumpărate apar în Inventar
+  const availableThemes = themeCosmetics.filter(it => !ownedIds.has(it.id))
+  if (!availableThemes.length) return <Empty msg="Ai cumpărat toate temele disponibile! Le găseşti în Inventar." />
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-      {themeCosmetics.map(it => {
+      {availableThemes.map(it => {
         const r = RARITY_STYLES[it.rarity] || RARITY_STYLES.COMMON
-        const owned = ownedIds.has(it.id)
         const balance = it.currency === 'GEMS' ? economy.gems : economy.coins
         const canAfford = balance >= it.price
         const themeData = themesByName.get(it.name) || {}
@@ -271,19 +272,13 @@ function ThemeGrid({ themeCosmetics, themesByName, ownedIds, onBuy, busy, econom
             <div className="p-3 space-y-2">
               <h3 className="font-bold text-sm text-blue-900">{it.name}</h3>
               <p className="text-[10px] text-slate-500 line-clamp-2 min-h-[28px]">{it.description || 'Tema vizuală pentru profilul tău.'}</p>
-              {owned ? (
-                <div className="w-full px-3 py-1.5 bg-emerald-50 ring-1 ring-emerald-200 text-emerald-700 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1">
-                  <CheckCircleIcon className="w-3.5 h-3.5" /> Deținut
-                </div>
-              ) : (
-                <button disabled={busy || !canAfford} onClick={() => onBuy(it.id)}
-                  className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                    canAfford ? 'bg-amber-400 hover:bg-amber-300 text-blue-900 active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  }`}>
-                  <span className="text-base leading-none">{it.currency === 'GEMS' ? '💎' : '🪙'}</span>
-                  <span>{it.price}</span>
-                </button>
-              )}
+              <button disabled={busy || !canAfford} onClick={() => onBuy(it.id)}
+                className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                  canAfford ? 'bg-amber-400 hover:bg-amber-300 text-blue-900 active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}>
+                <span className="text-base leading-none">{it.currency === 'GEMS' ? '💎' : '🪙'}</span>
+                <span>{it.price}</span>
+              </button>
             </div>
           </div>
         )
@@ -331,14 +326,12 @@ function ChestsGrid({ chests, onOpen, busy, economy }) {
 }
 
 function InventoryGrid({ items, equipped, onEquip, onUnequip, themesByName }) {
-  // Themes have their own dedicated tab — exclude them here to avoid duplicates
-  const nonThemeItems = items.filter(it => it.type !== 'THEME')
-  if (!nonThemeItems.length) return <Empty msg="Inventarul este gol. Cumpără din shop sau deschide cufere!" />
+  if (!items.length) return <Empty msg="Inventarul este gol. Cumpără din shop sau deschide cufere!" />
   const equippedIds = new Set(equipped.map(e => e.cosmeticId))
   const equippedByType = Object.fromEntries(equipped.map(e => [e.type, e.cosmeticId]))
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-      {nonThemeItems.map(it => {
+      {items.map(it => {
         const r = RARITY_STYLES[it.rarity] || RARITY_STYLES.COMMON
         const isEq = equippedIds.has(it.id)
         const isTheme = it.type === 'THEME'
