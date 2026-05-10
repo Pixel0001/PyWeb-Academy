@@ -322,7 +322,10 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const curMaxAttempts = cur ? getMaxAttempts(cur) : 3
   // Probleme blocate cu notă mică — derivat din submissions+locks, persistent la reload
   // permanentlyBlocked = indecși unde serverul a refuzat reset (e.g. soluție văzută) → nu pot fi reîncercate
-  const [permanentlyBlocked, setPermanentlyBlocked] = useState(new Set())
+  // permanentlyBlocked include și problemele cu soluția deja văzută (din sesiuni anterioare)
+  const [permanentlyBlocked, setPermanentlyBlocked] = useState(
+    () => new Set(problems.map((p, i) => p.solutionViewed ? i : null).filter(i => i !== null))
+  )
   const toRevisit = problems.map((_, i) => i).filter(i => locks[i] && (submissions[i]?.grade ?? 0) < 60 && !permanentlyBlocked.has(i))
 
   // O problemă e „terminată" dacă e rezolvată corect sau blocată cu notă ≥60
