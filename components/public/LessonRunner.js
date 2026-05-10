@@ -277,6 +277,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   const [finishing, setFinishing] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
+  const [resetKey, setResetKey] = useState(0) // bumped to force re-render when same-idx problem is reset
   const startRef = useRef(Date.now())
 
   // Dacă a venit ?problemId=... și teoria e gata, sărim direct la lista de probleme
@@ -304,7 +305,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     setTransitioning(true)
     const t = setTimeout(() => setTransitioning(false), 120)
     return () => clearTimeout(t)
-  }, [idx, problems])
+  }, [idx, problems, resetKey])
 
   const cur = problems[idx]
   // Salvează codul curent în savedCodes la fiecare modificare
@@ -719,6 +720,7 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
     if (nextRevisit === idx) {
       setAnswer('')
       setCode(problems[nextRevisit]?.starterCode || '')
+      setResetKey(k => k + 1) // force re-render & trigger transitioning effect
     }
     setIdx(nextRevisit)
     const remaining = toRevisit.filter(i => !skipSet.has(i)).length - 1
