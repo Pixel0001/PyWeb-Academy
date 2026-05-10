@@ -217,7 +217,7 @@ function CosmeticCard({ item, owned, onBuy, busy, economy }) {
   return (
     <div className={`bg-white rounded-2xl overflow-hidden ring-1 ${r.ring} ${r.shadow} hover:-translate-y-0.5 transition`}>
       <div className={`relative h-32 sm:h-36 ${r.bg} flex flex-col items-center justify-center p-3 gap-2`}>
-        <CosmeticArt type={item.type} rarity={item.rarity} className={item.type === 'TITLE' ? 'w-16 h-16 drop-shadow-md' : 'w-full h-full drop-shadow-md'} />
+        <CosmeticArt type={item.type} rarity={item.rarity} name={item.name} className={item.type === 'TITLE' ? 'w-16 h-16 drop-shadow-md' : 'w-full h-full drop-shadow-md'} />
         {item.type === 'TITLE' && (
           <TitleBadge
             name={item.name}
@@ -348,7 +348,7 @@ function InventoryGrid({ items, equipped, onEquip, onUnequip, themesByName }) {
             <div className={`relative h-32 sm:h-36 ${r.bg} flex items-center justify-center p-3 overflow-hidden`}>
               {isTheme
                 ? <ThemePreview theme={themeData} className="w-full h-full" />
-                : <CosmeticArt type={it.type} rarity={it.rarity} className="w-full h-full drop-shadow-md" />}
+                : <CosmeticArt type={it.type} rarity={it.rarity} name={it.name} className="w-full h-full drop-shadow-md" />}
               {isEq && (
                 <span className="absolute top-1.5 right-1.5 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow">✓ ECHIPAT</span>
               )}
@@ -423,7 +423,7 @@ function RewardModal({ reward, onClose }) {
         {cosm && r && (
           <div className="space-y-2">
             <div className={`mx-auto h-32 w-32 rounded-2xl ${r.bg} flex items-center justify-center p-3 shadow-lg`}>
-              <CosmeticArt type={cosm.type} rarity={cosm.rarity} className="w-full h-full" />
+              <CosmeticArt type={cosm.type} rarity={cosm.rarity} name={cosm.name} className="w-full h-full" />
             </div>
             <p className="font-extrabold text-lg text-blue-900">{cosm.name}</p>
             <p className={`text-[10px] uppercase tracking-wider font-bold inline-block px-3 py-1 rounded-full ${r.chip}`}>{cosm.rarity}</p>

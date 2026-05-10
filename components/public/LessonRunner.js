@@ -700,16 +700,16 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
   }
 
   // Deblochează și navighează la o problemă din toRevisit — apelabilă de oriunde
-  const goToNextRevisit = async () => {
-    const nextRevisit = toRevisit[0]
+  const goToNextRevisit = async (skipSet = new Set()) => {
+    const nextRevisit = toRevisit.find(i => !skipSet.has(i))
     if (nextRevisit === undefined) return
     const nl = [...locks]; nl[nextRevisit] = false; setLocks(nl)
     const ns = [...submissions]; ns[nextRevisit] = null; setSubmissions(ns)
     const na = [...attemptsCount]; na[nextRevisit] = 0; setAttemptsCount(na)
     setAiFeedback(prev => { const c = { ...prev }; delete c[problems[nextRevisit]?.id]; return c })
     setIdx(nextRevisit)
-    const remaining = toRevisit.length - 1
-    toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { icon: '🔁', duration: 4000 })
+    const remaining = toRevisit.filter(i => !skipSet.has(i)).length - 1
+    toast(`Revenim la problema ${nextRevisit + 1}${remaining > 0 ? ` — mai ai ${remaining} de revizuit după` : ' — ultima de revizuit!'}`, { id: 'revisit-nav', icon: '🔁', duration: 4000 })
     if (!isGuest) {
       try {
         const res = await fetch(`/api/public/learn/${token}/lesson/${lesson.id}/reset-problem`, {
@@ -717,14 +717,17 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
           body: JSON.stringify({ problemId: problems[nextRevisit]?.id }),
         })
         if (!res.ok) {
-          // Reset-problem refused (e.g. student viewed solution) — mark as permanently blocked
-          // so it's excluded from toRevisit and we can advance past it
+          // Reset refused (e.g. student viewed solution) — mark permanently blocked and skip
           const rl = [...locks]; rl[nextRevisit] = true; setLocks(rl)
           const data = await res.json().catch(() => ({}))
-          toast(data.error || 'Problema nu poate fi resetată — sari peste ea', { icon: '⚠️', duration: 4000 })
+          toast(data.error || 'Problema nu poate fi resetată — sari peste ea', { id: 'reset-blocked', icon: '⚠️', duration: 4000 })
+          const newSkip = new Set([...skipSet, nextRevisit])
           setPermanentlyBlocked(prev => new Set([...prev, nextRevisit]))
-          // Continuă automat cu următoarea problemă blocată (dacă există)
-          setTimeout(() => goToNextRevisit(), 300)
+          // Move to next revisit, passing the accumulated skip set to avoid re-reading stale state
+          const nextAfter = toRevisit.find(i => !newSkip.has(i))
+          if (nextAfter !== undefined) {
+            setTimeout(() => goToNextRevisit(newSkip), 300)
+          }
           return
         }
       } catch {

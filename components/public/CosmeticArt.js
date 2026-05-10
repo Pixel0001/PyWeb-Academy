@@ -13,28 +13,190 @@ const RARITY_COLORS = {
   MYTHIC:    { c1: '#fb7185', c2: '#7c3aed', glow: '#fda4af' },
 }
 
-export default function CosmeticArt({ type, rarity = 'COMMON', className = '' }) {
+export default function CosmeticArt({ type, rarity = 'COMMON', name = '', className = '' }) {
   const c = RARITY_COLORS[rarity] || RARITY_COLORS.COMMON
+  const uid = `${type}-${rarity}-${name.replace(/\s+/g, '_')}`
   return (
     <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id={`g-${type}-${rarity}`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`g-${uid}`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%"   stopColor={c.c1} />
           <stop offset="100%" stopColor={c.c2} />
         </linearGradient>
-        <radialGradient id={`glow-${type}-${rarity}`}>
+        <radialGradient id={`glow-${uid}`}>
           <stop offset="0%"   stopColor={c.glow} stopOpacity="0.6" />
           <stop offset="100%" stopColor={c.glow} stopOpacity="0" />
         </radialGradient>
       </defs>
-      <circle cx="50" cy="50" r="48" fill={`url(#glow-${type}-${rarity})`} />
-      {renderShape(type, `url(#g-${type}-${rarity})`, c)}
+      <circle cx="50" cy="50" r="48" fill={`url(#glow-${uid})`} />
+      {renderShape(type, `url(#g-${uid})`, c, name)}
     </svg>
   )
 }
 
-function renderShape(type, fill, c) {
+function renderShape(type, fill, c, name = '') {
   const stroke = c.c2
+
+  // ── Named overrides ──────────────────────────────────────────────────────
+  if (type === 'PET') {
+    if (name.includes('Pisic')) {
+      // Cat — detailed face with whiskers, round ears
+      return (
+        <g>
+          {/* body */}
+          <ellipse cx="50" cy="66" rx="24" ry="18" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* head */}
+          <circle cx="50" cy="40" r="22" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* ears */}
+          <polygon points="30,24 24,10 40,22" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          <polygon points="70,24 76,10 60,22" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          <polygon points="32,22 27,13 40,22" fill={c.glow} opacity="0.7" />
+          <polygon points="68,22 73,13 60,22" fill={c.glow} opacity="0.7" />
+          {/* eyes */}
+          <ellipse cx="42" cy="40" rx="5" ry="6" fill="#fff" />
+          <ellipse cx="58" cy="40" rx="5" ry="6" fill="#fff" />
+          <ellipse cx="42" cy="41" rx="3" ry="5" fill="#1a1a2e" />
+          <ellipse cx="58" cy="41" rx="3" ry="5" fill="#1a1a2e" />
+          <circle cx="43" cy="39" r="1.2" fill="#fff" />
+          <circle cx="59" cy="39" r="1.2" fill="#fff" />
+          {/* nose */}
+          <path d="M48 48 L50 50 L52 48 Z" fill="#f9a8d4" />
+          {/* mouth */}
+          <path d="M50 50 Q46 54 43 53" stroke="#1a1a2e" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          <path d="M50 50 Q54 54 57 53" stroke="#1a1a2e" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          {/* whiskers */}
+          <line x1="28" y1="47" x2="44" y2="49" stroke={c.c2} strokeWidth="0.9" opacity="0.7" />
+          <line x1="28" y1="50" x2="44" y2="51" stroke={c.c2} strokeWidth="0.9" opacity="0.7" />
+          <line x1="72" y1="47" x2="56" y2="49" stroke={c.c2} strokeWidth="0.9" opacity="0.7" />
+          <line x1="72" y1="50" x2="56" y2="51" stroke={c.c2} strokeWidth="0.9" opacity="0.7" />
+          {/* tail */}
+          <path d="M74 68 Q86 58 80 48 Q76 40 82 35" fill="none" stroke={fill} strokeWidth="5" strokeLinecap="round" />
+          <path d="M74 68 Q86 58 80 48 Q76 40 82 35" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+        </g>
+      )
+    }
+    if (name.includes('Dragon')) {
+      // Dragon — winged, horned, fire-breathing
+      return (
+        <g>
+          {/* wings */}
+          <path d="M28 50 Q10 30 18 18 Q30 35 38 45 Z" fill={fill} opacity="0.85" stroke={stroke} strokeWidth="1" />
+          <path d="M72 50 Q90 30 82 18 Q70 35 62 45 Z" fill={fill} opacity="0.85" stroke={stroke} strokeWidth="1" />
+          {/* body */}
+          <ellipse cx="50" cy="68" rx="20" ry="14" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* neck */}
+          <path d="M42 58 Q44 45 50 38 Q56 45 58 58 Z" fill={fill} stroke={stroke} strokeWidth="1" />
+          {/* head */}
+          <ellipse cx="50" cy="34" rx="18" ry="14" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* snout */}
+          <ellipse cx="50" cy="42" rx="8" ry="5" fill={c.c2} stroke={stroke} strokeWidth="1" />
+          {/* horns */}
+          <path d="M40 24 L36 12 L42 22" fill={c.c2} stroke={stroke} strokeWidth="1" />
+          <path d="M60 24 L64 12 L58 22" fill={c.c2} stroke={stroke} strokeWidth="1" />
+          {/* eyes */}
+          <ellipse cx="43" cy="32" rx="4" ry="4" fill="#fff" />
+          <ellipse cx="57" cy="32" rx="4" ry="4" fill="#fff" />
+          <ellipse cx="43" cy="33" rx="2.5" ry="3" fill="#dc2626" />
+          <ellipse cx="57" cy="33" rx="2.5" ry="3" fill="#dc2626" />
+          <circle cx="44" cy="31" r="1" fill="#fff" />
+          <circle cx="58" cy="31" r="1" fill="#fff" />
+          {/* nostrils */}
+          <circle cx="47" cy="43" r="1.2" fill={stroke} opacity="0.7" />
+          <circle cx="53" cy="43" r="1.2" fill={stroke} opacity="0.7" />
+          {/* fire breath */}
+          <path d="M50 47 Q44 54 40 58 Q48 55 50 52 Q52 55 60 58 Q56 54 50 47 Z" fill="#f97316" opacity="0.85" />
+          <path d="M50 50 Q46 56 43 60" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+          {/* spine spikes */}
+          <path d="M50 54 L47 62 L50 60 L53 62 Z" fill={c.glow} />
+          {/* tail */}
+          <path d="M70 72 Q82 80 84 72 Q80 65 76 68" fill={fill} stroke={stroke} strokeWidth="1.5" />
+        </g>
+      )
+    }
+    if (name.includes('Phoenix')) {
+      // Phoenix bird — majestic flaming bird
+      return (
+        <g>
+          {/* tail feathers */}
+          <path d="M50 72 Q38 88 30 92 Q40 82 42 75" fill="#f97316" opacity="0.8" />
+          <path d="M50 72 Q50 90 48 95 Q50 84 52 76" fill="#fbbf24" opacity="0.8" />
+          <path d="M50 72 Q62 88 70 92 Q60 82 58 75" fill="#ef4444" opacity="0.8" />
+          {/* body */}
+          <ellipse cx="50" cy="58" rx="18" ry="16" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* wings */}
+          <path d="M32 52 Q14 38 16 22 Q28 38 38 50 Z" fill="#f97316" stroke="#dc2626" strokeWidth="1" />
+          <path d="M68 52 Q86 38 84 22 Q72 38 62 50 Z" fill="#f97316" stroke="#dc2626" strokeWidth="1" />
+          <path d="M32 52 Q16 42 20 30 Q30 42 38 50 Z" fill="#fbbf24" opacity="0.7" />
+          <path d="M68 52 Q84 42 80 30 Q70 42 62 50 Z" fill="#fbbf24" opacity="0.7" />
+          {/* head */}
+          <circle cx="50" cy="36" r="16" fill={fill} stroke={stroke} strokeWidth="1.5" />
+          {/* crest feathers */}
+          <path d="M44 24 Q40 14 42 8 Q46 16 46 22" fill="#f97316" stroke="#dc2626" strokeWidth="1" />
+          <path d="M50 22 Q50 12 52 6 Q54 14 52 22" fill="#fbbf24" stroke="#dc2626" strokeWidth="1" />
+          <path d="M56 24 Q60 14 58 8 Q54 16 54 22" fill="#ef4444" stroke="#dc2626" strokeWidth="1" />
+          {/* eye */}
+          <circle cx="46" cy="36" r="4" fill="#fff" />
+          <circle cx="46" cy="37" r="2.5" fill="#1a1a2e" />
+          <circle cx="47" cy="35" r="1" fill="#fff" />
+          {/* beak */}
+          <path d="M34 40 L40 38 L38 43 Z" fill="#f59e0b" stroke="#92400e" strokeWidth="0.8" />
+          {/* flame aura */}
+          <path d="M20 58 Q14 50 18 42 Q22 52 24 58" fill="#f97316" opacity="0.5" />
+          <path d="M80 58 Q86 50 82 42 Q78 52 76 58" fill="#f97316" opacity="0.5" />
+          <circle cx="50" cy="58" r="18" fill="none" stroke="#fbbf24" strokeWidth="1" opacity="0.4" />
+        </g>
+      )
+    }
+  }
+
+  if (type === 'LEADERBOARD_EFFECT') {
+    if (name.includes('Phoenix')) {
+      // Phoenix trophy — flaming trophy
+      return (
+        <g>
+          {/* glow base */}
+          <ellipse cx="50" cy="82" rx="22" ry="5" fill="#ef444466" />
+          {/* trophy cup */}
+          <path d="M34 22 L66 22 L62 58 Q50 66 38 58 Z" fill={fill} stroke={stroke} strokeWidth="2" />
+          {/* handles */}
+          <path d="M34 28 Q20 30 22 46 Q24 56 34 52" fill="none" stroke={fill} strokeWidth="4" strokeLinecap="round" />
+          <path d="M66 28 Q80 30 78 46 Q76 56 66 52" fill="none" stroke={fill} strokeWidth="4" strokeLinecap="round" />
+          {/* stem */}
+          <rect x="44" y="58" width="12" height="14" fill={c.c2} />
+          <rect x="36" y="72" width="28" height="7" rx="2" fill={c.c2} />
+          {/* star on cup */}
+          <text x="50" y="48" textAnchor="middle" fontSize="18" fontWeight="900" fill="#fff" opacity="0.9">★</text>
+          {/* flames */}
+          <path d="M42 22 Q40 12 44 8 Q46 14 44 20" fill="#f97316" opacity="0.9" />
+          <path d="M50 20 Q50 8 52 4 Q54 10 52 20" fill="#fbbf24" opacity="0.9" />
+          <path d="M58 22 Q60 12 56 8 Q54 14 56 20" fill="#ef4444" opacity="0.9" />
+          <path d="M46 22 Q46 14 50 12 Q54 14 54 22" fill="#fde68a" opacity="0.6" />
+        </g>
+      )
+    }
+    // Default: Aur — gold trophy with star
+    return (
+      <g>
+        {/* glow base */}
+        <ellipse cx="50" cy="82" rx="22" ry="5" fill="#fbbf2455" />
+        {/* trophy cup */}
+        <path d="M34 22 L66 22 L62 58 Q50 66 38 58 Z" fill={fill} stroke={stroke} strokeWidth="2" />
+        {/* handles */}
+        <path d="M34 28 Q20 30 22 46 Q24 56 34 52" fill="none" stroke={fill} strokeWidth="4" strokeLinecap="round" />
+        <path d="M66 28 Q80 30 78 46 Q76 56 66 52" fill="none" stroke={fill} strokeWidth="4" strokeLinecap="round" />
+        {/* stem */}
+        <rect x="44" y="58" width="12" height="14" fill={c.c2} />
+        <rect x="36" y="72" width="28" height="7" rx="2" fill={c.c2} />
+        {/* star + rank */}
+        <text x="50" y="44" textAnchor="middle" fontSize="20" fontWeight="900" fill="#fff" opacity="0.95">1</text>
+        <path d="M50 52 L52 58 L58 58 L53 62 L55 68 L50 64 L45 68 L47 62 L42 58 L48 58 Z" fill={c.glow} opacity="0.8" />
+        {/* shine */}
+        <path d="M40 28 Q44 26 46 30" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.6" />
+      </g>
+    )
+  }
+
+  // ── Default per-type shapes ──────────────────────────────────────────────
   switch (type) {
     case 'THEME':
       return (
