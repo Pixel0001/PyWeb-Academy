@@ -702,7 +702,9 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
 
   // Deblochează și navighează la o problemă din toRevisit — apelabilă de oriunde
   const goToNextRevisit = async (skipSet = new Set()) => {
-    const nextRevisit = toRevisit.find(i => !skipSet.has(i))
+    // Preferă o problemă diferită de cea curentă; cade pe curentă dacă e singura opțiune
+    let nextRevisit = toRevisit.find(i => i !== idx && !skipSet.has(i))
+    if (nextRevisit === undefined) nextRevisit = toRevisit.find(i => !skipSet.has(i))
     if (nextRevisit === undefined) {
       if (skipSet.size > 0) toast('Toate problemele blocate au soluția văzută — nu pot fi reîncercate.', { icon: 'ℹ️', id: 'all-blocked', duration: 5000 })
       return
@@ -727,10 +729,12 @@ export default function LessonRunner({ token, lesson, problems, initialProgress,
           toast(data.error || 'Problema nu poate fi resetată — sari peste ea', { id: 'reset-blocked', icon: '⚠️', duration: 4000 })
           const newSkip = new Set([...skipSet, nextRevisit])
           setPermanentlyBlocked(prev => new Set([...prev, nextRevisit]))
-          // Move to next revisit, passing the accumulated skip set to avoid re-reading stale state
+          // Move to next revisit, passing the accumulated skip set
           const nextAfter = toRevisit.find(i => !newSkip.has(i))
           if (nextAfter !== undefined) {
             setTimeout(() => goToNextRevisit(newSkip), 300)
+          } else {
+            toast('Toate problemele blocate au soluția văzută — nu pot fi reîncercate.', { icon: 'ℹ️', id: 'all-blocked', duration: 5000 })
           }
           return
         }
