@@ -215,7 +215,7 @@ function RewardsModal({ event, onClose }) {
         await fetch(`/api/admin/leaderboard-rewards?id=${existing.id}`, { method: 'DELETE' })
       }
       const p = prizes[rank]
-      const hasValue = p.xp || p.coins || p.gems || p.cosmeticId || p.chestId || p.title
+      const hasValue = p.xp || p.coins || p.gems || p.cosmeticId || p.chestId || p.title || p.customReward
       if (hasValue) {
         const res = await fetch('/api/admin/leaderboard-rewards', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
