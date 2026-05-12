@@ -187,7 +187,7 @@ const PODIUM_SLOTS = [
   { rank: 2, emoji: '🥈', label: 'Locul 2', grad: 'from-slate-300 to-slate-400', ring: 'ring-slate-200',  text: 'text-slate-800' },
   { rank: 3, emoji: '🥉', label: 'Locul 3', grad: 'from-amber-600 to-orange-700', ring: 'ring-amber-400', text: 'text-white'     },
 ]
-const EMPTY_PRIZE = { xp: '', coins: '', gems: '', cosmeticId: '', chestId: '', title: '', rankTo: '' }
+const EMPTY_PRIZE = { xp: '', coins: '', gems: '', cosmeticId: '', chestId: '', title: '', rankTo: '', customReward: '' }
 
 function RewardsModal({ event, onClose }) {
   const [rewards, setRewards] = useState([])
@@ -252,6 +252,7 @@ function RewardsModal({ event, onClose }) {
         xp: r.xp || '', coins: r.coins || '', gems: r.gems || '',
         cosmeticId: r.cosmeticId || '', chestId: r.chestId || '',
         title: r.title || '', rankTo: '',
+        customReward: r.customReward || '',
       }
     })
     setPrizes(updated)
@@ -295,6 +296,7 @@ function RewardsModal({ event, onClose }) {
                           {existing.cosmeticId && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-fuchsia-700">✨ Cosmetic</span>}
                           {existing.chestId    && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-orange-700">🎁 Cufăr</span>}
                           {existing.title && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-slate-700">🏷 {existing.title}</span>}
+                          {existing.customReward && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-emerald-700">🎀 {existing.customReward}</span>}
                         </div>
                       )}
                     </div>
@@ -324,6 +326,9 @@ function RewardsModal({ event, onClose }) {
                     </Field>
                     <Field label="🏷 Titlu">
                       <input className={inp} placeholder="ex: Champion" value={p.title} onChange={e => setPrize(slot.rank, 'title', e.target.value)} />
+                    </Field>
+                    <Field label="🎀 Recompensă fizică / custom" className="col-span-3">
+                      <input className={inp} placeholder="ex: Gift card Steam $10, Lecție gratuită, Abonament aplicație..." value={p.customReward} onChange={e => setPrize(slot.rank, 'customReward', e.target.value)} />
                     </Field>
                   </div>
                   <div className="px-4 py-2 border-t border-slate-100 flex justify-end">
@@ -382,6 +387,9 @@ function RewardsModal({ event, onClose }) {
                   + Adaugă
                 </button>
               </div>
+              <Field label="🎀 Recompensă fizică / custom" className="col-span-3">
+                <input className={inp} placeholder="ex: Gift card Steam $10, Lecție gratuită, Abonament..." value={custom.customReward || ''} onChange={e=>setCustom({...custom, customReward: e.target.value})} />
+              </Field>
             </div>
 
             {otherRewards.length > 0 && (
@@ -396,6 +404,7 @@ function RewardsModal({ event, onClose }) {
                       {r.coins > 0 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">🪙 {r.coins}</span>}
                       {r.gems  > 0 && <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-bold">💎 {r.gems}</span>}
                       {r.title && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">🏷 {r.title}</span>}
+                      {r.customReward && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">🎀 {r.customReward}</span>}
                     </div>
                     <button onClick={() => remove(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
                       <TrashIcon className="w-3.5 h-3.5" />

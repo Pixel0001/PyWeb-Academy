@@ -1503,6 +1503,7 @@ model LeaderboardReward {
   cosmeticId  String?          @db.ObjectId
   chestId     String?          @db.ObjectId
   title       String?
+  customReward String?         // Recompensă liberă: "Gift card Steam $10", "Lecție gratuită", etc.
   createdAt   DateTime         @default(now())
 
   event       LeaderboardEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)

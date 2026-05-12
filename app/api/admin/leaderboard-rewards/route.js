@@ -38,6 +38,7 @@ export async function POST(req) {
         cosmeticId: body.cosmeticId || null,
         chestId: body.chestId || null,
         title: body.title || null,
+        customReward: body.customReward || null,
       },
     })
     return NextResponse.json(created, { status: 201 })

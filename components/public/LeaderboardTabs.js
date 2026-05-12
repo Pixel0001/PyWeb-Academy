@@ -338,7 +338,8 @@ function EventList({ event, me, theme }) {
                       {r.gems > 0  && <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-bold">💎 {r.gems} Gems</span>}
                       {r.cosmeticId && <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-bold">✨ Cosmetic exclusiv</span>}
                       {r.chestId && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">🎁 Cufăr</span>}
-                      {!r.xp && !r.coins && !r.gems && !r.cosmeticId && !r.chestId && <span className="text-xs text-gray-400">—</span>}
+                      {r.customReward && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">🎀 {r.customReward}</span>}
+                      {!r.xp && !r.coins && !r.gems && !r.cosmeticId && !r.chestId && !r.customReward && <span className="text-xs text-gray-400">—</span>}
                     </div>
                   </div>
                 </div>
