@@ -29,6 +29,12 @@ export default async function LeaderboardPage({ params }) {
           orderBy: { score: 'desc' },
           include: { student: { select: { id: true, fullName: true } } },
         },
+        rewards: {
+          orderBy: { rank: 'asc' },
+          include: {
+            event: false,
+          },
+        },
       },
     }),
   ])

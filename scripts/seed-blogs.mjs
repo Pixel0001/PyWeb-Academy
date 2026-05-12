@@ -100,6 +100,106 @@ const blogs = [
     ]
   },
   {
+    title: 'Liste în Python: ghid complet cu exerciții rezolvate',
+    slug: 'liste-python-exercitii-rezolvate',
+    excerpt: 'Tot ce trebuie să știi despre liste în Python: creare, accesare, modificare, metode și 10 exerciții rezolvate pas cu pas pentru clasa a 9-a și a 10-a.',
+    coverImage: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&q=80',
+    category: 'Programare',
+    tags: ['python', 'liste', 'exerciții', 'clasa 9', 'informatică'],
+    authorName: 'Echipa PyWeb',
+    readMinutes: 10,
+    content: [
+      { type: 'heading', text: 'Ce este o listă în Python?' },
+      { type: 'text', text: 'O listă este o colecție ordonată de valori care pot fi de orice tip: numere, texte, sau chiar alte liste. Se definește cu paranteze pătrate:\n\n```python\nnote = [8, 9, 10, 7, 9]\nnume = ["Ana", "Mihai", "Ioana"]\nmixt = [1, "doi", 3.0, True]\n```\n\nListele sunt **modificabile** (poți adăuga, șterge, schimba elemente) și **indexate** (primul element are indexul 0).' },
+      { type: 'heading', text: 'Accesarea elementelor' },
+      { type: 'text', text: '```python\nnote = [8, 9, 10, 7, 9]\n\nprint(note[0])   # 8 — primul element\nprint(note[-1])  # 9 — ultimul element\nprint(note[1:3]) # [9, 10] — slicing\n```\n\nIndexarea negativă: `note[-1]` înseamnă ultimul element, `note[-2]` penultimul etc.' },
+      { type: 'heading', text: 'Metode esențiale' },
+      { type: 'text', text: '```python\nnote = [8, 9, 10]\n\nnote.append(7)      # adaugă la final → [8, 9, 10, 7]\nnote.insert(1, 5)   # inserează pe poziția 1 → [8, 5, 9, 10, 7]\nnote.remove(9)      # șterge prima apariție a lui 9\nnote.pop()          # șterge și returnează ultimul element\nnote.sort()         # sortare crescătoare\nnote.sort(reverse=True)  # sortare descrescătoare\nnote.reverse()      # inversare\nlen(note)           # numărul de elemente\nsum(note)           # suma elementelor\nmin(note), max(note) # minim și maxim\n```' },
+      { type: 'heading', text: '10 exerciții rezolvate' },
+      { type: 'text', text: '**Ex 1 — Suma elementelor**\n```python\nn = [3, 7, 2, 8, 1]\nprint(sum(n))  # 21\n```\n\n**Ex 2 — Elementele pare**\n```python\nn = [1, 2, 3, 4, 5, 6]\npare = [x for x in n if x % 2 == 0]\nprint(pare)  # [2, 4, 6]\n```\n\n**Ex 3 — Inversarea listei fără reverse()**\n```python\nn = [1, 2, 3, 4, 5]\ninversat = n[::-1]\nprint(inversat)  # [5, 4, 3, 2, 1]\n```\n\n**Ex 4 — Maximul fără max()**\n```python\nn = [3, 7, 2, 9, 1]\nm = n[0]\nfor x in n:\n    if x > m:\n        m = x\nprint(m)  # 9\n```\n\n**Ex 5 — Eliminarea duplicatelor**\n```python\nn = [1, 2, 2, 3, 3, 3, 4]\nunice = list(set(n))\nprint(sorted(unice))  # [1, 2, 3, 4]\n```\n\n**Ex 6 — Numărarea aparițiilor**\n```python\nn = [1, 2, 2, 3, 2, 4]\nprint(n.count(2))  # 3\n```\n\n**Ex 7 — Concatenarea a două liste**\n```python\na = [1, 2, 3]\nb = [4, 5, 6]\nc = a + b\nprint(c)  # [1, 2, 3, 4, 5, 6]\n```\n\n**Ex 8 — Media aritmetică**\n```python\nnote = [8, 9, 7, 10, 6]\nmedie = sum(note) / len(note)\nprint(f"Media: {medie:.2f}")  # Media: 8.00\n```\n\n**Ex 9 — Sortare fără sort()**\n```python\nn = [3, 1, 4, 1, 5]\nfor i in range(len(n)):\n    for j in range(i+1, len(n)):\n        if n[i] > n[j]:\n            n[i], n[j] = n[j], n[i]\nprint(n)  # [1, 1, 3, 4, 5]\n```\n\n**Ex 10 — Matrice (listă de liste)**\n```python\nmatrice = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\nfor linie in matrice:\n    for elem in linie:\n        print(elem, end=" ")\n    print()\n# 1 2 3\n# 4 5 6\n# 7 8 9\n```' },
+      { type: 'faq', items: [
+        { question: 'Care e diferența dintre listă și tuplu?', answer: 'Lista e modificabilă (mutable), tuplul nu. Lista folosește [], tuplul folosește (). Dacă datele nu se schimbă, folosește tuplu — e mai rapid.' },
+        { question: 'Pot pune liste în liste?', answer: 'Da! Asta se numește listă de liste sau matrice. Util pentru tabele, grile, probleme de tip matrice la bacalaureat.' },
+        { question: 'Ce e list comprehension?', answer: 'O modalitate scurtă de a crea liste: [x*2 for x in range(5)] creează [0, 2, 4, 6, 8]. E mai rapid și mai pythonic decât un for clasic.' }
+      ]}
+    ]
+  },
+  {
+    title: 'Funcții în Python: teorie și exerciții pentru bacalaureat',
+    slug: 'functii-python-exercitii-bacalaureat',
+    excerpt: 'Ghid complet despre funcții în Python: def, parametri, return, funcții recursive. Cu exerciții tip bacalaureat rezolvate și explicate.',
+    coverImage: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1200&q=80',
+    category: 'Programare',
+    tags: ['python', 'funcții', 'bacalaureat', 'recursivitate', 'informatică'],
+    authorName: 'Echipa PyWeb',
+    readMinutes: 12,
+    content: [
+      { type: 'heading', text: 'Ce este o funcție?' },
+      { type: 'text', text: 'O funcție este un bloc de cod cu un nume, care poate fi apelat oricând ai nevoie de el. Evită repetarea codului și face programul mai ușor de înțeles.\n\n```python\ndef salut(nume):\n    print(f"Bună ziua, {nume}!")\n\nsalut("Ana")    # Bună ziua, Ana!\nsalut("Mihai")  # Bună ziua, Mihai!\n```' },
+      { type: 'heading', text: 'Parametri și valori returnate' },
+      { type: 'text', text: '```python\n# Funcție cu parametri și return\ndef aduna(a, b):\n    return a + b\n\nrezultat = aduna(3, 5)\nprint(rezultat)  # 8\n\n# Parametri cu valoare implicită\ndef putere(baza, exponent=2):\n    return baza ** exponent\n\nprint(putere(3))     # 9  (3²)\nprint(putere(2, 10)) # 1024 (2¹⁰)\n```' },
+      { type: 'heading', text: 'Recursivitate — explicat simplu' },
+      { type: 'text', text: 'O funcție recursivă se apelează pe ea însăși. Are întotdeauna:\n1. **Cazul de bază** — condiția de oprire\n2. **Cazul recursiv** — apelul cu un subproblem mai mic\n\n```python\ndef factorial(n):\n    if n == 0 or n == 1:  # cazul de bază\n        return 1\n    return n * factorial(n - 1)  # cazul recursiv\n\nprint(factorial(5))  # 120 = 5×4×3×2×1\n```\n\nCum funcționează:\n- `factorial(5)` = 5 × `factorial(4)`\n- `factorial(4)` = 4 × `factorial(3)`\n- `factorial(3)` = 3 × `factorial(2)`\n- `factorial(2)` = 2 × `factorial(1)`\n- `factorial(1)` = 1 ← caz de bază, se întoarce' },
+      { type: 'heading', text: 'Exerciții tip bacalaureat' },
+      { type: 'text', text: '**Ex 1 — Cel mai mare divizor comun (cmmdc)**\n```python\ndef cmmdc(a, b):\n    while b != 0:\n        a, b = b, a % b\n    return a\n\nprint(cmmdc(48, 18))  # 6\n```\n\n**Ex 2 — Număr prim**\n```python\ndef este_prim(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\nprint(este_prim(17))  # True\nprint(este_prim(15))  # False\n```\n\n**Ex 3 — Șirul Fibonacci recursiv**\n```python\ndef fib(n):\n    if n <= 1:\n        return n\n    return fib(n-1) + fib(n-2)\n\nfor i in range(10):\n    print(fib(i), end=" ")\n# 0 1 1 2 3 5 8 13 21 34\n```\n\n**Ex 4 — Suma cifrelor (recursiv)**\n```python\ndef suma_cifre(n):\n    if n < 10:\n        return n\n    return n % 10 + suma_cifre(n // 10)\n\nprint(suma_cifre(1234))  # 10\n```\n\n**Ex 5 — Funcție care returnează lista numerelor prime până la n**\n```python\ndef prime_pana_la(n):\n    return [x for x in range(2, n+1) if este_prim(x)]\n\nprint(prime_pana_la(30))\n# [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]\n```' },
+      { type: 'faq', items: [
+        { question: 'Care e diferența dintre print și return?', answer: 'print afișează pe ecran dar funcția nu "produce" nimic. return dă înapoi o valoare care poate fi folosită în altă parte. La bacalaureat, aproape mereu vei folosi return.' },
+        { question: 'Ce se întâmplă dacă uit cazul de bază la recursivitate?', answer: 'Funcția se apelează la infinit până când Python oprește execuția cu RecursionError: maximum recursion depth exceeded.' },
+        { question: 'Pot returna mai multe valori dintr-o funcție?', answer: 'Da: return a, b returnează un tuplu. Poți decomprima: x, y = functia().' }
+      ]}
+    ]
+  },
+  {
+    title: 'Șiruri de caractere în Python: metode și exerciții rezolvate',
+    slug: 'siruri-de-caractere-python-exercitii',
+    excerpt: 'Ghid complet despre string-uri în Python: indexare, slicing, metode esențiale și exerciții rezolvate pentru clasa 9-10 și bacalaureat.',
+    coverImage: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=1200&q=80',
+    category: 'Programare',
+    tags: ['python', 'stringuri', 'siruri', 'exerciții', 'clasa 9'],
+    authorName: 'Echipa PyWeb',
+    readMinutes: 9,
+    content: [
+      { type: 'heading', text: 'Ce este un șir de caractere?' },
+      { type: 'text', text: 'Un string (șir de caractere) este o secvență de caractere scrisă între ghilimele simple sau duble:\n\n```python\ns1 = "Bună ziua"\ns2 = \'Python e fain\'\ns3 = """Pot\nscrie\npe mai multe linii"""\n```\n\nStringurile sunt **imuabile** — nu poți modifica un caracter direct, ci creezi un string nou.' },
+      { type: 'heading', text: 'Indexare și slicing' },
+      { type: 'text', text: '```python\ns = "Python"\n\nprint(s[0])    # P — primul caracter\nprint(s[-1])   # n — ultimul caracter\nprint(s[1:4])  # yth — de la index 1 până la 3\nprint(s[:3])   # Pyt — primele 3\nprint(s[3:])   # hon — de la index 3 până la final\nprint(s[::-1]) # nohtyP — inversat\nprint(len(s))  # 6 — lungimea\n```' },
+      { type: 'heading', text: 'Metode esențiale' },
+      { type: 'text', text: '```python\ns = "  Buna ziua, Python!  "\n\nprint(s.upper())        # "  BUNA ZIUA, PYTHON!  "\nprint(s.lower())        # "  buna ziua, python!  "\nprint(s.strip())        # "Buna ziua, Python!" (elimină spații)\nprint(s.replace("ziua", "dimineata"))  # înlocuire\nprint(s.split(","))     # ["  Buna ziua", " Python!  "]\nprint(s.find("Python")) # indexul unde apare\nprint(s.count("a"))     # numărul de apariții ale lui "a"\nprint(s.startswith("  Buna"))  # True\nprint(s.isdigit())      # False — nu e format doar din cifre\n```' },
+      { type: 'heading', text: 'Exerciții rezolvate' },
+      { type: 'text', text: '**Ex 1 — Inversarea unui string**\n```python\ns = "Python"\ninversat = s[::-1]\nprint(inversat)  # nohtyP\n```\n\n**Ex 2 — Verificare palindrom**\n```python\ndef palindrom(s):\n    s = s.lower().replace(" ", "")\n    return s == s[::-1]\n\nprint(palindrom("Ana"))     # True\nprint(palindrom("Python"))  # False\nprint(palindrom("A man a plan a canal Panama"))  # True\n```\n\n**Ex 3 — Numărarea vocalelor**\n```python\ndef numar_vocale(s):\n    vocale = "aeiouAEIOU"\n    return sum(1 for c in s if c in vocale)\n\nprint(numar_vocale("Python este fain"))  # 5\n```\n\n**Ex 4 — Cuvinte unice**\n```python\ntext = "ana are mere ana mere are ana"\ncuvinte = text.split()\nunice = sorted(set(cuvinte))\nprint(unice)  # [\'ana\', \'are\', \'mere\']\n```\n\n**Ex 5 — Cel mai lung cuvânt**\n```python\ntext = "Python este un limbaj de programare"\ncuvinte = text.split()\ncel_mai_lung = max(cuvinte, key=len)\nprint(cel_mai_lung)  # programare\n```\n\n**Ex 6 — Formatare string**\n```python\nnume = "Ana"\nnota = 9.75\nprint(f"Elevul {nume} a luat nota {nota:.1f}")  # Elevul Ana a luat nota 9.8\n```' },
+      { type: 'faq', items: [
+        { question: 'De ce nu pot face s[0] = "A"?', answer: 'Stringurile sunt imuabile în Python. Pentru a "modifica" un caracter, creezi un string nou: s = "A" + s[1:]' },
+        { question: 'Cum compar două stringuri?', answer: 'Cu == pentru egalitate, sau < > pentru ordine alfabetică (lexicografică). "ana" < "banana" returnează True.' },
+        { question: 'Ce e diferența dintre find() și index()?', answer: 'Ambele returnează poziția unui substring. Diferența: find() returnează -1 dacă nu găsește, index() aruncă ValueError.' }
+      ]}
+    ]
+  },
+  {
+    title: 'Instrucțiuni repetitive în Python: while și for cu exerciții',
+    slug: 'instructiuni-repetitive-python-while-for',
+    excerpt: 'Bucle while și for în Python explicate simplu, cu exemple și exerciții rezolvate pentru clasa a 9-a. Ideal pentru pregătirea tezei și a bacalaureatului.',
+    coverImage: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&q=80',
+    category: 'Programare',
+    tags: ['python', 'while', 'for', 'bucle', 'clasa 9', 'bacalaureat'],
+    authorName: 'Echipa PyWeb',
+    readMinutes: 10,
+    content: [
+      { type: 'heading', text: 'Bucla while' },
+      { type: 'text', text: 'Bucla `while` repetă un bloc de cod atâta timp cât o condiție este adevărată.\n\n```python\ni = 1\nwhile i <= 5:\n    print(i)\n    i += 1\n# afișează 1, 2, 3, 4, 5\n```\n\n⚠️ Atenție la bucla infinită! Dacă condiția nu devine False niciodată, programul nu se oprește. Asigură-te că variabila din condiție se modifică în buclă.' },
+      { type: 'heading', text: 'Bucla for' },
+      { type: 'text', text: '```python\n# Iterare peste o secvență de numere\nfor i in range(1, 6):\n    print(i)  # 1, 2, 3, 4, 5\n\n# range(start, stop, step)\nfor i in range(0, 10, 2):\n    print(i)  # 0, 2, 4, 6, 8\n\n# Iterare peste o listă\nnote = [8, 9, 10, 7]\nfor nota in note:\n    print(nota)\n\n# Iterare cu index\nfor i, nota in enumerate(note):\n    print(f"Nota {i+1}: {nota}")\n```' },
+      { type: 'heading', text: 'break și continue' },
+      { type: 'text', text: '```python\n# break — oprește bucla complet\nfor i in range(10):\n    if i == 5:\n        break\n    print(i)  # 0, 1, 2, 3, 4\n\n# continue — sare peste iterația curentă\nfor i in range(10):\n    if i % 2 == 0:\n        continue\n    print(i)  # 1, 3, 5, 7, 9\n```' },
+      { type: 'heading', text: 'Exerciții rezolvate' },
+      { type: 'text', text: '**Ex 1 — Suma numerelor de la 1 la n**\n```python\nn = int(input("n = "))\ns = 0\nfor i in range(1, n+1):\n    s += i\nprint(f"Suma = {s}")  # Formula: n*(n+1)//2\n```\n\n**Ex 2 — Tabloul înmulțirii cu 7**\n```python\nfor i in range(1, 11):\n    print(f"7 x {i} = {7*i}")\n```\n\n**Ex 3 — Ghicește numărul**\n```python\nimport random\nsecret = random.randint(1, 100)\nwhile True:\n    ghicit = int(input("Ghicește: "))\n    if ghicit < secret:\n        print("Prea mic!")\n    elif ghicit > secret:\n        print("Prea mare!")\n    else:\n        print("Corect! 🎉")\n        break\n```\n\n**Ex 4 — Verificare număr prim cu while**\n```python\nn = int(input("n = "))\ni = 2\nprim = True\nwhile i * i <= n:\n    if n % i == 0:\n        prim = False\n        break\n    i += 1\nif n < 2:\n    prim = False\nprint("Prim" if prim else "Nu e prim")\n```\n\n**Ex 5 — Descompunere în factori primi**\n```python\nn = int(input("n = "))\nd = 2\nprint(f"{n} = ", end="")\nwhile n > 1:\n    while n % d == 0:\n        print(d, end="")\n        n //= d\n        if n > 1:\n            print(" × ", end="")\n    d += 1\nprint()\n```' },
+      { type: 'faq', items: [
+        { question: 'Când folosesc while și când for?', answer: 'Folosești for când știi de câte ori se repetă (de n ori, pentru fiecare element). Folosești while când nu știi — repeți până se îndeplinește o condiție (ex: citești până utilizatorul scrie "stop").' },
+        { question: 'Ce face range(5)?', answer: 'Generează numerele 0, 1, 2, 3, 4 — adică 5 numere de la 0. range(1, 6) generează 1, 2, 3, 4, 5.' },
+        { question: 'Cum parcurg o listă din spate?', answer: 'Folosești reversed(): for x in reversed(lista) sau slicing: for x in lista[::-1].' }
+      ]}
+    ]
+  },
+  {
     title: 'Cum să motivezi copilul să continue programarea',
     slug: 'cum-sa-motivezi-copilul-la-programare',
     excerpt: 'Începutul e ușor, dar cum păstrezi entuziasmul pe termen lung? 8 strategii testate cu sute de elevi.',

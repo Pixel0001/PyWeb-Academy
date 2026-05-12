@@ -1497,6 +1497,7 @@ model LeaderboardReward {
   rank        Int              // 1, 2, 3, ... sau 0 = top10, etc.
   rankTo      Int?             // dacă vrei range (ex 4-10)
   // Tipul de reward (oricare combinație)
+  xp          Int?             // XP acordat ca recompensă
   coins       Int?
   gems        Int?
   cosmeticId  String?          @db.ObjectId

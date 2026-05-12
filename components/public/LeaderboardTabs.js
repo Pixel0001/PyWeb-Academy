@@ -309,6 +309,45 @@ function EventList({ event, me, theme }) {
         </div>
       )}
 
+      {/* Prizes for top 1/2/3 */}
+      {event.rewards && event.rewards.filter(r => r.rank <= 3 && !r.rankTo).length > 0 && (() => {
+        const top3Rewards = event.rewards.filter(r => r.rank <= 3 && !r.rankTo).sort((a, b) => a.rank - b.rank)
+        const medalEmoji = ['🥇', '🥈', '🥉']
+        const medalGrad  = [
+          'from-yellow-400 to-amber-500 ring-yellow-300',
+          'from-slate-300 to-slate-400 ring-slate-200',
+          'from-amber-600 to-orange-700 ring-amber-400',
+        ]
+        return (
+          <div className="rounded-2xl overflow-hidden border border-white/20 shadow-sm" style={{ background: `linear-gradient(135deg, ${color}22, ${color}11)` }}>
+            <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: `${color}30` }}>
+              <TrophySolid className="w-4 h-4" style={{ color }} />
+              <span className="text-sm font-bold text-gray-800">Premii</span>
+            </div>
+            <div className="divide-y" style={{ borderColor: `${color}20` }}>
+              {top3Rewards.map(r => (
+                <div key={r.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${medalGrad[r.rank - 1]} ring-2 flex items-center justify-center text-lg shrink-0 shadow-md`}>
+                    {medalEmoji[r.rank - 1]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Locul {r.rank}{r.title ? ` · ${r.title}` : ''}</div>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {r.xp > 0    && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">⚡ {r.xp} XP</span>}
+                      {r.coins > 0 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">🪙 {r.coins} Coins</span>}
+                      {r.gems > 0  && <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-bold">💎 {r.gems} Gems</span>}
+                      {r.cosmeticId && <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-bold">✨ Cosmetic exclusiv</span>}
+                      {r.chestId && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">🎁 Cufăr</span>}
+                      {!r.xp && !r.coins && !r.gems && !r.cosmeticId && !r.chestId && <span className="text-xs text-gray-400">—</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Event list */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50/80">
@@ -355,6 +394,13 @@ function EventList({ event, me, theme }) {
                   <div className="text-right shrink-0">
                     <div className={'text-base font-extrabold tabular-nums ' + (isTop ? RANK_COLOR[idx] : isMe ? 'text-blue-900' : 'text-gray-800')}>{entry.score}</div>
                     <div className="text-[10px] text-gray-400">{typeLabel}</div>
+                    {(() => {
+                      const prize = (event.rewards || []).find(r => r.rank === rank && !r.rankTo)
+                      if (!prize) return null
+                      const medal = ['🥇','🥈','🥉'][rank - 1]
+                      if (!medal) return null
+                      return <div className="text-[10px] font-bold mt-0.5">{medal} Premiu</div>
+                    })()}
                   </div>
                 </div>
               )

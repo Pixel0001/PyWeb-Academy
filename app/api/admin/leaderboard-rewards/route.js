@@ -32,6 +32,7 @@ export async function POST(req) {
         eventId: body.eventId,
         rank: Number(body.rank),
         rankTo: body.rankTo ? Number(body.rankTo) : null,
+        xp: body.xp ? Number(body.xp) : null,
         coins: body.coins ? Number(body.coins) : null,
         gems: body.gems ? Number(body.gems) : null,
         cosmeticId: body.cosmeticId || null,

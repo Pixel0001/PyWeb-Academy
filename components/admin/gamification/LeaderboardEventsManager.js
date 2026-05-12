@@ -182,11 +182,20 @@ function EventModal({ item, onClose, onSave }) {
   )
 }
 
+const PODIUM_SLOTS = [
+  { rank: 1, emoji: '🥇', label: 'Locul 1', grad: 'from-yellow-400 to-amber-500', ring: 'ring-yellow-300', text: 'text-amber-900' },
+  { rank: 2, emoji: '🥈', label: 'Locul 2', grad: 'from-slate-300 to-slate-400', ring: 'ring-slate-200',  text: 'text-slate-800' },
+  { rank: 3, emoji: '🥉', label: 'Locul 3', grad: 'from-amber-600 to-orange-700', ring: 'ring-amber-400', text: 'text-white'     },
+]
+const EMPTY_PRIZE = { xp: '', coins: '', gems: '', cosmeticId: '', chestId: '', title: '', rankTo: '' }
+
 function RewardsModal({ event, onClose }) {
   const [rewards, setRewards] = useState([])
   const [cosmetics, setCosmetics] = useState([])
   const [chests, setChests] = useState([])
-  const [form, setForm] = useState({ rank: 1, rankTo: '', coins: '', gems: '', cosmeticId: '', chestId: '', title: '' })
+  const [prizes, setPrizes] = useState({ 1: {...EMPTY_PRIZE}, 2: {...EMPTY_PRIZE}, 3: {...EMPTY_PRIZE} })
+  const [custom, setCustom] = useState({ rank: 4, ...EMPTY_PRIZE })
+  const [saving, setSaving] = useState({})
 
   async function load() {
     const [r, c, ch] = await Promise.all([
@@ -198,78 +207,206 @@ function RewardsModal({ event, onClose }) {
   }
   useEffect(() => { load() }, [event.id])
 
-  async function add() {
-    const body = { eventId: event.id, ...form }
-    const res = await fetch('/api/admin/leaderboard-rewards', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    })
-    if (res.ok) {
-      toast.success('Recompensă adăugată')
-      setForm({ rank: form.rank + 1, rankTo: '', coins: '', gems: '', cosmeticId: '', chestId: '', title: '' })
-      load()
-    } else toast.error('Eroare')
+  async function savePodium(rank) {
+    const existing = rewards.find(r => r.rank === rank && !r.rankTo)
+    setSaving(s => ({ ...s, [rank]: true }))
+    try {
+      if (existing) {
+        await fetch(`/api/admin/leaderboard-rewards?id=${existing.id}`, { method: 'DELETE' })
+      }
+      const p = prizes[rank]
+      const hasValue = p.xp || p.coins || p.gems || p.cosmeticId || p.chestId || p.title
+      if (hasValue) {
+        const res = await fetch('/api/admin/leaderboard-rewards', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: event.id, rank, ...p }),
+        })
+        if (!res.ok) throw new Error()
+      }
+      toast.success(`Locul ${rank} salvat!`)
+      await load()
+    } catch { toast.error('Eroare') }
+    setSaving(s => ({ ...s, [rank]: false }))
   }
+
+  async function addCustom() {
+    const res = await fetch('/api/admin/leaderboard-rewards', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: event.id, ...custom }),
+    })
+    if (res.ok) { toast.success('Adăugat!'); setCustom({ rank: Number(custom.rank) + 1, ...EMPTY_PRIZE }); load() }
+    else toast.error('Eroare')
+  }
+
   async function remove(id) {
     const res = await fetch(`/api/admin/leaderboard-rewards?id=${id}`, { method: 'DELETE' })
-    if (res.ok) load()
+    if (res.ok) { toast.success('Șters'); load() }
+  }
+
+  // Pre-fill prize form when rewards load
+  useEffect(() => {
+    if (!rewards.length) return
+    const updated = { 1: {...EMPTY_PRIZE}, 2: {...EMPTY_PRIZE}, 3: {...EMPTY_PRIZE} }
+    rewards.filter(r => r.rank <= 3 && !r.rankTo).forEach(r => {
+      updated[r.rank] = {
+        xp: r.xp || '', coins: r.coins || '', gems: r.gems || '',
+        cosmeticId: r.cosmeticId || '', chestId: r.chestId || '',
+        title: r.title || '', rankTo: '',
+      }
+    })
+    setPrizes(updated)
+  }, [rewards])
+
+  const otherRewards = rewards.filter(r => r.rank > 3 || r.rankTo)
+
+  function setPrize(rank, key, val) {
+    setPrizes(prev => ({ ...prev, [rank]: { ...prev[rank], [key]: val } }))
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        <div className="px-5 py-4 border-b">
-          <h3 className="text-lg font-bold text-slate-900">🏆 Recompense — {event.name}</h3>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col">
+        <div className="px-5 py-4 border-b flex items-center gap-3">
+          <TrophyIcon className="w-5 h-5 text-amber-500" />
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Premii — {event.name}</h3>
+            <p className="text-xs text-slate-500">Poți combina XP + Gems + Coins + Cosmetic pentru același loc</p>
+          </div>
         </div>
-        <div className="p-5 flex-1 overflow-y-auto space-y-3">
-          {rewards.length === 0 && <div className="text-center py-6 text-slate-400 text-sm">Nicio recompensă încă.</div>}
-          {rewards.map(r => (
-            <div key={r.id} className="flex items-center gap-3 p-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg ring-1 ring-violet-200">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-extrabold shadow">
-                #{r.rank}{r.rankTo ? `-${r.rankTo}` : ''}
-              </div>
-              <div className="flex-1 text-sm space-y-0.5">
-                {r.title && <div className="font-bold">{r.title}</div>}
-                <div className="flex flex-wrap gap-2">
-                  {r.coins && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">🪙 {r.coins}</span>}
-                  {r.gems && <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-bold">💎 {r.gems}</span>}
-                  {r.cosmeticId && <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-bold">✨ {cosmetics.find(c=>c.id===r.cosmeticId)?.name || 'Cosmetic'}</span>}
-                  {r.chestId && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">🎁 {chests.find(c=>c.id===r.chestId)?.name || 'Cufăr'}</span>}
-                </div>
-              </div>
-              <button onClick={() => remove(r.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
-                <TrashIcon className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
 
-          <div className="border-t pt-4 space-y-2">
-            <h4 className="text-sm font-bold text-slate-700">Adaugă recompensă</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Loc (rank)"><input type="number" className={inp} value={form.rank} onChange={e=>setForm({...form, rank: Number(e.target.value)})} /></Field>
-              <Field label="Până la (opțional)"><input type="number" className={inp} value={form.rankTo} onChange={e=>setForm({...form, rankTo: e.target.value})} placeholder="ex: 10" /></Field>
-              <Field label="Coins"><input type="number" className={inp} value={form.coins} onChange={e=>setForm({...form, coins: e.target.value})} /></Field>
-              <Field label="Gems"><input type="number" className={inp} value={form.gems} onChange={e=>setForm({...form, gems: e.target.value})} /></Field>
-              <Field label="Cosmetic">
-                <select className={inp} value={form.cosmeticId} onChange={e=>setForm({...form, cosmeticId: e.target.value})}>
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* PODIUM 1/2/3 */}
+          <div className="space-y-3">
+            {PODIUM_SLOTS.map(slot => {
+              const p = prizes[slot.rank]
+              const existing = rewards.find(r => r.rank === slot.rank && !r.rankTo)
+              return (
+                <div key={slot.rank} className="rounded-2xl border border-slate-200 overflow-hidden">
+                  {/* Header */}
+                  <div className={`px-4 py-3 bg-gradient-to-r ${slot.grad} flex items-center gap-3`}>
+                    <span className="text-2xl">{slot.emoji}</span>
+                    <div className="flex-1">
+                      <div className={`font-extrabold text-sm ${slot.text}`}>{slot.label}</div>
+                      {existing && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {existing.xp    > 0 && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-blue-700">⚡ {existing.xp} XP</span>}
+                          {existing.coins > 0 && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-amber-700">🪙 {existing.coins}</span>}
+                          {existing.gems  > 0 && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-cyan-700">💎 {existing.gems}</span>}
+                          {existing.cosmeticId && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-fuchsia-700">✨ Cosmetic</span>}
+                          {existing.chestId    && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-orange-700">🎁 Cufăr</span>}
+                          {existing.title && <span className="px-1.5 py-0.5 bg-white/80 rounded text-[10px] font-bold text-slate-700">🏷 {existing.title}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Form */}
+                  <div className="p-4 bg-slate-50 grid grid-cols-3 gap-2.5">
+                    <Field label="⚡ XP">
+                      <input type="number" className={inp} placeholder="0" value={p.xp} onChange={e => setPrize(slot.rank, 'xp', e.target.value)} />
+                    </Field>
+                    <Field label="🪙 Coins">
+                      <input type="number" className={inp} placeholder="0" value={p.coins} onChange={e => setPrize(slot.rank, 'coins', e.target.value)} />
+                    </Field>
+                    <Field label="💎 Gems">
+                      <input type="number" className={inp} placeholder="0" value={p.gems} onChange={e => setPrize(slot.rank, 'gems', e.target.value)} />
+                    </Field>
+                    <Field label="✨ Cosmetic">
+                      <select className={inp} value={p.cosmeticId} onChange={e => setPrize(slot.rank, 'cosmeticId', e.target.value)}>
+                        <option value="">— niciunul —</option>
+                        {cosmetics.map(c => <option key={c.id} value={c.id}>{c.rarity} · {c.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="🎁 Cufăr">
+                      <select className={inp} value={p.chestId} onChange={e => setPrize(slot.rank, 'chestId', e.target.value)}>
+                        <option value="">— niciunul —</option>
+                        {chests.map(c => <option key={c.id} value={c.id}>{c.tier} · {c.name}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="🏷 Titlu">
+                      <input className={inp} placeholder="ex: Champion" value={p.title} onChange={e => setPrize(slot.rank, 'title', e.target.value)} />
+                    </Field>
+                  </div>
+                  <div className="px-4 py-2 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => savePodium(slot.rank)}
+                      disabled={saving[slot.rank]}
+                      className="px-4 py-1.5 bg-slate-900 hover:bg-slate-700 text-white rounded-lg text-xs font-bold disabled:opacity-50"
+                    >
+                      {saving[slot.rank] ? 'Se salvează...' : 'Salvează'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* CUSTOM RANKS (4+, range) */}
+          <div className="rounded-2xl border border-dashed border-slate-300 overflow-hidden">
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+              <h4 className="text-sm font-bold text-slate-700">Alte locuri / range (opțional)</h4>
+              <p className="text-xs text-slate-400">Ex: locurile 4-10 primesc câte 50 Coins</p>
+            </div>
+            <div className="p-4 grid grid-cols-3 gap-2.5">
+              <Field label="Loc de la">
+                <input type="number" className={inp} value={custom.rank} onChange={e=>setCustom({...custom, rank: e.target.value})} />
+              </Field>
+              <Field label="Până la (opt.)">
+                <input type="number" className={inp} placeholder="—" value={custom.rankTo} onChange={e=>setCustom({...custom, rankTo: e.target.value})} />
+              </Field>
+              <Field label="🏷 Titlu">
+                <input className={inp} value={custom.title} onChange={e=>setCustom({...custom, title: e.target.value})} />
+              </Field>
+              <Field label="⚡ XP">
+                <input type="number" className={inp} placeholder="0" value={custom.xp} onChange={e=>setCustom({...custom, xp: e.target.value})} />
+              </Field>
+              <Field label="🪙 Coins">
+                <input type="number" className={inp} placeholder="0" value={custom.coins} onChange={e=>setCustom({...custom, coins: e.target.value})} />
+              </Field>
+              <Field label="💎 Gems">
+                <input type="number" className={inp} placeholder="0" value={custom.gems} onChange={e=>setCustom({...custom, gems: e.target.value})} />
+              </Field>
+              <Field label="✨ Cosmetic">
+                <select className={inp} value={custom.cosmeticId} onChange={e=>setCustom({...custom, cosmeticId: e.target.value})}>
                   <option value="">— niciunul —</option>
                   {cosmetics.map(c => <option key={c.id} value={c.id}>{c.rarity} · {c.name}</option>)}
                 </select>
               </Field>
-              <Field label="Cufăr">
-                <select className={inp} value={form.chestId} onChange={e=>setForm({...form, chestId: e.target.value})}>
+              <Field label="🎁 Cufăr">
+                <select className={inp} value={custom.chestId} onChange={e=>setCustom({...custom, chestId: e.target.value})}>
                   <option value="">— niciunul —</option>
                   {chests.map(c => <option key={c.id} value={c.id}>{c.tier} · {c.name}</option>)}
                 </select>
               </Field>
-              <Field label="Titlu (opțional)">
-                <input className={inp} value={form.title} onChange={e=>setForm({...form, title: e.target.value})} placeholder="ex: Champion" />
-              </Field>
+              <div className="flex items-end">
+                <button onClick={addCustom} className="w-full px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold">
+                  + Adaugă
+                </button>
+              </div>
             </div>
-            <button onClick={add} className="w-full px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold">
-              + Adaugă recompensă
-            </button>
+
+            {otherRewards.length > 0 && (
+              <div className="border-t border-slate-200 divide-y divide-slate-100">
+                {otherRewards.map(r => (
+                  <div key={r.id} className="px-4 py-2.5 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-xs font-extrabold text-slate-700">
+                      #{r.rank}{r.rankTo ? `-${r.rankTo}` : ''}
+                    </div>
+                    <div className="flex-1 flex flex-wrap gap-1.5">
+                      {r.xp    > 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">⚡ {r.xp} XP</span>}
+                      {r.coins > 0 && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">🪙 {r.coins}</span>}
+                      {r.gems  > 0 && <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs font-bold">💎 {r.gems}</span>}
+                      {r.title && <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">🏷 {r.title}</span>}
+                    </div>
+                    <button onClick={() => remove(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
         <div className="px-5 py-3 border-t flex justify-end">
           <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 rounded-lg">Închide</button>
         </div>
