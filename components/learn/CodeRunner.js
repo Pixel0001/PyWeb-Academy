@@ -49,12 +49,12 @@ self.onmessage = async (e) => {
     const pyodide = await initPy()
 
     pyodide.setStdout({ batched: (s) => {
-      logs.push(s)
-      self.postMessage({ type: 'stdout', line: s })
+      logs.push(s + '\\n')
+      self.postMessage({ type: 'stdout', line: s + '\\n' })
     }})
     pyodide.setStderr({ batched: (s) => {
-      logs.push(s)
-      self.postMessage({ type: 'stdout', line: s })
+      logs.push(s + '\\n')
+      self.postMessage({ type: 'stdout', line: s + '\\n' })
     }})
 
     // input() — INTERACTIV via SAB+Atomics, sau fallback dacă SAB lipsește
