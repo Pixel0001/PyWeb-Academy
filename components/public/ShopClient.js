@@ -171,7 +171,9 @@ export default function ShopClient({ token, studentName, initialData = null }) {
         )}
         {tab === 'themes' && (
           <ThemeGrid themeCosmetics={themeCosmetics} themesByName={themesByName}
-            ownedIds={new Set(data.inventory.map(i => i.id))} onBuy={buy} busy={busy} economy={data.economy} />
+            ownedIds={new Set(data.inventory.map(i => i.id))}
+            equipped={data.equipped} onBuy={buy} onEquip={equip} onUnequip={unequip}
+            busy={busy} economy={data.economy} />
         )}
         {tab === 'chests' && <ChestsGrid chests={data.chests} onOpen={openChest} busy={busy} economy={data.economy} />}
         {tab === 'inventory' && (
@@ -250,17 +252,18 @@ function CosmeticCard({ item, owned, onBuy, busy, economy }) {
   )
 }
 
-function ThemeGrid({ themeCosmetics, themesByName, ownedIds, onBuy, busy, economy }) {
-  // Arată doar temele NECUMPăRATE — cele cumpărate apar în Inventar
-  const availableThemes = themeCosmetics.filter(it => !ownedIds.has(it.id))
-  if (!availableThemes.length) return <Empty msg="Ai cumpărat toate temele disponibile! Le găseşti în Inventar." />
+function ThemeGrid({ themeCosmetics, themesByName, ownedIds, equipped, onBuy, onEquip, onUnequip, busy, economy }) {
+  if (!themeCosmetics.length) return <Empty msg="Nicio temă disponibilă momentan." />
+  const equippedThemeId = equipped?.find(e => e.type === 'THEME')?.cosmeticId || null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-      {availableThemes.map(it => {
+      {themeCosmetics.map(it => {
         const r = RARITY_STYLES[it.rarity] || RARITY_STYLES.COMMON
-        const balance = it.currency === 'GEMS' ? economy.gems : economy.coins
-        const canAfford = balance >= it.price
-        const themeData = themesByName.get(it.name) || {}
+        const isOwned    = ownedIds.has(it.id)
+        const isEquipped = equippedThemeId === it.id
+        const balance    = it.currency === 'GEMS' ? economy.gems : economy.coins
+        const canAfford  = balance >= it.price
+        const themeData  = themesByName.get(it.name) || {}
         return (
           <div key={it.id} className={`bg-white rounded-2xl overflow-hidden ring-1 ${r.ring} ${r.shadow} hover:-translate-y-0.5 transition`}>
             <div className="relative h-36 sm:h-40">
@@ -268,17 +271,36 @@ function ThemeGrid({ themeCosmetics, themesByName, ownedIds, onBuy, busy, econom
               <span className={`absolute top-2 left-2 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${r.chip} backdrop-blur shadow`}>
                 {it.rarity}
               </span>
+              {isEquipped && (
+                <span className="absolute top-2 right-2 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white shadow">
+                  Echipat
+                </span>
+              )}
             </div>
             <div className="p-3 space-y-2">
               <h3 className="font-bold text-sm text-blue-900">{it.name}</h3>
-              <p className="text-[10px] text-slate-500 line-clamp-2 min-h-[28px]">{it.description || 'Tema vizuală pentru profilul tău.'}</p>
-              <button disabled={busy || !canAfford} onClick={() => onBuy(it.id)}
-                className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                  canAfford ? 'bg-amber-400 hover:bg-amber-300 text-blue-900 active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                }`}>
-                <span className="text-base leading-none">{it.currency === 'GEMS' ? '💎' : '🪙'}</span>
-                <span>{it.price}</span>
-              </button>
+              <p className="text-[10px] text-slate-500 line-clamp-2 min-h-[28px]">{it.description || 'Temă vizuală pentru profilul tău.'}</p>
+              {isOwned ? (
+                isEquipped ? (
+                  <button disabled={busy} onClick={() => onUnequip('THEME')}
+                    className="w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-slate-100 hover:bg-slate-200 text-slate-600 active:scale-95">
+                    Dezechipează
+                  </button>
+                ) : (
+                  <button disabled={busy} onClick={() => onEquip(it.id, 'THEME')}
+                    className="w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-blue-600 hover:bg-blue-500 text-white active:scale-95">
+                    <CheckCircleIcon className="w-3.5 h-3.5" /> Echipează
+                  </button>
+                )
+              ) : (
+                <button disabled={busy || !canAfford} onClick={() => onBuy(it.id)}
+                  className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                    canAfford ? 'bg-amber-400 hover:bg-amber-300 text-blue-900 active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}>
+                  <span className="text-base leading-none">{it.currency === 'GEMS' ? '💎' : '🪙'}</span>
+                  <span>{it.price}</span>
+                </button>
+              )}
             </div>
           </div>
         )
