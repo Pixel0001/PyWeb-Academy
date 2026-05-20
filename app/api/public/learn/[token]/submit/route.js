@@ -175,6 +175,21 @@ export async function POST(req, { params }) {
       grade: grade ?? 0,
       passed: (grade ?? 0) >= 60,
     })
+
+    // Stocăm valorile exacte adăugate la leaderboard (post-multiplier)
+    // economy.coins = multipliedXp (folosit pt XP + COINS + CODING events)
+    // economy.gems  = gems acordate pt GEMS events (fără bonus milestone care e one-time)
+    if (economy && (grade ?? 0) >= 60) {
+      const leaderboardXp   = economy.coins || 0
+      const leaderboardGems = (economy.gems || 0) - (economy.bonusGems || 0) // excludem bonusul de milestone
+      await prisma.problemSubmission.update({
+        where: { id: sub.id },
+        data: {
+          leaderboardXp:   leaderboardXp   > 0 ? leaderboardXp   : null,
+          leaderboardGems: leaderboardGems > 0 ? leaderboardGems : null,
+        },
+      })
+    }
   }
 
   // Marchează ca citite notificările REVISION_REQUEST pentru această problemă
