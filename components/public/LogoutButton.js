@@ -11,8 +11,7 @@ export default function LogoutButton({ className, children }) {
     try {
       localStorage.removeItem('learnToken')
     } catch {}
-    // navigate cu flag explicit ca redirect-ul PWA să nu se reaplice
-    router.push('/learn?logout=1')
+    router.push('/learn/guest')
   }
   return (
     <button onClick={handleLogout} className={className} type="button">

@@ -41,7 +41,7 @@
       "name": "Modulele mele",
       "short_name": "Module",
       "description": "Vezi modulele tale",
-      "url": "/learn"
+      "url": "/learn/guest"
     },
     {
       "name": "Login",

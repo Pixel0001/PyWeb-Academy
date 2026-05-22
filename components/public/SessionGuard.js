@@ -125,7 +125,7 @@ export default function SessionGuard({ token }) {
         <button
           onClick={() => {
             try { localStorage.removeItem(STORAGE_KEY_PREFIX + token) } catch {}
-            router.push('/learn')
+            router.push('/learn/guest')
           }}
           className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transition active:scale-95"
         >

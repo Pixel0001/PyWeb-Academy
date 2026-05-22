@@ -51,7 +51,7 @@ export default function LearnLoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo + title */}
         <div className="text-center mb-8">
-          <Link href="/learn"
+          <Link href="/learn/guest"
             className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-6 transition">
             {'←'} Înapoi la platformă
           </Link>
