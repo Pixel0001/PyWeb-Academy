@@ -183,9 +183,9 @@
     "temperatura": 0.6
   },
   "pasi": {
-    "_comentariu": "Cât lucru face un singur pas al rulării (ca să nu depășească timeout-ul serverless de 60s).",
-    "interogariPePas": 5,
-    "siteuriPePas": 30,
-    "loturiPitchPePas": 2
+    "_comentariu": "Cat lucru face un singur pas. Sunt PLAFOANE, nu tinte: pasul se opreste oricum dupa ~45s si continua la urmatorul apel, deci nu poate depasi limita de 60s a functiei.",
+    "interogariPePas": 4,
+    "siteuriPePas": 20,
+    "loturiPitchPePas": 1
   }
 }

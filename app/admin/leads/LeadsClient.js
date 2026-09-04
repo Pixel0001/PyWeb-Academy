@@ -156,13 +156,20 @@ export default function LeadsClient({
       opresteRef.current = false
       setRuleaza(true)
 
+      let esecuriLaRand = 0
+
       while (!opresteRef.current) {
         let raspuns
         try {
           raspuns = await fetch(`/api/admin/leads/runs/${id}/step`, { method: 'POST' })
         } catch {
-          toast.error('Conexiune pierdută. Rularea rămâne salvată — reia-o oricând.')
-          break
+          // Rețeaua a picat — reîncercăm de câteva ori înainte să renunțăm.
+          if (++esecuriLaRand > 5) {
+            toast.error('Conexiune pierdută. Rularea rămâne salvată — reia-o oricând.')
+            break
+          }
+          await new Promise((r) => setTimeout(r, 4000))
+          continue
         }
 
         if (raspuns.status === 202) {
@@ -170,6 +177,18 @@ export default function LeadsClient({
           continue
         }
 
+        // 504 = pasul a depășit limita funcției. Progresul e salvat în baza de
+        // date, deci pur și simplu cerem pasul din nou de unde a rămas.
+        if (raspuns.status >= 500) {
+          if (++esecuriLaRand > 5) {
+            toast.error('Serverul nu răspunde. Rularea rămâne salvată — reia-o de pe pagină.')
+            break
+          }
+          await new Promise((r) => setTimeout(r, 5000))
+          continue
+        }
+
+        esecuriLaRand = 0
         const date = await raspuns.json().catch(() => ({}))
 
         if (!raspuns.ok) {
