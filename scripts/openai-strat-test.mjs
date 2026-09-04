@@ -10,6 +10,7 @@
  *   node scripts/openai-strat-test.mjs
  */
 
+import './_env.mjs'
 import {
   alegeModel,
   cereOpenAI,

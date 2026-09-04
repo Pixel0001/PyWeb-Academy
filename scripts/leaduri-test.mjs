@@ -13,6 +13,7 @@
  * pitch-ul și fișierele de ieșire sunt cât se poate de reale.
  */
 
+import './_env.mjs'
 import fs from 'fs'
 import path from 'path'
 import { CONFIG } from '../lib/leads/config.js'
