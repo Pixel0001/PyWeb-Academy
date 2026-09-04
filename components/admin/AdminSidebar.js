@@ -53,6 +53,7 @@ const navigation = [
   { name: 'Module Învățare', href: '/admin/modules', icon: 'book', permission: 'modules.view' },
   { name: 'Submisii', href: '/admin/submissions', icon: 'clipboard', permission: 'submissions.view' },
   { name: 'Mr. PyWeb (AI)', href: '/admin/ai-usage', icon: 'puzzle', permission: 'submissions.view' },
+  { name: '🎯 Leaduri Web', href: '/admin/leads', icon: 'target', permission: 'leads.view' },
   { name: '🎮 Gamification', href: '/admin/abonamente', icon: 'star', permission: 'system.settings' },
   { name: 'Securitate', href: '/admin/security', icon: 'shield', permission: 'security.manage' },
   { name: 'Alerte Securitate', href: '/admin/security-alerts', icon: 'exclamation', permission: 'security.view' },
@@ -68,6 +69,11 @@ const icons = {
   clock: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  target: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21a9 9 0 100-18 9 9 0 000 18zm0-4a5 5 0 100-10 5 5 0 000 10zm0-4a1 1 0 100-2 1 1 0 000 2z" />
     </svg>
   ),
   bell: (

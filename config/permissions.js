@@ -394,6 +394,18 @@ export const PERMISSIONS = {
     label: 'Gestionează Gamification',
     description: 'Cosmetics, Themes, Chests, Leaderboard Events, Rewards',
     category: 'Sistem'
+  },
+
+  // Leaduri Web (instrument intern de vânzări — firme fără site)
+  'leads.view': {
+    label: 'Vezi lead-urile web',
+    description: 'Poate vedea lista de firme prospectate și poate exporta Excel / CSV',
+    category: 'Leaduri Web'
+  },
+  'leads.manage': {
+    label: 'Pornește rulări și editează lead-uri',
+    description: 'Poate porni căutări pe Google Places (consumă buget API) și poate schimba status / notițe',
+    category: 'Leaduri Web'
   }
 }
 
@@ -456,6 +468,7 @@ export const PERMISSION_CATEGORIES = [
   'Banca de Probleme',
   'Module Învățare',
   'Submisii Probleme',
+  'Leaduri Web',
   'Sistem'
 ]
 
