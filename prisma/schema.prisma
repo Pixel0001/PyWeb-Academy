@@ -1629,6 +1629,7 @@ model LeadRun {
 
   lockedAt   DateTime? // lock simplu: un singur pas rulează la un moment dat
   startedAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt // se schimbă la fiecare pas — așa vedem dacă rularea mai e vie
   finishedAt DateTime?
   createdBy  String?
 
