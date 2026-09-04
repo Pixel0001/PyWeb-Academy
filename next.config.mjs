@@ -13,6 +13,13 @@ const nextConfig = {
     ],
   },
 
+  // Instrumentul de leaduri citește config/leads.json de pe disc la runtime.
+  // Fără linia asta, fișierul nu ajunge în bundle-ul serverless de pe Vercel.
+  outputFileTracingIncludes: {
+    '/admin/leads': ['./config/leads.json'],
+    '/api/admin/leads/**': ['./config/leads.json'],
+  },
+
   // Image optimization
   images: {
     remotePatterns: [

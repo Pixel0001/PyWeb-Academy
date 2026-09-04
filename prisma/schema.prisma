@@ -1528,3 +1528,98 @@ model RewardClaim {
   @@map("reward_claims")
 }
 
+
+// ==================== LEAD GENERATION (vânzare site-uri web) ====================
+// Instrument intern: caută firme pe Google Places, verifică site-ul, dă scor.
+// Sursa datelor: Places API (New) — DOAR endpointul Text Search, niciodată Place Details.
+
+model WebLead {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  placeId             String   @unique // cheia de deduplicare între rulări
+  denumire            String
+  telefon             String? // format internațional +373...
+  telefonLocal        String?
+  adresa              String?
+  oras                String?
+  categorii           String[] @default([]) // toate categoriile sub care a apărut firma
+  categoriePrincipala String?
+  rating              Float?
+  nrRecenzii          Int      @default(0)
+  siteUrl             String?
+  calitateSite        String? // LIPSA | DOAR_SOCIAL | MORT | FARA_HTTPS | NEADAPTAT_MOBIL | LENT | OK
+  observatiiSite      String? // motivul exact, în cuvinte
+  scor                Int      @default(0)
+  pitch               String? // fraza de deschidere pentru apel
+  linkMaps            String?
+  businessStatus      String?
+  verificatLa         DateTime? // când a fost verificat ultima dată site-ul
+
+  // Coloane de lucru — se completează manual în timpul apelurilor
+  status   LeadStatus @default(DE_SUNAT)
+  dataApel DateTime?
+  notite   String?
+
+  runId     String?  @db.ObjectId // ultima rulare în care a apărut
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scor])
+  @@index([status])
+  @@index([oras])
+  @@index([runId])
+  @@index([calitateSite])
+  @@map("web_leads")
+}
+
+enum LeadStatus {
+  DE_SUNAT
+  SUNAT
+  INTERESAT
+  REFUZ
+  NU_MA_SUNA
+}
+
+// O rulare = produs cartezian CATEGORII × ORAȘE, executată în pași mici
+// (SEARCH → CHECK → PITCH), ca să nu depășim timeout-ul serverless.
+model LeadRun {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  status String @default("QUEUED") // QUEUED | RULEAZA | DONE | EROARE | ANULAT
+  faza   String @default("SEARCH") // SEARCH | CHECK | PITCH | DONE
+
+  orase     String[] @default([])
+  categorii String[] @default([])
+
+  interogari    Json // [{ q, oras, categorie, stare, apeluri, gasite, eroare }]
+  idxInterogare Int  @default(0) // unde am rămas în listă
+
+  apeluriApi     Int    @default(0) // apeluri Text Search făcute (facturabile)
+  interogariSarite Int  @default(0) // sărite din cache (0 apeluri, 0 $)
+  costUsd        Float  @default(0)
+  firmeTotal     Int    @default(0) // firme unice atinse de rulare
+  firmeNoi       Int    @default(0) // firme care nu existau în baza de date
+  faraSite       Int    @default(0)
+  limitaApeluri  Int    @default(900)
+
+  avertisment String?
+  eroare      String?
+  loguri      Json? // jurnalul interogărilor, ca să văd unde s-a oprit
+
+  lockedAt   DateTime? // lock simplu: un singur pas rulează la un moment dat
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  createdBy  String?
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("lead_runs")
+}
+
+// Cache la nivel de interogare: „categorie|oraș" rulat recent = 0 apeluri API.
+model LeadQueryCache {
+  cheie        String   @id @map("_id") // "restaurant|Chișinău"
+  ultimaRulare DateTime
+  apeluri      Int      @default(0)
+  rezultate    Int      @default(0)
+
+  @@map("lead_query_cache")
+}

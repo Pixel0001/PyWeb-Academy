@@ -1,0 +1,184 @@
+{
+  "_comentariu": "Setările instrumentului de generare lead-uri. Modifică aici, fără să umbli în cod. Orașele/categoriile de mai jos sunt valorile IMPLICITE — le poți bifa selectiv și din interfața /admin/leads la fiecare rulare.",
+  "orase": [
+    "Chișinău",
+    "Bălți",
+    "Tiraspol",
+    "Cahul",
+    "Orhei"
+  ],
+  "_oraseInactive": "Mută orice oraș de aici în lista `orase` ca să-l activezi.",
+  "oraseInactive": [
+    "Ungheni",
+    "Soroca",
+    "Comrat",
+    "Căușeni",
+    "Strășeni",
+    "Edineț",
+    "Hîncești",
+    "Ialoveni",
+    "Florești",
+    "Drochia"
+  ],
+  "categorii": [
+    "restaurant",
+    "cafenea",
+    "pizzerie",
+    "bar",
+    "hotel",
+    "pensiune",
+    "frizerie",
+    "salon de înfrumusețare",
+    "salon de unghii",
+    "cabinet stomatologic",
+    "clinică privată",
+    "cabinet veterinar",
+    "service auto",
+    "spălătorie auto",
+    "vulcanizare",
+    "sală de fitness",
+    "școală de șoferi",
+    "grădiniță privată",
+    "centru de limbi străine",
+    "magazin de mobilă",
+    "florărie",
+    "agenție imobiliară",
+    "agenție de turism",
+    "cabinet avocat",
+    "birou notarial",
+    "servicii contabile",
+    "fotograf",
+    "agenție evenimente",
+    "curățătorie chimică",
+    "atelier croitorie",
+    "tipografie",
+    "firmă de construcții",
+    "instalator",
+    "brutărie",
+    "cofetărie",
+    "optică medicală",
+    "pet shop"
+  ],
+  "cautare": {
+    "_comentariu": "Parametrii cererii către Google Places Text Search (New).",
+    "languageCode": "ro",
+    "regionCode": "MD",
+    "pageSize": 20,
+    "paginiMax": 3,
+    "reincercari": 3,
+    "pauzaInitialaMs": 1000
+  },
+  "filtre": {
+    "_comentariu": "Salvez firma doar daca am PE CE s-o contactez: telefon sau, in lipsa lui, o pagina de social (facebook, instagram, ok.ru, vk.com, linktr.ee — lista din verificareSite.domeniiSociale). Fara niciunul, firma se sare.",
+    "doarCuContact": true,
+    "excludeInchisePermanent": true
+  },
+  "buget": {
+    "_comentariu": "Limita gratuită Google e ~1000 apeluri/lună. Rularea se OPREȘTE singură la `maxApeluriPeRulare`.",
+    "costPerApelUsd": 0.035,
+    "maxApeluriPeRulare": 900,
+    "avertismentLaApeluri": 700
+  },
+  "cache": {
+    "_comentariu": "Nu plăti de două ori pentru aceleași firme. Interogările rulate mai recent de `zileValabilitateInterogare` sunt sărite complet (0 apeluri API).",
+    "zileValabilitateInterogare": 30,
+    "zileReverificareSite": 30
+  },
+  "verificareSite": {
+    "_comentariu": "Regulile de verificare a site-ului. `pragLentMs` = peste cât timp site-ul e considerat LENT.",
+    "timeoutMs": 10000,
+    "concurenta": 10,
+    "redirectMax": 5,
+    "pragLentMs": 3000,
+    "maxHtmlBytes": 500000,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "domeniiSociale": [
+      "facebook.com",
+      "instagram.com",
+      "ok.ru",
+      "vk.com",
+      "linktr.ee"
+    ]
+  },
+  "scor": {
+    "_comentariu": "scor = puncteSite + puncteRating + puncteRecenzii (0–100).",
+    "puncteSite": {
+      "LIPSA": 50,
+      "MORT": 45,
+      "DOAR_SOCIAL": 40,
+      "FARA_HTTPS": 25,
+      "NEADAPTAT_MOBIL": 20,
+      "LENT": 15,
+      "OK": 0
+    },
+    "puncteRating": [
+      {
+        "min": 4.5,
+        "puncte": 30
+      },
+      {
+        "min": 4,
+        "puncte": 20
+      },
+      {
+        "min": 3.5,
+        "puncte": 10
+      },
+      {
+        "min": 0,
+        "puncte": 0
+      }
+    ],
+    "puncteRecenzii": [
+      {
+        "min": 100,
+        "puncte": 20
+      },
+      {
+        "min": 30,
+        "puncte": 15
+      },
+      {
+        "min": 10,
+        "puncte": 8
+      },
+      {
+        "min": 0,
+        "puncte": 0
+      }
+    ]
+  },
+  "pitch": {
+    "_comentariu": "Fraza de deschidere pentru apel. Foloseste OPENAI_API_KEY — aceeasi cheie ca Mr. PyWeb. La prima rulare intreaba /v1/models si alege primul model din modelePreferate pe care cheia ta chiar il are.",
+    "furnizor": "openai",
+    "modelePreferate": [
+      "gpt-5",
+      "gpt-4.1",
+      "gpt-4o"
+    ],
+    "modelRezerva": "gpt-4o-mini",
+    "_preturi": "USD per 1M tokeni. Daca modelul ales nu e in lista, costul se raporteaza ca necunoscut — adauga-l aici ca sa ai cifre corecte.",
+    "preturi": {
+      "gpt-4o": {
+        "intrare": 2.5,
+        "iesire": 10
+      },
+      "gpt-4o-mini": {
+        "intrare": 0.15,
+        "iesire": 0.6
+      }
+    },
+    "marimeLot": 20,
+    "maxCuvinte": 25,
+    "loturiParalele": 3,
+    "reincercari": 3,
+    "repararePitchuriProaste": true,
+    "temperatura": 0.6
+  },
+  "pasi": {
+    "_comentariu": "Cât lucru face un singur pas al rulării (ca să nu depășească timeout-ul serverless de 60s).",
+    "interogariPePas": 5,
+    "siteuriPePas": 30,
+    "loturiPitchPePas": 2
+  }
+}

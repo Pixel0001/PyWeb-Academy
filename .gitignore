@@ -48,3 +48,6 @@ next-env.d.ts
 # Material sursa (metodicile profesorului)
 metodici/
 
+
+# Fisiere generate de instrumentul de leaduri
+/exports
