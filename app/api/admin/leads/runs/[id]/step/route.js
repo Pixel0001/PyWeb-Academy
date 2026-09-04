@@ -15,7 +15,12 @@ import { executaPas, rezumatRulare } from '@/lib/leads/runner'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+// Maximul pe Vercel Pro. Trebuie să rămână mai MARE decât „bugetPasSecunde"
+// din config/leads.json — pasul se oprește singur înainte, iar diferența e
+// marja în care apucă să salveze progresul și să răspundă.
+// Pe planul Hobby limita e 60: dacă treci pe Hobby, pune 60 aici ȘI
+// bugetPasSecunde pe 45 în config.
+export const maxDuration = 300
 
 export async function POST(request, { params }) {
   try {

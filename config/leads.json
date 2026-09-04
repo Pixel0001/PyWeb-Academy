@@ -183,9 +183,11 @@
     "temperatura": 0.6
   },
   "pasi": {
-    "_comentariu": "Cat lucru face un singur pas. Sunt PLAFOANE, nu tinte: pasul se opreste oricum dupa ~45s si continua la urmatorul apel, deci nu poate depasi limita de 60s a functiei.",
-    "interogariPePas": 4,
-    "siteuriPePas": 20,
-    "loturiPitchPePas": 1
+    "_comentariu": "Cat lucru face un singur pas. Pasul se opreste dupa bugetPasSecunde si continua la urmatorul apel, deci numerele de mai jos sunt PLAFOANE, nu tinte.",
+    "_atentie": "bugetPasSecunde trebuie sa fie MAI MIC decat maxDuration din app/api/admin/leads/runs/[id]/step/route.js (acum 300s, plan Vercel Pro). Pe Hobby: maxDuration 60 si buget 45.",
+    "bugetPasSecunde": 270,
+    "interogariPePas": 20,
+    "siteuriPePas": 100,
+    "loturiPitchPePas": 5
   }
 }
