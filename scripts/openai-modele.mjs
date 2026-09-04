@@ -10,6 +10,7 @@
  * `pitch.modelePreferate` din config/leads.json.
  */
 
+import './_env.mjs'
 import { CONFIG } from '../lib/leads/config.js'
 import { listeazaModele, alegeModel, pretModel } from '../lib/leads/pitch-openai.js'
 
