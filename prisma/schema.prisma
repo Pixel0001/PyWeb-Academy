@@ -1555,20 +1555,43 @@ model WebLead {
   verificatLa         DateTime? // când a fost verificat ultima dată site-ul
 
   // Coloane de lucru — se completează manual în timpul apelurilor
-  status   LeadStatus @default(DE_SUNAT)
-  dataApel DateTime?
-  notite   String?
+  status         LeadStatus @default(DE_SUNAT)
+  dataApel       DateTime?
+  nextFollowUpAt     DateTime? // când trebuie recontactată firma
+  followUpNotificatLa DateTime? // când s-a trimis ultima notificare pe Telegram
+  notite             String? // legacy — notițele noi stau în WebLeadNota
 
-  runId     String?  @db.ObjectId // ultima rulare în care a apărut
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  runId             String?  @db.ObjectId // ultima rulare în care a apărut
+  descoperitInRunId String?  @db.ObjectId // rularea care a găsit-o PRIMA dată (nu se mai schimbă)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  notiteIstoric WebLeadNota[] @relation("WebLeadNotite")
 
   @@index([scor])
   @@index([status])
   @@index([oras])
   @@index([runId])
+  @@index([descoperitInRunId])
+  @@index([nextFollowUpAt])
   @@index([calitateSite])
   @@map("web_leads")
+}
+
+// Istoricul discuțiilor cu o firmă — o notiță per apel, nu un câmp care se
+// suprascrie. Când suni a treia oară vrei să vezi ce s-a zis la primele două.
+model WebLeadNota {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  webLeadId  String   @db.ObjectId
+  continut   String
+  autorNume  String? // cine a scris notița
+  createdAt  DateTime @default(now())
+
+  webLead WebLead @relation("WebLeadNotite", fields: [webLeadId], references: [id], onDelete: Cascade)
+
+  @@index([webLeadId, createdAt])
+  @@map("web_lead_notes")
 }
 
 enum LeadStatus {

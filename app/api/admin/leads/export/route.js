@@ -10,6 +10,7 @@ import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
 import { construiesteXlsx, construiesteCsv } from '@/lib/leads/export'
+import { construiesteFiltre, construiesteOrdine } from '../route'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,23 +28,11 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const format = (searchParams.get('format') || 'xlsx').toLowerCase()
 
-    const where = {}
-    const oras = searchParams.get('oras')
-    const calitate = searchParams.get('calitate')
-    const status = searchParams.get('status')
-    const runId = searchParams.get('runId')
-    const scorMin = parseInt(searchParams.get('scorMin') || '0', 10)
+    // Exact aceleași filtre ca lista de pe ecran — ce vezi e ce iese în fișier.
+    const where = await construiesteFiltre(searchParams)
+    const orderBy = construiesteOrdine(searchParams.get('sortare'))
 
-    if (oras) where.oras = oras
-    if (calitate) where.calitateSite = calitate
-    if (status) where.status = status
-    if (runId) where.runId = runId
-    if (scorMin > 0) where.scor = { gte: scorMin }
-
-    const leaduri = await prisma.webLead.findMany({
-      where,
-      orderBy: [{ scor: 'desc' }, { nrRecenzii: 'desc' }],
-    })
+    const leaduri = await prisma.webLead.findMany({ where, orderBy })
 
     if (!leaduri.length) {
       return NextResponse.json({ error: 'Nu există lead-uri de exportat' }, { status: 404 })
