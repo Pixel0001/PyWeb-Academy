@@ -33,7 +33,11 @@ export default async function LeadsPage() {
   const [leaduri, total, peCalitate, rulari, apeluriLuna, rulareActiva] = await Promise.all([
     prisma.webLead.findMany({
       orderBy: [{ scor: 'desc' }, { nrRecenzii: 'desc' }],
-      take: 200,
+      take: 300,
+      include: {
+        // Istoricul discuțiilor, ca să apară imediat la deschiderea unui lead
+        notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 },
+      },
     }),
     prisma.webLead.count(),
     prisma.webLead.groupBy({ by: ['calitateSite'], _count: true }),

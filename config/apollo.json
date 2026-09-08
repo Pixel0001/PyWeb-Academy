@@ -1,0 +1,95 @@
+{
+  "_comentariu": "Setările integrării cu Apollo.io. Instrument de prospectare B2B: cauți companii și oameni în orice țară și domeniu, le afli emailul și îi bagi în secvențe de email. Separat de /admin/leads (care e despre firme din Moldova fără site).",
+
+  "credite": {
+    "_comentariu": "Planul tău Apollo. `totalLunar` e doar pentru afișaj — Apollo nu expune un endpoint de sold, așa că numărăm noi ce cheltuim și comparăm cu numărul de aici. Actualizează-l dacă schimbi planul.",
+    "totalLunar": 2500,
+    "planUsd": 59,
+    "avertismentLaProcent": 80,
+    "opresteLaProcent": 95
+  },
+
+  "cautare": {
+    "_comentariu": "Căutarea de persoane e GRATUITĂ la Apollo (0 credite). Doar enrich-ul costă.",
+    "perPagina": 25,
+    "paginiMaxPeCautare": 10,
+    "reincercari": 3
+  },
+
+  "enrich": {
+    "_comentariu": "1 credit pentru email. Telefonul mobil costă +8 credite și vine asincron, deci e oprit implicit — 9 credite per contact ar goli planul în 277 de contacte.",
+    "marimeLot": 10,
+    "revealEmailuriPersonale": true,
+    "revealTelefon": false,
+    "crediteEstimatePerContact": 1,
+    "doarCeiCuEmail": true
+  },
+
+  "secvente": {
+    "_comentariu": "Apollo trimite efectiv emailurile: se ocupă de livrare, pauze între mesaje, dezabonări și warmup. Noi alegem pe cine băgăm și de pe ce adresă pleacă.",
+    "rotatieMailboxuri": true,
+    "maxContactePeAdaugare": 100
+  },
+
+  "sanatateEmail": {
+    "_comentariu": "Praguri peste care un mailbox e considerat în pericol. Sub ele, campania se oprește ca să nu-ți arzi domeniul.",
+    "bounceMaxProcent": 5,
+    "spamMaxProcent": 0.3,
+    "livrareMinProcent": 90,
+    "avertismentUtilizareZilnicaProcent": 80
+  },
+
+  "seniorityDisponibile": [
+    "owner",
+    "founder",
+    "c_suite",
+    "partner",
+    "vp",
+    "head",
+    "director",
+    "manager",
+    "senior",
+    "entry",
+    "intern"
+  ],
+
+  "marimiCompanie": [
+    { "eticheta": "1–10", "valoare": "1,10" },
+    { "eticheta": "11–20", "valoare": "11,20" },
+    { "eticheta": "21–50", "valoare": "21,50" },
+    { "eticheta": "51–100", "valoare": "51,100" },
+    { "eticheta": "101–200", "valoare": "101,200" },
+    { "eticheta": "201–500", "valoare": "201,500" },
+    { "eticheta": "501–1000", "valoare": "501,1000" },
+    { "eticheta": "1001–5000", "valoare": "1001,5000" },
+    { "eticheta": "5000+", "valoare": "5001,100000" }
+  ],
+
+  "_sabloaneCautare": "Puncte de plecare rapide pentru căutări des folosite. Le poți schimba, șterge sau adăuga.",
+  "sabloaneCautare": [
+    {
+      "nume": "Fondatori de firme mici, Irlanda",
+      "filtre": {
+        "person_seniorities": ["owner", "founder", "c_suite"],
+        "organization_locations": ["Ireland"],
+        "organization_num_employees_ranges": ["11,20", "21,50"]
+      }
+    },
+    {
+      "nume": "HR / Recrutare, UK",
+      "filtre": {
+        "person_titles": ["HR Manager", "Head of People", "Talent Acquisition"],
+        "organization_locations": ["United Kingdom"],
+        "organization_num_employees_ranges": ["51,100", "101,200"]
+      }
+    },
+    {
+      "nume": "Directori, România",
+      "filtre": {
+        "person_seniorities": ["owner", "founder", "c_suite", "director"],
+        "organization_locations": ["Romania"],
+        "organization_num_employees_ranges": ["11,20", "21,50", "51,100"]
+      }
+    }
+  ]
+}

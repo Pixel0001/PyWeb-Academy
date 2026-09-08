@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   PhoneIcon,
@@ -10,34 +11,23 @@ import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   GlobeAltIcon,
-  MapPinIcon,
-  ClipboardDocumentIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ChevronRightIcon,
   ChatBubbleLeftRightIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
-
-// ============================================================
-// ETICHETE ȘI CULORI
-// ============================================================
-
-const CALITATE = {
-  LIPSA: { eticheta: 'Fără site', culoare: 'bg-red-100 text-red-800', puncte: 50 },
-  MORT: { eticheta: 'Site mort', culoare: 'bg-orange-100 text-orange-800', puncte: 45 },
-  DOAR_SOCIAL: { eticheta: 'Doar social', culoare: 'bg-amber-100 text-amber-800', puncte: 40 },
-  FARA_HTTPS: { eticheta: 'Fără HTTPS', culoare: 'bg-yellow-100 text-yellow-800', puncte: 25 },
-  NEADAPTAT_MOBIL: { eticheta: 'Nemobil', culoare: 'bg-lime-100 text-lime-800', puncte: 20 },
-  LENT: { eticheta: 'Lent', culoare: 'bg-sky-100 text-sky-800', puncte: 15 },
-  OK: { eticheta: 'Site OK', culoare: 'bg-gray-100 text-gray-600', puncte: 0 },
-}
-
-const STATUS = {
-  DE_SUNAT: { eticheta: '📞 De sunat', culoare: 'bg-blue-100 text-blue-800' },
-  SUNAT: { eticheta: '☎️ Sunat', culoare: 'bg-yellow-100 text-yellow-800' },
-  INTERESAT: { eticheta: '🟢 Interesat', culoare: 'bg-green-100 text-green-800' },
-  REFUZ: { eticheta: '🔴 Refuz', culoare: 'bg-red-100 text-red-800' },
-  NU_MA_SUNA: { eticheta: '⛔ Nu mă suna', culoare: 'bg-gray-200 text-gray-700' },
-}
+import {
+  STATUSURI,
+  getStatus,
+  getCalitate,
+  FILTRE_FOLLOWUP,
+  PERIOADE,
+  SORTARI,
+  stareFollowUp,
+  formateazaFollowUp,
+  STILURI_FOLLOWUP,
+} from '@/lib/leads/statusuri'
 
 /** Verde peste 70, galben 40–70, gri sub 40 — la fel ca în Excel. */
 function culoareScor(scor) {
@@ -51,7 +41,6 @@ function ratingRo(rating) {
 }
 
 // Rețelele pe care pot scrie unei firme care nu și-a lăsat numărul în Maps.
-// Lista trebuie să rămână în pas cu `verificareSite.domeniiSociale` din config.
 const RETELE = [
   { potrivire: /facebook\.com/i, nume: 'Facebook' },
   { potrivire: /instagram\.com/i, nume: 'Instagram' },
@@ -60,12 +49,14 @@ const RETELE = [
   { potrivire: /linktr\.ee/i, nume: 'Linktree' },
 ]
 
-/** Dacă firma n-are telefon, dar are pagină de social, întoarce linkul și rețeaua. */
 function contactSocial(lead) {
   if (!lead.siteUrl) return null
   const retea = RETELE.find((r) => r.potrivire.test(lead.siteUrl))
   return retea ? { url: lead.siteUrl, nume: retea.nume } : null
 }
+
+const selectClass =
+  'rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
 
 // ============================================================
 // COMPONENTA PRINCIPALĂ
@@ -85,13 +76,21 @@ export default function LeadsClient({
   const [leaduri, setLeaduri] = useState(leaduriInitiale)
   const [stats, setStats] = useState(statistici)
   const [istoric, setIstoric] = useState(rulari)
+  const [seIncarca, setSeIncarca] = useState(false)
 
-  // ── Filtre tabel ──────────────────────────────────────────────────
+  // ── Filtre (se aplică pe server) ──────────────────────────────────
   const [cautare, setCautare] = useState('')
-  const [filtruOras, setFiltruOras] = useState('')
-  const [filtruCalitate, setFiltruCalitate] = useState('')
-  const [filtruStatus, setFiltruStatus] = useState('')
-  const [scorMin, setScorMin] = useState(0)
+  const [filtre, setFiltre] = useState({
+    status: '',
+    oras: '',
+    calitate: '',
+    categorie: '',
+    perioada: '',
+    followUp: '',
+    sortare: 'scor',
+    scorMin: 0,
+    doarNoi: false,
+  })
 
   // ── Rulare ────────────────────────────────────────────────────────
   const [panouRulare, setPanouRulare] = useState(false)
@@ -101,11 +100,138 @@ export default function LeadsClient({
   const [runId, setRunId] = useState(rulareActiva?.id || null)
   const [progres, setProgres] = useState(null)
   const [loguri, setLoguri] = useState([])
+  const [rulareBlocanta, setRulareBlocanta] = useState(null)
   const opresteRef = useRef(false)
 
   // ============================================================
-  // ESTIMAREA COSTULUI (înainte de a cheltui ceva)
+  // ÎNCĂRCAREA LISTEI (filtrarea se face pe server)
   // ============================================================
+  const parametri = useMemo(() => {
+    const p = new URLSearchParams()
+    if (cautare.trim()) p.set('q', cautare.trim())
+    if (filtre.status) p.set('status', filtre.status)
+    if (filtre.oras) p.set('oras', filtre.oras)
+    if (filtre.calitate) p.set('calitate', filtre.calitate)
+    if (filtre.categorie) p.set('categorie', filtre.categorie)
+    if (filtre.perioada) p.set('perioada', filtre.perioada)
+    if (filtre.followUp) p.set('followUp', filtre.followUp)
+    if (filtre.sortare) p.set('sortare', filtre.sortare)
+    if (filtre.scorMin > 0) p.set('scorMin', String(filtre.scorMin))
+    if (filtre.doarNoi) p.set('doarNoi', '1')
+    return p
+  }, [cautare, filtre])
+
+  const incarca = useCallback(async () => {
+    setSeIncarca(true)
+    try {
+      const raspuns = await fetch(`/api/admin/leads?${parametri.toString()}&limita=300`)
+      if (!raspuns.ok) return
+      const date = await raspuns.json()
+      setLeaduri(date.leaduri)
+      setStats((s) => ({ ...s, afisate: date.total }))
+    } catch {
+      /* rețeaua a picat — lista rămâne cum era */
+    } finally {
+      setSeIncarca(false)
+    }
+  }, [parametri])
+
+  // Reîncărcăm la schimbarea filtrelor, cu o pauză scurtă pentru scris.
+  const primaRandare = useRef(true)
+  useEffect(() => {
+    if (primaRandare.current) {
+      primaRandare.current = false
+      return
+    }
+    const t = setTimeout(incarca, 300)
+    return () => clearTimeout(t)
+  }, [incarca])
+
+  // ============================================================
+  // BUCLA DE EXECUȚIE A RULĂRII
+  // ============================================================
+  const ruleazaPasi = useCallback(
+    async (id) => {
+      opresteRef.current = false
+      setRuleaza(true)
+
+      let esecuriLaRand = 0
+
+      while (!opresteRef.current) {
+        let raspuns
+        try {
+          raspuns = await fetch(`/api/admin/leads/runs/${id}/step`, { method: 'POST' })
+        } catch {
+          // Rețeaua a picat — reîncercăm de câteva ori înainte să renunțăm.
+          if (++esecuriLaRand > 5) {
+            toast.error('Conexiune pierdută. Rularea rămâne salvată — reia-o oricând.')
+            break
+          }
+          await new Promise((r) => setTimeout(r, 4000))
+          continue
+        }
+
+        if (raspuns.status === 202) {
+          await new Promise((r) => setTimeout(r, 3000))
+          continue
+        }
+
+        // 504 = pasul a depășit limita funcției. Progresul e salvat în baza de
+        // date, deci pur și simplu cerem pasul din nou de unde a rămas.
+        if (raspuns.status >= 500) {
+          if (++esecuriLaRand > 5) {
+            toast.error('Serverul nu răspunde. Rularea rămâne salvată — reia-o de pe pagină.')
+            break
+          }
+          await new Promise((r) => setTimeout(r, 5000))
+          continue
+        }
+
+        esecuriLaRand = 0
+        const date = await raspuns.json().catch(() => ({}))
+
+        if (!raspuns.ok) {
+          toast.error(date.error || 'Pasul a eșuat')
+          break
+        }
+
+        setProgres({ ...date.progres, faza: date.faza, rezumat: date.rezumat })
+        if (date.loguri?.length) setLoguri(date.loguri)
+        if (date.avertisment) toast(date.avertisment, { icon: '⚠️', duration: 8000 })
+
+        if (date.terminat) {
+          if (date.eroare) toast.error(`Rulare oprită: ${date.eroare}`)
+          else toast.success('Rulare încheiată. Vezi firmele noi în listă.')
+          break
+        }
+      }
+
+      setRuleaza(false)
+      // După o rulare, arătăm implicit doar firmele noi.
+      setFiltre((f) => ({ ...f, doarNoi: true }))
+      await incarca()
+      await reincarcaRulari()
+    },
+    [incarca]
+  )
+
+  useEffect(() => {
+    if (rulareActiva?.id) ruleazaPasi(rulareActiva.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function reincarcaRulari() {
+    try {
+      const r = await fetch('/api/admin/leads/runs')
+      if (!r.ok) return
+      const d = await r.json()
+      setIstoric(d.rulari)
+      setStats((s) => ({ ...s, apeluriLunaCurenta: d.apeluriLunaCurenta }))
+    } catch {
+      /* opțional */
+    }
+  }
+
   const estimare = useMemo(() => {
     const interogari = oraseAlese.length * categoriiAlese.length
     const apeluriMax = interogari * optiuni.paginiMax
@@ -119,59 +245,6 @@ export default function LeadsClient({
       depaseste: apeluriMax > optiuni.buget.maxApeluriPeRulare,
     }
   }, [oraseAlese, categoriiAlese, optiuni])
-
-  // ============================================================
-  // BUCLA DE EXECUȚIE — cere pas după pas până se termină
-  // ============================================================
-  const ruleazaPasi = useCallback(async (id) => {
-    opresteRef.current = false
-    setRuleaza(true)
-
-    while (!opresteRef.current) {
-      let raspuns
-      try {
-        raspuns = await fetch(`/api/admin/leads/runs/${id}/step`, { method: 'POST' })
-      } catch {
-        toast.error('Conexiune pierdută. Rularea rămâne salvată — reia-o oricând.')
-        break
-      }
-
-      // 202 = un alt pas rulează deja (altă filă deschisă). Așteptăm puțin.
-      if (raspuns.status === 202) {
-        await new Promise((r) => setTimeout(r, 3000))
-        continue
-      }
-
-      const date = await raspuns.json().catch(() => ({}))
-
-      if (!raspuns.ok) {
-        toast.error(date.error || 'Pasul a eșuat')
-        break
-      }
-
-      setProgres({ ...date.progres, faza: date.faza, rezumat: date.rezumat })
-      if (date.loguri?.length) setLoguri(date.loguri)
-
-      if (date.avertisment) {
-        toast(date.avertisment, { icon: '⚠️', duration: 8000 })
-      }
-
-      if (date.terminat) {
-        if (date.eroare) toast.error(`Rulare oprită: ${date.eroare}`)
-        else toast.success('Rulare încheiată. Lead-urile sunt în tabel.')
-        break
-      }
-    }
-
-    setRuleaza(false)
-    await reincarca()
-  }, [])
-
-  // Dacă intru pe pagină și o rulare era în curs, o continui automat.
-  useEffect(() => {
-    if (rulareActiva?.id) ruleazaPasi(rulareActiva.id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   async function porneste() {
     if (!areCheieGoogle) {
@@ -191,6 +264,13 @@ export default function LeadsClient({
     const date = await raspuns.json()
 
     if (!raspuns.ok) {
+      // 409 = există o rulare neterminată. Nu doar ne plângem: îi arătăm
+      // utilizatorului ce e blocat și îi dăm butoane s-o rezolve.
+      if (raspuns.status === 409 && date.rulareBlocanta) {
+        setRulareBlocanta(date.rulareBlocanta)
+        setPanouRulare(false)
+        return
+      }
       toast.error(date.error || 'Nu am putut porni rularea')
       return
     }
@@ -203,108 +283,80 @@ export default function LeadsClient({
     ruleazaPasi(date.rulare.id)
   }
 
-  async function opreste() {
-    opresteRef.current = true
-    if (runId) {
-      await fetch(`/api/admin/leads/runs/${runId}`, { method: 'DELETE' })
-    }
-    setRuleaza(false)
-    toast('Rulare oprită', { icon: '🛑' })
-    reincarca()
+  async function reiaBlocanta() {
+    if (!rulareBlocanta) return
+    const id = rulareBlocanta.id
+    setRulareBlocanta(null)
+    setRunId(id)
+    toast('Reiau rularea de unde a rămas', { icon: '▶️' })
+    ruleazaPasi(id)
   }
 
-  async function reincarca() {
-    try {
-      const raspuns = await fetch('/api/admin/leads?limita=500')
-      if (!raspuns.ok) return
-      const date = await raspuns.json()
-      setLeaduri(date.leaduri)
-      setStats((s) => ({
-        ...s,
-        total: date.total,
-        faraSite: date.leaduri.filter((l) => ['LIPSA', 'DOAR_SOCIAL'].includes(l.calitateSite)).length,
-      }))
-
-      const r = await fetch('/api/admin/leads/runs')
-      if (r.ok) {
-        const d = await r.json()
-        setIstoric(d.rulari)
-        setStats((s) => ({ ...s, apeluriLunaCurenta: d.apeluriLunaCurenta }))
-      }
-    } catch {
-      /* reîncărcarea e opțională — tabelul rămâne cum era */
+  async function anuleazaBlocanta() {
+    if (!rulareBlocanta) return
+    const raspuns = await fetch(`/api/admin/leads/runs/${rulareBlocanta.id}`, { method: 'DELETE' })
+    if (!raspuns.ok) {
+      toast.error('Nu am putut anula rularea')
+      return
     }
+    setRulareBlocanta(null)
+    toast.success('Rulare anulată. Poți porni una nouă.')
+    reincarcaRulari()
+  }
+
+  async function opreste() {
+    opresteRef.current = true
+    if (runId) await fetch(`/api/admin/leads/runs/${runId}`, { method: 'DELETE' })
+    setRuleaza(false)
+    toast('Rulare oprită', { icon: '🛑' })
+    incarca()
   }
 
   // ============================================================
   // ACȚIUNI PE LEAD
   // ============================================================
 
-  async function schimbaStatus(lead, status) {
-    setLeaduri((l) => l.map((x) => (x.id === lead.id ? { ...x, status } : x)))
+  function actualizeazaLocal(id, schimbari) {
+    setLeaduri((l) => l.map((x) => (x.id === id ? { ...x, ...schimbari } : x)))
+  }
+
+  async function salveaza(lead, date, mesajEroare) {
     const raspuns = await fetch(`/api/admin/leads/${lead.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(date),
     })
     if (!raspuns.ok) {
-      toast.error('Nu am putut salva statusul')
-      setLeaduri((l) => l.map((x) => (x.id === lead.id ? { ...x, status: lead.status } : x)))
+      toast.error(mesajEroare)
+      return null
     }
+    return (await raspuns.json()).lead
   }
 
-  async function salveazaNotite(lead, notite) {
-    if (notite === (lead.notite || '')) return
-    setLeaduri((l) => l.map((x) => (x.id === lead.id ? { ...x, notite } : x)))
-    await fetch(`/api/admin/leads/${lead.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notite }),
-    })
+  async function schimbaStatus(lead, status) {
+    const anterior = lead.status
+    actualizeazaLocal(lead.id, { status })
+    const salvat = await salveaza(lead, { status }, 'Nu am putut salva statusul')
+    if (!salvat) actualizeazaLocal(lead.id, { status: anterior })
+    else actualizeazaLocal(lead.id, { dataApel: salvat.dataApel })
   }
 
-  function copiazaPitch(pitch) {
-    navigator.clipboard?.writeText(pitch)
-    toast.success('Pitch copiat')
-  }
-
-  // ============================================================
-  // FILTRARE
-  // ============================================================
-  const leaduriFiltrate = useMemo(() => {
-    let rezultat = leaduri
-
-    if (filtruOras) rezultat = rezultat.filter((l) => l.oras === filtruOras)
-    if (filtruCalitate) rezultat = rezultat.filter((l) => l.calitateSite === filtruCalitate)
-    if (filtruStatus) rezultat = rezultat.filter((l) => l.status === filtruStatus)
-    if (scorMin > 0) rezultat = rezultat.filter((l) => (l.scor || 0) >= scorMin)
-
-    if (cautare.trim()) {
-      const q = cautare.toLowerCase().trim()
-      rezultat = rezultat.filter(
-        (l) =>
-          l.denumire?.toLowerCase().includes(q) ||
-          l.telefon?.includes(q) ||
-          l.adresa?.toLowerCase().includes(q)
-      )
+  // ── Numărătoarea de follow-up din lista curentă ──────────────────
+  const contorFollowUp = useMemo(() => {
+    const c = { restant: 0, azi: 0, urmeaza: 0 }
+    for (const l of leaduri) {
+      const s = stareFollowUp(l.nextFollowUpAt)
+      if (s) c[s]++
     }
-
-    return rezultat
-  }, [leaduri, filtruOras, filtruCalitate, filtruStatus, scorMin, cautare])
-
-  const parametriExport = useMemo(() => {
-    const p = new URLSearchParams()
-    if (filtruOras) p.set('oras', filtruOras)
-    if (filtruCalitate) p.set('calitate', filtruCalitate)
-    if (filtruStatus) p.set('status', filtruStatus)
-    if (scorMin > 0) p.set('scorMin', String(scorMin))
-    return p.toString()
-  }, [filtruOras, filtruCalitate, filtruStatus, scorMin])
+    return c
+  }, [leaduri])
 
   const oraseleDinDate = useMemo(
     () => [...new Set(leaduri.map((l) => l.oras).filter(Boolean))].sort(),
     [leaduri]
   )
+
+  const setFiltru = (cheie, valoare) => setFiltre((f) => ({ ...f, [cheie]: valoare }))
 
   // ============================================================
   // RANDARE
@@ -323,14 +375,14 @@ export default function LeadsClient({
 
         <div className="flex flex-wrap gap-2">
           <a
-            href={`/api/admin/leads/export?format=xlsx&${parametriExport}`}
+            href={`/api/admin/leads/export?format=xlsx&${parametri.toString()}`}
             className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
             Excel
           </a>
           <a
-            href={`/api/admin/leads/export?format=csv&${parametriExport}`}
+            href={`/api/admin/leads/export?format=csv&${parametri.toString()}`}
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
@@ -357,7 +409,6 @@ export default function LeadsClient({
         </div>
       </div>
 
-      {/* ── Avertisment lipsă cheie ────────────────────────────── */}
       {!areCheieGoogle && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
@@ -371,7 +422,45 @@ export default function LeadsClient({
         </div>
       )}
 
-      {/* ── Cartonașe cu cifre ─────────────────────────────────── */}
+      {/* ── Rulare neterminată ─────────────────────────────────── */}
+      {rulareBlocanta && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900">Ai o rulare neterminată</p>
+              <p className="mt-0.5 text-sm text-amber-800">
+                Faza <b>{rulareBlocanta.faza}</b> · {rulareBlocanta.interogariFacute} din{' '}
+                {rulareBlocanta.totalInterogari} interogări ({rulareBlocanta.procent}%) ·{' '}
+                {rulareBlocanta.firmeNoi} firme noi găsite · ultima mișcare acum{' '}
+                {rulareBlocanta.minuteDeLaUltimaMiscare} min.
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                Nu poți porni alta până n-o rezolvi pe asta. Reluarea continuă exact de unde a
+                rămas — nu plătești din nou pentru interogările deja făcute.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={reiaBlocanta}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  Reia de unde a rămas
+                </button>
+                <button
+                  onClick={anuleazaBlocanta}
+                  className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                >
+                  Anulează rularea
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cartonașe ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Cartonas titlu="Total lead-uri" valoare={stats.total} />
         <Cartonas
@@ -390,14 +479,46 @@ export default function LeadsClient({
           titlu="Pitch generat de"
           valoare={furnizorPitch === 'openai' ? modelPitch || 'OpenAI' : 'Șabloane'}
           subtitlu={
-            furnizorPitch === 'openai'
-              ? 'validat: fără cifre inventate'
-              : 'fără cheie OpenAI — gratis'
+            furnizorPitch === 'openai' ? 'validat: fără cifre inventate' : 'fără cheie OpenAI — gratis'
           }
         />
       </div>
 
-      {/* ── Panoul de rulare nouă ──────────────────────────────── */}
+      {/* ── Bara de recontactare ──────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow-sm">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          De recontactat
+        </span>
+        {[
+          { cheie: 'restante', stare: 'restant', eticheta: 'Restante' },
+          { cheie: 'azi', stare: 'azi', eticheta: 'Azi' },
+          { cheie: 'urmeaza', stare: 'urmeaza', eticheta: 'Urmează' },
+        ].map(({ cheie, stare, eticheta }) => {
+          const stil = STILURI_FOLLOWUP[stare]
+          const activ = filtre.followUp === cheie
+          return (
+            <button
+              key={cheie}
+              onClick={() => setFiltru('followUp', activ ? '' : cheie)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                activ ? `${stil.color} ring-2 ring-offset-1 ring-indigo-400` : stil.color
+              }`}
+            >
+              {stil.emoji} {eticheta}
+              <span className="font-bold">{contorFollowUp[stare]}</span>
+            </button>
+          )
+        })}
+        {filtre.followUp && (
+          <button
+            onClick={() => setFiltru('followUp', '')}
+            className="text-xs text-gray-500 hover:text-gray-800"
+          >
+            arată tot
+          </button>
+        )}
+      </div>
+
       {panouRulare && poateRula && !ruleaza && (
         <PanouRulare
           optiuni={optiuni}
@@ -411,12 +532,11 @@ export default function LeadsClient({
         />
       )}
 
-      {/* ── Progresul rulării ──────────────────────────────────── */}
       {ruleaza && <PanouProgres progres={progres} loguri={loguri} />}
 
       {/* ── Filtre ─────────────────────────────────────────────── */}
       <div className="rounded-xl bg-white p-4 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative lg:col-span-2">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -424,89 +544,115 @@ export default function LeadsClient({
               value={cautare}
               onChange={(e) => setCautare(e.target.value)}
               placeholder="Caută după nume, telefon, adresă..."
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
-          <select
-            value={filtruOras}
-            onChange={(e) => setFiltruOras(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
+          <select value={filtre.status} onChange={(e) => setFiltru('status', e.target.value)} className={selectClass}>
+            <option value="">Orice status</option>
+            {STATUSURI.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.emoji} {s.label}
+              </option>
+            ))}
+          </select>
+
+          <select value={filtre.sortare} onChange={(e) => setFiltru('sortare', e.target.value)} className={selectClass}>
+            {SORTARI.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+
+          <select value={filtre.oras} onChange={(e) => setFiltru('oras', e.target.value)} className={selectClass}>
             <option value="">Toate orașele</option>
             {oraseleDinDate.map((o) => (
               <option key={o} value={o}>{o}</option>
             ))}
           </select>
 
-          <select
-            value={filtruCalitate}
-            onChange={(e) => setFiltruCalitate(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
+          <select value={filtre.calitate} onChange={(e) => setFiltru('calitate', e.target.value)} className={selectClass}>
             <option value="">Orice calitate site</option>
-            {Object.entries(CALITATE).map(([cheie, v]) => (
-              <option key={cheie} value={cheie}>
-                {v.eticheta} (+{v.puncte})
-              </option>
+            {['LIPSA', 'MORT', 'DOAR_SOCIAL', 'FARA_HTTPS', 'NEADAPTAT_MOBIL', 'LENT', 'OK'].map((c) => {
+              const info = getCalitate(c)
+              return (
+                <option key={c} value={c}>
+                  {info.emoji} {info.label} (+{info.puncte})
+                </option>
+              )
+            })}
+          </select>
+
+          <select value={filtre.categorie} onChange={(e) => setFiltru('categorie', e.target.value)} className={selectClass}>
+            <option value="">Orice categorie</option>
+            {optiuni.categorii.map((c) => (
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
 
-          <select
-            value={filtruStatus}
-            onChange={(e) => setFiltruStatus(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="">Orice status</option>
-            {Object.entries(STATUS).map(([cheie, v]) => (
-              <option key={cheie} value={cheie}>{v.eticheta}</option>
+          <select value={filtre.perioada} onChange={(e) => setFiltru('perioada', e.target.value)} className={selectClass}>
+            {PERIOADE.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.value ? `Găsite: ${p.label.toLowerCase()}` : 'Găsite: oricând'}
+              </option>
             ))}
           </select>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
-          <label className="text-sm text-gray-600">Scor minim: <b>{scorMin}</b></label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={scorMin}
-            onChange={(e) => setScorMin(Number(e.target.value))}
-            className="h-2 flex-1 max-w-xs cursor-pointer accent-indigo-600"
-          />
-          <span className="text-sm text-gray-500">
-            {leaduriFiltrate.length} din {leaduri.length}
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={filtre.doarNoi}
+              onChange={(e) => setFiltru('doarNoi', e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
+              <SparklesIcon className="h-3.5 w-3.5 text-indigo-500" />
+              Doar firme noi
+            </span>
+            <span className="text-[11px] text-gray-400">(din ultima rulare)</span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-600">
+              Scor minim: <b>{filtre.scorMin}</b>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={filtre.scorMin}
+              onChange={(e) => setFiltru('scorMin', Number(e.target.value))}
+              className="h-2 w-32 cursor-pointer accent-indigo-600"
+            />
+          </div>
+
+          <span className="ml-auto text-xs text-gray-500">
+            {seIncarca ? 'se încarcă...' : `${leaduri.length} afișate`}
           </span>
         </div>
       </div>
 
-      {/* ── Tabelul ────────────────────────────────────────────── */}
-      {leaduriFiltrate.length === 0 ? (
+      {/* ── Lista ──────────────────────────────────────────────── */}
+      {leaduri.length === 0 ? (
         <div className="rounded-xl bg-white p-10 text-center shadow-sm">
           <GlobeAltIcon className="mx-auto h-10 w-10 text-gray-300" />
           <p className="mt-3 font-medium text-gray-900">Niciun lead</p>
           <p className="mt-1 text-sm text-gray-500">
-            {leaduri.length === 0
+            {stats.total === 0
               ? 'Apasă „Caută firme noi" ca să pornești prima rulare.'
               : 'Niciun lead nu se potrivește cu filtrele.'}
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {leaduriFiltrate.map((lead) => (
-            <RandLead
-              key={lead.id}
-              lead={lead}
-              onStatus={schimbaStatus}
-              onNotite={salveazaNotite}
-              onCopiaza={copiazaPitch}
-            />
+        <div className="space-y-1">
+          {leaduri.map((lead) => (
+            <RandLead key={lead.id} lead={lead} onStatus={schimbaStatus} />
           ))}
         </div>
       )}
 
-      {/* ── Istoricul rulărilor ────────────────────────────────── */}
       {istoric.length > 0 && <IstoricRulari rulari={istoric} />}
     </div>
   )
@@ -525,6 +671,125 @@ function Cartonas({ titlu, valoare, subtitlu, accent = 'text-gray-900' }) {
     </div>
   )
 }
+
+/**
+ * Un lead pe UN SINGUR RÂND.
+ *
+ * Când ai 300 de firme de sunat, cardurile mari te obligă să derulezi la
+ * nesfârșit. Aici încape tot ce-ți trebuie ca să decizi dacă suni acum:
+ * scor, nume, ce e prost la site, rating, oraș, recontactare, telefon.
+ * Restul — pitch, istoric, analiză — sunt la un clic distanță, pe pagina firmei.
+ */
+function RandLead({ lead, onStatus }) {
+  const calitate = getCalitate(lead.calitateSite)
+  const status = getStatus(lead.status)
+  const social = contactSocial(lead)
+  const stareFU = stareFollowUp(lead.nextFollowUpAt)
+  const stilFU = stareFU ? STILURI_FOLLOWUP[stareFU] : null
+  const nrNotite = lead.notiteIstoric?.length || 0
+
+  return (
+    <div
+      className={`group flex items-center gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm transition hover:bg-indigo-50/40 hover:shadow ${
+        stareFU === 'restant' ? 'ring-1 ring-red-200' : ''
+      }`}
+    >
+      {/* Scorul */}
+      <div
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold ${culoareScor(lead.scor)}`}
+        title={`Scor ${lead.scor} din 100`}
+      >
+        {lead.scor}
+      </div>
+
+      {/* Numele + tot ce ține de firmă — zona pe care dai clic */}
+      <Link href={`/admin/leads/${lead.id}`} className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate text-sm font-medium text-gray-900 group-hover:text-indigo-700">
+          {lead.denumire}
+        </span>
+
+        <span
+          className={`hidden shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium sm:inline ${calitate.color}`}
+          title={lead.observatiiSite || calitate.label}
+        >
+          {calitate.emoji} {calitate.label}
+        </span>
+
+        {lead.rating != null && (
+          <span className="hidden shrink-0 text-xs text-gray-500 md:inline">
+            ⭐ {ratingRo(lead.rating)}
+            <span className="text-gray-400">·{lead.nrRecenzii}</span>
+          </span>
+        )}
+
+        <span className="hidden shrink-0 text-xs text-gray-400 lg:inline">{lead.oras}</span>
+
+        {stilFU && (
+          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${stilFU.color}`}>
+            {stilFU.emoji} {formateazaFollowUp(lead.nextFollowUpAt)}
+          </span>
+        )}
+
+        {nrNotite > 0 && (
+          <span
+            className="hidden shrink-0 items-center gap-0.5 text-[10px] text-gray-400 sm:inline-flex"
+            title={`${nrNotite} notițe`}
+          >
+            💬{nrNotite}
+          </span>
+        )}
+      </Link>
+
+      {/* Contactul */}
+      {lead.telefon ? (
+        <a
+          href={`tel:${lead.telefon}`}
+          onClick={(e) => e.stopPropagation()}
+          className="hidden shrink-0 items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 sm:inline-flex"
+        >
+          <PhoneIcon className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">{lead.telefon}</span>
+        </a>
+      ) : (
+        social && (
+          <a
+            href={social.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="hidden shrink-0 items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 sm:inline-flex"
+            title={`Fără telefon — scrie pe ${social.nume}`}
+          >
+            <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" />
+          </a>
+        )
+      )}
+
+      {/* Statusul — se schimbă direct din listă, fără să deschizi firma */}
+      <select
+        value={lead.status}
+        onChange={(e) => onStatus(lead, e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        className={`shrink-0 rounded border px-1 py-0.5 text-[11px] font-medium ${status.color}`}
+      >
+        {STATUSURI.map((s) => (
+          <option key={s.value} value={s.value}>
+            {s.emoji} {s.label}
+          </option>
+        ))}
+      </select>
+
+      <Link
+        href={`/admin/leads/${lead.id}`}
+        className="shrink-0 rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600"
+        title="Deschide firma"
+      >
+        <ChevronRightIcon className="h-4 w-4" />
+      </Link>
+    </div>
+  )
+}
+
 
 function PanouRulare({
   optiuni,
@@ -545,10 +810,9 @@ function PanouRulare({
       <h2 className="font-semibold text-gray-900">Rulare nouă</h2>
       <p className="mt-0.5 text-sm text-gray-600">
         Se caută fiecare categorie în fiecare oraș. Interogările rulate în ultimele 30 de zile sunt
-        sărite automat — nu plătești de două ori pentru aceleași firme.
+        sărite automat, iar firmele deja găsite nu se salvează a doua oară.
       </p>
 
-      {/* Orașe */}
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-sm font-medium text-gray-700">Orașe ({oraseAlese.length})</p>
@@ -575,7 +839,6 @@ function PanouRulare({
         </div>
       </div>
 
-      {/* Categorii */}
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-sm font-medium text-gray-700">Categorii ({categoriiAlese.length})</p>
@@ -601,7 +864,6 @@ function PanouRulare({
         </div>
       </div>
 
-      {/* Estimarea costului */}
       <div className="mt-4 rounded-lg bg-white p-3 text-sm">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div>
@@ -666,9 +928,7 @@ function PanouProgres({ progres, loguri }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
           <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-600" />
         </span>
-        <p className="font-medium text-gray-900">
-          {faze[progres?.faza] || 'Pregătesc rularea'}
-        </p>
+        <p className="font-medium text-gray-900">{faze[progres?.faza] || 'Pregătesc rularea'}</p>
       </div>
 
       {progres && (
@@ -680,18 +940,10 @@ function PanouProgres({ progres, loguri }) {
             />
           </div>
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">
-            <span>
-              Interogări: <b>{progres.interogariFacute}/{progres.totalInterogari}</b>
-            </span>
-            <span>
-              Apeluri API: <b>{progres.rezumat?.apeluriApi ?? 0}</b>
-            </span>
-            <span>
-              Cost: <b>{progres.rezumat?.costEstimatUsd ?? 0} $</b>
-            </span>
-            <span>
-              Firme: <b>{progres.rezumat?.firmeUnice ?? 0}</b>
-            </span>
+            <span>Interogări: <b>{progres.interogariFacute}/{progres.totalInterogari}</b></span>
+            <span>Apeluri API: <b>{progres.rezumat?.apeluriApi ?? 0}</b></span>
+            <span>Cost: <b>{progres.rezumat?.costEstimatUsd ?? 0} $</b></span>
+            <span>Firme noi: <b>{progres.rezumat?.firmeNoi ?? 0}</b></span>
             {progres.rezumat?.interogariSarite > 0 && (
               <span className="text-green-600">
                 Sărite din cache: <b>{progres.rezumat.interogariSarite}</b>
@@ -710,152 +962,12 @@ function PanouProgres({ progres, loguri }) {
   )
 }
 
-function RandLead({ lead, onStatus, onNotite, onCopiaza }) {
-  const [deschis, setDeschis] = useState(false)
-  const calitate = CALITATE[lead.calitateSite] || {
-    eticheta: 'Neverificat',
-    culoare: 'bg-gray-100 text-gray-500',
-  }
-  const social = contactSocial(lead)
-
-  return (
-    <div className="rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start gap-3">
-        {/* Scorul */}
-        <div
-          className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg font-bold ${culoareScor(lead.scor)}`}
-          title="Scor 0–100: site + rating + recenzii"
-        >
-          <span className="text-lg leading-none">{lead.scor}</span>
-        </div>
-
-        {/* Datele firmei */}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate font-semibold text-gray-900">{lead.denumire}</h3>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${calitate.culoare}`}>
-              {calitate.eticheta}
-            </span>
-          </div>
-
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-            {lead.rating != null && (
-              <span>⭐ {ratingRo(lead.rating)} ({lead.nrRecenzii} recenzii)</span>
-            )}
-            {lead.oras && (
-              <span className="inline-flex items-center gap-1">
-                <MapPinIcon className="h-3.5 w-3.5" />
-                {lead.oras}
-              </span>
-            )}
-            {lead.categoriePrincipala && <span>{lead.categoriePrincipala}</span>}
-          </div>
-
-          {lead.observatiiSite && (
-            <p className="mt-1 text-xs text-gray-600">
-              <span className="font-medium">Site:</span> {lead.observatiiSite}
-            </p>
-          )}
-
-          {/* Pitch-ul — asta citesc la telefon */}
-          {lead.pitch && (
-            <div className="mt-2 flex items-start gap-2 rounded-lg bg-indigo-50 p-2.5">
-              <p className="flex-1 text-sm italic text-indigo-900">„{lead.pitch}&rdquo;</p>
-              <button
-                onClick={() => onCopiaza(lead.pitch)}
-                className="shrink-0 rounded p-1 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
-                title="Copiază pitch-ul"
-              >
-                <ClipboardDocumentIcon className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Acțiuni */}
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          {/* Are telefon → îl sun. N-are, dar are social → îi scriu acolo. */}
-          {lead.telefon ? (
-            <a
-              href={`tel:${lead.telefon}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
-            >
-              <PhoneIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">{lead.telefon}</span>
-            </a>
-          ) : (
-            social && (
-              <a
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-                title="Firma nu are telefon în Google Maps — scrie-i pe rețea"
-              >
-                <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Scrie pe {social.nume}</span>
-              </a>
-            )
-          )}
-
-          <select
-            value={lead.status}
-            onChange={(e) => onStatus(lead, e.target.value)}
-            className={`rounded-lg border-0 px-2 py-1 text-xs font-medium ${STATUS[lead.status]?.culoare || ''}`}
-          >
-            {Object.entries(STATUS).map(([cheie, v]) => (
-              <option key={cheie} value={cheie}>{v.eticheta}</option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => setDeschis((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
-          >
-            {deschis ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
-            Notițe
-          </button>
-        </div>
-      </div>
-
-      {/* Detalii */}
-      {deschis && (
-        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-          <textarea
-            defaultValue={lead.notite || ''}
-            onBlur={(e) => onNotite(lead, e.target.value)}
-            rows={2}
-            placeholder="Notițe din timpul apelului..."
-            className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          />
-          <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-            {lead.adresa && <span>{lead.adresa}</span>}
-            {lead.siteUrl && (
-              <a href={lead.siteUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                {lead.siteUrl}
-              </a>
-            )}
-            {lead.linkMaps && (
-              <a href={lead.linkMaps} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                Vezi pe Maps
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function IstoricRulari({ rulari }) {
   const [deschis, setDeschis] = useState(false)
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <button
-        onClick={() => setDeschis((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
-      >
+      <button onClick={() => setDeschis((v) => !v)} className="flex w-full items-center justify-between text-left">
         <h2 className="font-semibold text-gray-900">Istoric rulări ({rulari.length})</h2>
         {deschis ? <ChevronUpIcon className="h-5 w-5 text-gray-400" /> : <ChevronDownIcon className="h-5 w-5 text-gray-400" />}
       </button>
@@ -869,7 +981,7 @@ function IstoricRulari({ rulari }) {
                 <th className="pb-2 pr-3">Status</th>
                 <th className="pb-2 pr-3">Apeluri</th>
                 <th className="pb-2 pr-3">Cost</th>
-                <th className="pb-2 pr-3">Firme</th>
+                <th className="pb-2 pr-3">Firme noi</th>
                 <th className="pb-2">Fără site</th>
               </tr>
             </thead>
@@ -902,7 +1014,8 @@ function IstoricRulari({ rulari }) {
                   <td className="py-2 pr-3 text-gray-900">{r.apeluriApi}</td>
                   <td className="py-2 pr-3 text-gray-900">{(r.costUsd ?? 0).toFixed(2)} $</td>
                   <td className="py-2 pr-3 text-gray-900">
-                    {r.firmeTotal} <span className="text-xs text-gray-400">({r.firmeNoi} noi)</span>
+                    <b>{r.firmeNoi}</b>
+                    <span className="text-xs text-gray-400"> / {r.firmeTotal} atinse</span>
                   </td>
                   <td className="py-2 text-gray-900">{r.faraSite}</td>
                 </tr>

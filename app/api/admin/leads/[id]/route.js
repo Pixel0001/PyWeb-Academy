@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
-import { STATUSURI_LEAD } from '@/lib/leads/config'
+import { VALORI_STATUS } from '@/lib/leads/statusuri'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,7 +27,7 @@ export async function PATCH(request, { params }) {
     const date = {}
 
     if (corp.status !== undefined) {
-      if (!STATUSURI_LEAD.includes(corp.status)) {
+      if (!VALORI_STATUS.includes(corp.status)) {
         return NextResponse.json({ error: `Status invalid: ${corp.status}` }, { status: 400 })
       }
       date.status = corp.status
@@ -42,11 +42,28 @@ export async function PATCH(request, { params }) {
       date.dataApel = corp.dataApel ? new Date(corp.dataApel) : null
     }
 
+    // Recontactarea: dată + oră, sau null ca s-o scoatem din listă.
+    if (corp.nextFollowUpAt !== undefined) {
+      if (!corp.nextFollowUpAt) {
+        date.nextFollowUpAt = null
+      } else {
+        const cand = new Date(corp.nextFollowUpAt)
+        if (Number.isNaN(cand.getTime())) {
+          return NextResponse.json({ error: 'Dată de recontactare invalidă' }, { status: 400 })
+        }
+        date.nextFollowUpAt = cand
+      }
+    }
+
     if (!Object.keys(date).length) {
       return NextResponse.json({ error: 'Nimic de actualizat' }, { status: 400 })
     }
 
-    const lead = await prisma.webLead.update({ where: { id }, data: date })
+    const lead = await prisma.webLead.update({
+      where: { id },
+      data: date,
+      include: { notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 } },
+    })
     return NextResponse.json({ lead })
   } catch (error) {
     if (['Unauthorized', 'Forbidden'].includes(error.message)) {

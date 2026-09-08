@@ -116,14 +116,54 @@ export async function POST(request) {
     }
 
     // Nu pornim o rulare nouă cât timp alta e în curs.
+    //
+    // Dar o rulare poate rămâne agățată în „RULEAZA" dacă funcția a fost ucisă
+    // de timeout: nimeni nu mai apucă să-i schimbe statusul, iar ea ar bloca
+    // pornirea altora la nesfârșit. Așa că întâi verificăm dacă mai e vie.
     const inCurs = await prisma.leadRun.findFirst({
       where: { status: { in: ['QUEUED', 'RULEAZA'] } },
+      orderBy: { startedAt: 'desc' },
     })
+
     if (inCurs) {
-      return NextResponse.json(
-        { error: 'Există deja o rulare în curs. Așteapt-o sau anuleaz-o.', runId: inCurs.id },
-        { status: 409 }
-      )
+      const ultimaMiscare = inCurs.updatedAt || inCurs.startedAt
+      const minuteDeLaUltimaMiscare = (Date.now() - new Date(ultimaMiscare).getTime()) / 60000
+      const areLockViu =
+        inCurs.lockedAt && Date.now() - new Date(inCurs.lockedAt).getTime() < 6 * 60 * 1000
+
+      // Fără lock viu și fără nicio mișcare de 15 minute → e moartă. O închidem
+      // singuri și lăsăm rularea nouă să pornească.
+      if (!areLockViu && minuteDeLaUltimaMiscare > 15) {
+        await prisma.leadRun.update({
+          where: { id: inCurs.id },
+          data: {
+            status: 'ANULAT',
+            lockedAt: null,
+            finishedAt: new Date(),
+            eroare: 'Abandonată — nicio activitate timp de 15 minute (probabil funcția a expirat).',
+          },
+        })
+      } else {
+        const interogari = Array.isArray(inCurs.interogari) ? inCurs.interogari.length : 0
+        return NextResponse.json(
+          {
+            error: 'Ai deja o rulare neterminată. Reia-o sau anuleaz-o mai întâi.',
+            runId: inCurs.id,
+            rulareBlocanta: {
+              id: inCurs.id,
+              faza: inCurs.faza,
+              status: inCurs.status,
+              interogariFacute: inCurs.idxInterogare,
+              totalInterogari: interogari,
+              procent: interogari ? Math.round((inCurs.idxInterogare / interogari) * 100) : 0,
+              firmeNoi: inCurs.firmeNoi,
+              startedAt: inCurs.startedAt,
+              minuteDeLaUltimaMiscare: Math.round(minuteDeLaUltimaMiscare),
+            },
+          },
+          { status: 409 }
+        )
+      }
     }
 
     const { rulare, estimare } = await creeazaRulare({

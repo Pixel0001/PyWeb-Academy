@@ -40,6 +40,13 @@
     "școală de șoferi",
     "grădiniță privată",
     "centru de limbi străine",
+    "școală privată",
+    "liceu privat",
+    "școală primară privată",
+    "centru educațional",
+    "școală online",
+    "after school",
+    "centru de meditații",
     "magazin de mobilă",
     "florărie",
     "agenție imobiliară",
@@ -176,9 +183,11 @@
     "temperatura": 0.6
   },
   "pasi": {
-    "_comentariu": "Cât lucru face un singur pas al rulării (ca să nu depășească timeout-ul serverless de 60s).",
-    "interogariPePas": 5,
-    "siteuriPePas": 30,
-    "loturiPitchPePas": 2
+    "_comentariu": "Cat lucru face un singur pas. Pasul se opreste dupa bugetPasSecunde si continua la urmatorul apel, deci numerele de mai jos sunt PLAFOANE, nu tinte.",
+    "_atentie": "bugetPasSecunde trebuie sa fie MAI MIC decat maxDuration din app/api/admin/leads/runs/[id]/step/route.js (acum 300s, plan Vercel Pro). Pe Hobby: maxDuration 60 si buget 45.",
+    "bugetPasSecunde": 270,
+    "interogariPePas": 20,
+    "siteuriPePas": 100,
+    "loturiPitchPePas": 5
   }
 }
