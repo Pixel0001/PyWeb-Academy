@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   MagnifyingGlassIcon,
@@ -77,6 +78,8 @@ export default function ApolloClient({
   const [paginare, setPaginare] = useState(null)
   const [cauta, setCauta] = useState(false)
   const [alese, setAlese] = useState(new Set())
+  const [ascundeCunoscute, setAscundeCunoscute] = useState(true)
+  const [rezumatCautare, setRezumatCautare] = useState(null)
 
   // ── Contacte salvate ──────────────────────────────────────────────
   const [persoane, setPersoane] = useState(persoaneInitiale)
@@ -132,7 +135,7 @@ export default function ApolloClient({
       const r = await fetch('/api/admin/apollo/cautare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filtre, pagina }),
+        body: JSON.stringify({ filtre, pagina, ascundeCunoscute }),
       })
       const d = await r.json()
       if (!r.ok) {
@@ -141,8 +144,19 @@ export default function ApolloClient({
       }
       setRezultate(d.persoane)
       setPaginare(d.paginare)
+      setRezumatCautare({ noi: d.noi, cunoscute: d.cunoscute })
       setAlese(new Set())
-      if (!d.persoane.length) toast('Niciun rezultat pentru filtrele astea', { icon: '🔍' })
+
+      if (!d.persoane.length) {
+        toast(
+          d.cunoscute
+            ? `Toate cele ${d.cunoscute} rezultate le aveai deja salvate`
+            : 'Niciun rezultat pentru filtrele astea',
+          { icon: '🔍' }
+        )
+      } else if (d.noi) {
+        toast.success(`${d.noi} contacte noi, salvate automat`)
+      }
     } finally {
       setCauta(false)
     }
@@ -424,6 +438,9 @@ export default function ApolloClient({
           cauta={cauta}
           alese={alese}
           setAlese={setAlese}
+          ascundeCunoscute={ascundeCunoscute}
+          setAscundeCunoscute={setAscundeCunoscute}
+          rezumat={rezumatCautare}
           onCauta={ruleazaCautarea}
           onEnrich={faEnrich}
           poateGestiona={poateGestiona}
@@ -627,6 +644,9 @@ function TabCautare({
   cauta,
   alese,
   setAlese,
+  ascundeCunoscute,
+  setAscundeCunoscute,
+  rezumat,
   onCauta,
   onEnrich,
   poateGestiona,
@@ -637,8 +657,10 @@ function TabCautare({
       [cheie]: text.split(',').map((s) => s.trim()).filter(Boolean),
     }))
 
+  // Costă doar cei care au email la Apollo ȘI pe care nu i-am plătit deja.
   const cuEmail = useMemo(
-    () => rezultate.filter((p) => alese.has(p.apolloPersonId) && p.areEmail).length,
+    () =>
+      rezultate.filter((p) => alese.has(p.apolloPersonId) && p.areEmail && !p.dejaEnriched).length,
     [rezultate, alese]
   )
 
@@ -739,7 +761,19 @@ function TabCautare({
           </Camp>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-gray-700">
+            <input
+              type="checkbox"
+              checked={ascundeCunoscute}
+              onChange={(e) => setAscundeCunoscute(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+            />
+            Ascunde contactele pe care le am deja
+          </label>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             onClick={() => onCauta(1)}
             disabled={cauta}
@@ -751,6 +785,20 @@ function TabCautare({
           <span className="text-xs text-gray-400">Căutarea nu consumă credite</span>
         </div>
       </div>
+
+      {rezumat && (
+        <div className="rounded-lg bg-white p-3 text-xs shadow-sm">
+          <span className="font-medium text-green-700">{rezumat.noi} noi</span>
+          <span className="mx-2 text-gray-300">·</span>
+          <span className="text-gray-600">{rezumat.cunoscute} îi aveam deja</span>
+          {ascundeCunoscute && rezumat.cunoscute > 0 && (
+            <span className="ml-2 text-gray-400">(ascunși)</span>
+          )}
+          <span className="ml-2 text-gray-400">
+            — cei noi s-au salvat automat, nu se pierd la refresh
+          </span>
+        </div>
+      )}
 
       {rezultate.length > 0 && (
         <div className="rounded-xl bg-white shadow-sm">
@@ -768,7 +816,7 @@ function TabCautare({
                 <span className="font-medium text-gray-700">Toate</span>
               </label>
               <span className="text-xs text-gray-500">
-                {alese.size} alese · {cuEmail} au email → cam {cuEmail} credite
+                {alese.size} alese · {cuEmail} de plătit
               </span>
             </div>
 
@@ -788,7 +836,9 @@ function TabCautare({
             {rezultate.map((p) => (
               <label
                 key={p.apolloPersonId}
-                className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 hover:bg-gray-50 ${
+                  p.eNou === false ? 'bg-gray-50/60' : ''
+                }`}
               >
                 <input
                   type="checkbox"
@@ -800,22 +850,50 @@ function TabCautare({
                   }}
                   className="h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600"
                 />
-                <div className="min-w-0 flex-1">
+
+                <div className="min-w-0 flex-1 truncate">
                   <span className="text-sm font-medium text-gray-900">
                     {p.prenume} {p.numeFamilie}
                   </span>
                   <span className="ml-2 text-xs text-gray-500">{p.titlu}</span>
-                  <span className="ml-2 text-xs text-gray-400">· {p.companie}</span>
+                  <span className="ml-1.5 text-xs text-gray-400">· {p.companie}</span>
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  {p.areEmail && (
+
+                <div className="flex shrink-0 items-center gap-1">
+                  {/* Ce am deja despre el — ca să nu reiei munca sau plata */}
+                  {p.inSecventa && (
+                    <span
+                      className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-800"
+                      title="E deja într-o secvență de email"
+                    >
+                      în secvență
+                    </span>
+                  )}
+                  {p.dejaEnriched && !p.inSecventa && (
+                    <span
+                      className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
+                      title={p.emailStiut || 'Email deja plătit'}
+                    >
+                      {p.emailStiut ? 'email știut' : 'verificat'}
+                    </span>
+                  )}
+                  {p.eNou === false && !p.dejaEnriched && (
+                    <span
+                      className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
+                      title="L-ai mai găsit la o căutare anterioară"
+                    >
+                      îl am
+                    </span>
+                  )}
+
+                  {p.areEmail && !p.dejaEnriched && (
                     <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
                       email
                     </span>
                   )}
                   {p.areTelefon && (
                     <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-800">
-                      telefon
+                      tel
                     </span>
                   )}
                 </div>
@@ -991,8 +1069,8 @@ function TabContacte({
           {persoane.map((p) => (
             <label
               key={p.id}
-              className={`flex items-center gap-3 px-3 py-2 ${
-                p.email ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50'
+              className={`flex items-center gap-2 px-3 py-1.5 ${
+                p.email ? 'hover:bg-gray-50' : 'opacity-60'
               }`}
             >
               <input
@@ -1006,16 +1084,16 @@ function TabContacte({
                 }}
                 className="h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600"
               />
-              <div className="min-w-0 flex-1">
-                <span className="text-sm font-medium text-gray-900">
+              <Link href={`/admin/apollo/${p.id}`} className="min-w-0 flex-1 truncate">
+                <span className="text-sm font-medium text-gray-900 hover:text-indigo-700">
                   {p.prenume} {p.numeFamilie}
                 </span>
                 <span className="ml-2 text-xs text-gray-500">{p.titlu}</span>
-                <div className="text-xs text-gray-400">
-                  {p.email || 'fără email'}
+                <span className="ml-1.5 text-xs text-gray-400">
+                  · {p.email || 'fără email'}
                   {p.companie ? ` · ${p.companie}` : ''}
-                </div>
-              </div>
+                </span>
+              </Link>
               <span
                 className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
                   p.status === 'IN_SECVENTA'
