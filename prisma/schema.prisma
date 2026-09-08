@@ -1647,3 +1647,99 @@ model LeadQueryCache {
 
   @@map("lead_query_cache")
 }
+
+// ==================== APOLLO.IO (prospectare B2B) ====================
+// Instrument separat de /admin/leads: aici cauți companii și oameni în orice
+// țară și domeniu, le afli emailul și îi bagi în secvențe de email pe care le
+// trimite Apollo. Folosit pentru a găsi clienți pentru firme care oferă
+// diverse servicii — nu doar pentru site-urile PyWeb.
+
+model ApolloCampanie {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  nume   String
+  client String? // pentru cine facem campania
+
+  // Secvența Apollo care trimite efectiv emailurile
+  sequenceId   String?
+  sequenceNume String?
+
+  // De pe ce adrese pleacă. Mai multe = Apollo rotește între ele, ceea ce
+  // împrăștie volumul și ține fiecare mailbox sub limita lui zilnică.
+  mailboxIds    String[] @default([])
+  mailboxEmails String[] @default([])
+
+  filtre Json? // filtrele de căutare folosite
+
+  status           String @default("CIORNA") // CIORNA | ACTIVA | OPRITA | TERMINATA
+  contacteAdaugate Int    @default(0)
+  crediteFolosite  Int    @default(0)
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  persoane ApolloPersoana[] @relation("CampaniePersoane")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("apollo_campanii")
+}
+
+model ApolloPersoana {
+  id             String @id @default(auto()) @map("_id") @db.ObjectId
+  apolloPersonId String @unique // id-ul din baza Apollo
+
+  // Ce vine din căutare (gratis, parțial mascat)
+  prenume     String?
+  numeFamilie String?
+  numeMascat  Boolean @default(true)
+  titlu       String?
+  companie    String?
+
+  // Ce apare abia după enrich (costă credite)
+  email        String?
+  emailStatus  String? // verified | guessed | unavailable...
+  telefon      String?
+  domeniu      String?
+  oras         String?
+  tara         String?
+  industrie    String?
+  companieMarime Int?
+  linkedinUrl  String?
+
+  enrichedLa      DateTime?
+  crediteFolosite Int       @default(0)
+
+  // Legătura cu Apollo CRM și cu secvența
+  apolloContactId    String?
+  adaugatInSecventaLa DateTime?
+
+  status String @default("GASIT") // GASIT | ENRICHED | IN_SECVENTA | RASPUNS | REFUZ | FARA_EMAIL
+
+  campanieId String? @db.ObjectId
+  campanie   ApolloCampanie? @relation("CampaniePersoane", fields: [campanieId], references: [id], onDelete: SetNull)
+
+  notite    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campanieId])
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@map("apollo_persoane")
+}
+
+// Căutările salvate — căutarea e gratuită, dar filtrele bune merită păstrate.
+model ApolloCautare {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  nume        String
+  filtre      Json
+  nrRezultate Int      @default(0)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("apollo_cautari")
+}

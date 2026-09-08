@@ -18,6 +18,8 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/admin/leads': ['./config/leads.json'],
     '/api/admin/leads/**': ['./config/leads.json'],
+    '/admin/apollo': ['./config/apollo.json'],
+    '/api/admin/apollo/**': ['./config/apollo.json'],
   },
 
   // Image optimization

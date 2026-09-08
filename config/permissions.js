@@ -396,6 +396,18 @@ export const PERMISSIONS = {
     category: 'Sistem'
   },
 
+  // Apollo.io (prospectare B2B + campanii de email)
+  'apollo.view': {
+    label: 'Vezi Apollo',
+    description: 'Poate căuta contacte, vedea campaniile, statisticile și sănătatea mailbox-urilor',
+    category: 'Apollo'
+  },
+  'apollo.manage': {
+    label: 'Cheltuie credite și trimite emailuri',
+    description: 'Poate face enrich (consumă credite) și poate adăuga contacte în secvențe de email',
+    category: 'Apollo'
+  },
+
   // Leaduri Web (instrument intern de vânzări — firme fără site)
   'leads.view': {
     label: 'Vezi lead-urile web',
@@ -469,6 +481,7 @@ export const PERMISSION_CATEGORIES = [
   'Module Învățare',
   'Submisii Probleme',
   'Leaduri Web',
+  'Apollo',
   'Sistem'
 ]
 
