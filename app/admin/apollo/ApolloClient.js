@@ -13,7 +13,9 @@ import {
   ArrowPathIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline'
+import EditorSecventa from './EditorSecventa'
 
 // ============================================================
 // AJUTOARE
@@ -84,6 +86,7 @@ export default function ApolloClient({
   const [secventaAleasa, setSecventaAleasa] = useState('')
   const [mailboxuriAlese, setMailboxuriAlese] = useState([])
   const [trimite, setTrimite] = useState(false)
+  const [editorDeschis, setEditorDeschis] = useState(false)
 
   const incarcaStarea = useCallback(async () => {
     setSeIncarca(true)
@@ -388,7 +391,26 @@ export default function ApolloClient({
 
       {/* ── CAMPANII ──────────────────────────────────────────── */}
       {tab === 'campanii' && stare && (
-        <TabCampanii secvente={secvente} />
+        <div className="space-y-4">
+          {poateGestiona && !editorDeschis && (
+            <button
+              onClick={() => setEditorDeschis(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Scrie o secvență nouă
+            </button>
+          )}
+
+          {editorDeschis && (
+            <EditorSecventa
+              onInchide={() => setEditorDeschis(false)}
+              onCreata={() => incarcaStarea()}
+            />
+          )}
+
+          <TabCampanii secvente={secvente} />
+        </div>
       )}
 
       {/* ── CĂUTARE ───────────────────────────────────────────── */}
