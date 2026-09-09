@@ -1686,8 +1686,14 @@ model ApolloCampanie {
 }
 
 model ApolloPersoana {
-  id             String @id @default(auto()) @map("_id") @db.ObjectId
-  apolloPersonId String @unique // id-ul din baza Apollo
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Id-ul din baza Apollo. Contactele adăugate de mână primesc unul sintetic
+  // („manual:...") ca să rămână unicitatea, dar să se vadă că nu vin de la Apollo.
+  apolloPersonId String @unique
+
+  sursa    String  @default("apollo") // apollo | manual
+  esteTest Boolean @default(false) // adresă de test — nu e prospect real
 
   // Ce vine din căutare (gratis, parțial mascat)
   prenume     String?
