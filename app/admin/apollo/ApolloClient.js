@@ -15,6 +15,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
+  XMarkIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 import EditorSecventa from './EditorSecventa'
 
@@ -423,7 +425,11 @@ export default function ApolloClient({
             />
           )}
 
-          <TabCampanii secvente={secvente} />
+          <TabCampanii
+            secvente={secvente}
+            poateGestiona={poateGestiona}
+            onReimprospateaza={incarcaStarea}
+          />
         </div>
       )}
 
@@ -462,6 +468,7 @@ export default function ApolloClient({
           onTrimite={() => bagaInSecventa(false)}
           trimite={trimite}
           poateGestiona={poateGestiona}
+          onReincarca={reincarcaContacte}
         />
       )}
 
@@ -485,7 +492,7 @@ function Cartonas({ titlu, valoare, subtitlu, accent = 'text-gray-900' }) {
   )
 }
 
-function TabCampanii({ secvente }) {
+function TabCampanii({ secvente, poateGestiona, onReimprospateaza }) {
   const [deschis, setDeschis] = useState(null)
 
   if (!secvente.length) {
@@ -582,19 +589,17 @@ function TabCampanii({ secvente }) {
 
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Follow-up automat
+                    Emailurile din secvență
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 space-y-2">
                     {st.pasi.map((p, i) => (
-                      <div key={p.id} className="flex items-center gap-2">
-                        {i > 0 && <span className="text-gray-300">→</span>}
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs">
-                          <span className="font-medium text-gray-900">Pas {p.pozitie}</span>
-                          <span className="ml-1.5 text-gray-500">
-                            {i === 0 ? 'imediat' : `după ${traduUnitate(p.asteapta, p.unitate)}`}
-                          </span>
-                        </div>
-                      </div>
+                      <PasSecventa
+                        key={p.id}
+                        pas={p}
+                        index={i}
+                        poateGestiona={poateGestiona}
+                        onSalvat={onReimprospateaza}
+                      />
                     ))}
                   </div>
                 </div>
@@ -621,6 +626,128 @@ function TabCampanii({ secvente }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/**
+ * Un pas al secvenței: cât așteaptă, ce scrie în email, cum s-a descurcat.
+ * Textul se poate schimba direct de aici.
+ */
+function PasSecventa({ pas, index, poateGestiona, onSalvat }) {
+  const [editez, setEditez] = useState(false)
+  const [subiect, setSubiect] = useState(pas.subiect || '')
+  const [corp, setCorp] = useState(pas.corpText || '')
+  const [salveaza, setSalveaza] = useState(false)
+
+  async function salveaza_() {
+    if (!subiect.trim() || !corp.trim()) {
+      toast.error('Subiectul și textul nu pot fi goale')
+      return
+    }
+
+    setSalveaza(true)
+    try {
+      const r = await fetch(`/api/admin/apollo/emailuri/${pas.templateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subiect, corp }),
+      })
+      const d = await r.json()
+
+      if (!r.ok) {
+        toast.error(d.error || 'Nu am putut salva')
+        return
+      }
+
+      toast.success('Salvat. Se aplică la emailurile care pleacă de acum înainte.')
+      setEditez(false)
+      onSalvat?.()
+    } finally {
+      setSalveaza(false)
+    }
+  }
+
+  const st = pas.statistici
+
+  return (
+    <div className="rounded-lg border border-gray-200">
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2">
+        <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold text-white">
+          Pas {pas.pozitie}
+        </span>
+        <span className="text-xs text-gray-600">
+          {index === 0 ? 'pleacă imediat' : `după ${traduUnitate(pas.asteapta, pas.unitate)}`}
+        </span>
+
+        {st && st.livrate > 0 && (
+          <span className="text-xs text-gray-500">
+            · {st.livrate} livrate · {st.rataDeschidere}% deschise ·{' '}
+            <b className="text-green-700">{st.raspunsuri} răspunsuri</b>
+          </span>
+        )}
+
+        {poateGestiona && pas.templateId && !editez && (
+          <button
+            onClick={() => setEditez(true)}
+            className="ml-auto inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-indigo-600 hover:bg-indigo-50"
+          >
+            <PencilSquareIcon className="h-3.5 w-3.5" />
+            Editează
+          </button>
+        )}
+      </div>
+
+      <div className="p-3">
+        {editez ? (
+          <div className="space-y-2">
+            <input
+              className={input}
+              value={subiect}
+              onChange={(e) => setSubiect(e.target.value)}
+              placeholder="Subiect"
+            />
+            <textarea
+              className={input}
+              rows={8}
+              value={corp}
+              onChange={(e) => setCorp(e.target.value)}
+            />
+            <p className="text-[11px] text-amber-700">
+              Modificarea se aplică doar emailurilor care pleacă de acum înainte. Cele deja
+              trimise rămân cum au fost.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={salveaza_}
+                disabled={salveaza}
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:bg-gray-300"
+              >
+                {salveaza ? 'Salvez...' : 'Salvează'}
+              </button>
+              <button
+                onClick={() => {
+                  setSubiect(pas.subiect || '')
+                  setCorp(pas.corpText || '')
+                  setEditez(false)
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                Renunță
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-gray-900">
+              {pas.subiect || <span className="text-gray-400">(fără subiect)</span>}
+            </p>
+            <pre className="mt-1.5 whitespace-pre-wrap font-sans text-xs leading-relaxed text-gray-600">
+              {pas.corpText || '(fără text)'}
+            </pre>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -947,6 +1074,135 @@ function Camp({ eticheta, children, latime = '' }) {
   )
 }
 
+/**
+ * Adaugă o adresă de mână — de obicei a ta, ca să vezi cum arată campania
+ * înainte s-o trimiți unor oameni adevărați.
+ */
+function AdaugaContactTest({ onAdaugat }) {
+  const [deschis, setDeschis] = useState(false)
+  const [date, setDate] = useState({ email: '', prenume: '', numeFamilie: '', titlu: '', companie: '' })
+  const [salveaza, setSalveaza] = useState(false)
+
+  async function trimite() {
+    if (!date.email.trim()) return toast.error('Pune o adresă de email')
+
+    setSalveaza(true)
+    try {
+      const r = await fetch('/api/admin/apollo/contacte', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(date),
+      })
+      const d = await r.json()
+
+      if (!r.ok) {
+        toast.error(d.error || 'Nu am putut adăuga contactul')
+        return
+      }
+
+      toast.success(`${date.email} adăugat. Îl poți băga în secvență ca pe oricare altul.`)
+      setDate({ email: '', prenume: '', numeFamilie: '', titlu: '', companie: '' })
+      setDeschis(false)
+      onAdaugat?.()
+    } finally {
+      setSalveaza(false)
+    }
+  }
+
+  if (!deschis) {
+    return (
+      <button
+        onClick={() => setDeschis(true)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
+      >
+        <PlusIcon className="h-4 w-4" />
+        Adaugă o adresă de test
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="font-semibold text-gray-900">Adresă de test</h3>
+          <p className="mt-0.5 text-xs text-gray-600">
+            Pune-ți propria adresă și bag-o într-o secvență: vezi exact ce primește destinatarul,
+            cum arată follow-up-ul și cum se oprește când răspunzi. Nu consumă credite.
+          </p>
+        </div>
+        <button
+          onClick={() => setDeschis(false)}
+          className="rounded p-1 text-gray-400 hover:bg-gray-100"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs font-medium text-gray-700">Email *</label>
+          <input
+            className={input}
+            type="email"
+            value={date.email}
+            onChange={(e) => setDate((d) => ({ ...d, email: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && trimite()}
+            placeholder="tu@exemplu.com"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-700">Prenume</label>
+          <input
+            className={input}
+            value={date.prenume}
+            onChange={(e) => setDate((d) => ({ ...d, prenume: e.target.value }))}
+            placeholder="pentru {{first_name}}"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-700">Nume</label>
+          <input
+            className={input}
+            value={date.numeFamilie}
+            onChange={(e) => setDate((d) => ({ ...d, numeFamilie: e.target.value }))}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-700">Funcție</label>
+          <input
+            className={input}
+            value={date.titlu}
+            onChange={(e) => setDate((d) => ({ ...d, titlu: e.target.value }))}
+            placeholder="pentru {{title}}"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-700">Companie</label>
+          <input
+            className={input}
+            value={date.companie}
+            onChange={(e) => setDate((d) => ({ ...d, companie: e.target.value }))}
+            placeholder="pentru {{company}}"
+          />
+        </div>
+      </div>
+
+      <p className="mt-2 text-[11px] text-gray-500">
+        Completează numele și compania dacă vrei să vezi cum se înlocuiesc variabilele din email.
+      </p>
+
+      <button
+        onClick={trimite}
+        disabled={salveaza || !date.email.trim()}
+        className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:bg-gray-300"
+      >
+        {salveaza ? 'Adaug...' : 'Adaugă în lista mea'}
+      </button>
+    </div>
+  )
+}
+
 function TabContacte({
   persoane,
   alese,
@@ -960,23 +1216,30 @@ function TabContacte({
   onTrimite,
   trimite,
   poateGestiona,
+  onReincarca,
 }) {
   const cuEmail = persoane.filter((p) => p.email)
 
   if (!persoane.length) {
     return (
-      <div className="rounded-xl bg-white p-10 text-center shadow-sm">
-        <ChatBubbleLeftRightIcon className="mx-auto h-10 w-10 text-gray-300" />
-        <p className="mt-3 font-medium text-gray-900">Niciun contact salvat</p>
-        <p className="mt-1 text-sm text-gray-500">
-          Caută oameni în tabul „Caută contacte&rdquo; și apasă „Află emailurile&rdquo;.
-        </p>
+      <div className="space-y-4">
+        {poateGestiona && <AdaugaContactTest onAdaugat={onReincarca} />}
+        <div className="rounded-xl bg-white p-10 text-center shadow-sm">
+          <ChatBubbleLeftRightIcon className="mx-auto h-10 w-10 text-gray-300" />
+          <p className="mt-3 font-medium text-gray-900">Niciun contact salvat</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Caută oameni în tabul „Caută contacte&rdquo;, sau adaugă-ți propria adresă ca să testezi
+            întâi campania.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
+      {poateGestiona && <AdaugaContactTest onAdaugat={onReincarca} />}
+
       {/* Panoul de trimitere */}
       {poateGestiona && (
         <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
@@ -1094,17 +1357,27 @@ function TabContacte({
                   {p.companie ? ` · ${p.companie}` : ''}
                 </span>
               </Link>
-              <span
-                className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                  p.status === 'IN_SECVENTA'
-                    ? 'bg-indigo-100 text-indigo-800'
-                    : p.status === 'ENRICHED'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {p.status}
-              </span>
+              <div className="flex shrink-0 items-center gap-1">
+                {p.esteTest && (
+                  <span
+                    className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                    title="Adresă adăugată de tine — nu e prospect din Apollo"
+                  >
+                    TEST
+                  </span>
+                )}
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                    p.status === 'IN_SECVENTA'
+                      ? 'bg-indigo-100 text-indigo-800'
+                      : p.status === 'ENRICHED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {p.status}
+                </span>
+              </div>
             </label>
           ))}
         </div>
