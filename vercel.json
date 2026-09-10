@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/leaduri-followup",
-      "schedule": "0 8,11,14,17 * * 1-5"
+      "schedule": "0 6,8,11,14 * * 1-5"
     }
   ]
 }

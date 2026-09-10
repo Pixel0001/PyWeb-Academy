@@ -1594,12 +1594,19 @@ model WebLeadNota {
   @@map("web_lead_notes")
 }
 
+// Pipeline-ul unui lead, de la găsit până la client (sau pierdut).
+// Ordinea de aici e ordinea din toate dropdown-urile.
 enum LeadStatus {
-  DE_SUNAT
-  SUNAT
-  INTERESAT
-  REFUZ
-  NU_MA_SUNA
+  DE_SUNAT // încă n-am sunat
+  FARA_RASPUNS // am sunat, n-a răspuns
+  SUNAT // am vorbit cu cineva
+  DE_REVENIT // mi-a zis să sun altă dată
+  INTERESAT // vrea să discutăm
+  OFERTA_TRIMISA // i-am trimis prețul
+  NEGOCIERE // discutăm condițiile
+  CLIENT // a semnat
+  REFUZ // a zis nu
+  NU_MA_SUNA // nu mai suna niciodată
 }
 
 // O rulare = produs cartezian CATEGORII × ORAȘE, executată în pași mici

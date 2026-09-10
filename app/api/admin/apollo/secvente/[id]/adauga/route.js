@@ -13,7 +13,12 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
-import { adaugaInSecventa, creeazaContact, listeazaMailboxuri } from '@/lib/apollo/api'
+import {
+  adaugaInSecventa,
+  creeazaContact,
+  listeazaMailboxuri,
+  candPleacaPrimul,
+} from '@/lib/apollo/api'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -104,13 +109,34 @@ export async function POST(request, { params }) {
 
     const rezultat = await adaugaInSecventa(secventaId, contactIds, mailboxIds)
 
-    await prisma.apolloPersoana.updateMany({
-      where: { id: { in: persoane.map((p) => p.id) } },
-      data: { status: 'IN_SECVENTA', adaugatInSecventaLa: new Date() },
-    })
+    // Marcăm ca „în secvență" DOAR pe cei pe care Apollo chiar i-a acceptat.
+    // Altfel lista ar minți: ar arăta oameni ca fiind în campanie deși Apollo
+    // i-a sărit (cel mai des pentru că erau deja acolo).
+    const adaugateSet = new Set(rezultat.adaugateIds)
+    const persoaneAdaugate = persoane.filter((p) => adaugateSet.has(p.apolloContactId))
+
+    if (persoaneAdaugate.length) {
+      await prisma.apolloPersoana.updateMany({
+        where: { id: { in: persoaneAdaugate.map((p) => p.id) } },
+        data: { status: 'IN_SECVENTA', adaugatInSecventaLa: new Date() },
+      })
+    }
+
+    // Apollo nu trimite instant — pune emailul la coadă în fereastra orară a
+    // secvenței. Fără ora asta, omul crede că nu s-a trimis nimic.
+    const primulEmailLa = rezultat.adaugate
+      ? await candPleacaPrimul(secventaId, rezultat.adaugateIds)
+      : null
 
     return NextResponse.json({
       adaugate: rezultat.adaugate,
+      sarite: rezultat.sarite,
+      motivSarite:
+        rezultat.sarite > 0
+          ? 'Apollo i-a sărit — cel mai probabil erau deja în această secvență sau în alta activă.'
+          : null,
+      primulEmailLa,
+      secventaActiva: true,
       contacteCreate: contactIds.length,
       mailboxuri: alese.map((m) => m.email),
       esecuri,
