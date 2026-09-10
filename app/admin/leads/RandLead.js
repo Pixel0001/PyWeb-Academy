@@ -13,6 +13,7 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   PhoneIcon,
   ChatBubbleLeftRightIcon,
@@ -97,9 +98,15 @@ export default function RandLead({
           {lead.scor}
         </span>
 
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-tight text-gray-900">
+        {/* Numele duce la pagina firmei; restul rândului doar deschide panoul. */}
+        <Link
+          href={`/admin/leads/${lead.id}`}
+          onClick={(e) => e.stopPropagation()}
+          title="Deschide pagina firmei"
+          className="min-w-0 flex-1 truncate text-[13px] font-medium leading-tight text-gray-900 hover:text-indigo-700 hover:underline"
+        >
           {lead.denumire}
-        </span>
+        </Link>
 
         <span
           className={`hidden shrink-0 rounded px-1 py-px text-[10px] leading-tight sm:inline ${calitate.color}`}

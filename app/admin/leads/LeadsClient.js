@@ -217,6 +217,30 @@ export default function LeadsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  async function testeazaNotificarea() {
+    const t = toast.loading('Trimit pe Telegram...')
+    try {
+      const r = await fetch('/api/cron/leaduri-followup?forteaza=1')
+      const d = await r.json()
+      toast.dismiss(t)
+
+      if (d.eroare) {
+        toast.error(d.eroare, { duration: 10000 })
+        return
+      }
+      if (!d.trimise) {
+        toast(d.mesaj || 'Nimic de trimis', { icon: 'ℹ️', duration: 8000 })
+        return
+      }
+      toast.success(`Trimis pe Telegram: ${d.firme?.slice(0, 3).join(', ')}${d.trimise > 3 ? '...' : ''}`, {
+        duration: 8000,
+      })
+    } catch {
+      toast.dismiss(t)
+      toast.error('Nu am putut contacta serverul')
+    }
+  }
+
   async function reincarcaRulari() {
     try {
       const r = await fetch('/api/admin/leads/runs')
@@ -555,6 +579,16 @@ export default function LeadsClient({
             className="text-xs text-gray-500 hover:text-gray-800"
           >
             arată tot
+          </button>
+        )}
+
+        {poateRula && (
+          <button
+            onClick={testeazaNotificarea}
+            className="ml-auto rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+            title="Trimite ACUM pe Telegram lista de recontactat, fără să aștepți cron-ul"
+          >
+            📨 Testează notificarea
           </button>
         )}
       </div>
