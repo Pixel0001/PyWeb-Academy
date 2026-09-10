@@ -2,28 +2,31 @@
  * GET /api/cron/leaduri-followup
  *
  * Memento pe Telegram pentru firmele care trebuie recontactate.
- * Rulează din Vercel Cron (vezi vercel.json) — implicit la fiecare oră,
- * în intervalul de lucru.
+ * Rulează din Vercel Cron (vezi vercel.json), la fiecare sfert de oră în
+ * timpul programului.
  *
- * Trimite UN SINGUR mesaj cu toate firmele scadente, nu unul per firmă.
- * Fiecare firmă e notificată o singură dată per programare: după trimitere
- * marcăm `followUpNotificatLa`, iar data următoare o notificăm doar dacă
- * `nextFollowUpAt` s-a mutat între timp.
+ * Fiecare responsabil primește DOAR firmele lui, în privat. Firmele fără
+ * responsabil merg în chat-ul comun. Fiecare firmă e anunțată o singură dată
+ * per programare: după trimitere marcăm `followUpNotificatLa`, iar data
+ * următoare o anunțăm doar dacă `nextFollowUpAt` s-a mutat între timp.
+ *
+ * Poate fi apelată și manual de un admin logat (butonul „Testează notificarea"
+ * din pagina de leaduri) — altfel singurul mod de a afla dacă Telegram e
+ * configurat corect ar fi să aștepți ora următoare.
  */
 
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { notifyLeaduriFollowUp } from '@/lib/telegram'
 import { getCurrentUser } from '@/lib/session'
+import { leaduriScadente, trimiteMementouri } from '@/lib/leads/notificare'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function GET(request) {
   try {
-    // Două căi de intrare: Vercel Cron (cu secret) sau un admin logat care
-    // apasă „testează" din pagină. A doua e importantă — fără ea, singurul mod
-    // de a afla dacă Telegram e configurat corect e să aștepți ora următoare.
+    // Două căi de intrare: Vercel Cron (cu secret) sau un admin logat.
     const authHeader = request.headers.get('authorization')
     const esteCron = authHeader === `Bearer ${process.env.CRON_SECRET}`
 
@@ -37,93 +40,55 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // La test forțăm trimiterea chiar dacă am mai anunțat deja firmele astea.
+    // La test forțăm trimiterea chiar dacă firmele au fost deja anunțate.
     const { searchParams } = new URL(request.url)
     const forteaza = esteAdmin && searchParams.get('forteaza') === '1'
 
-    // Telegram configurat? Dacă nu, spunem asta explicit, nu tăcem.
-    const telegramConfigurat = Boolean(
-      process.env.TELEGRAM_LESSONS_BOT_TOKEN && process.env.TELEGRAM_ADMIN_CHAT_ID
-    )
-    if (!telegramConfigurat) {
+    if (!process.env.TELEGRAM_LESSONS_BOT_TOKEN) {
       return NextResponse.json(
         {
           ok: false,
           trimise: 0,
-          eroare:
-            'Telegram nu e configurat: lipsește TELEGRAM_LESSONS_BOT_TOKEN sau TELEGRAM_ADMIN_CHAT_ID din variabilele de mediu.',
+          eroare: 'Telegram nu e configurat: lipsește TELEGRAM_LESSONS_BOT_TOKEN.',
         },
         { status: esteAdmin ? 200 : 500 }
       )
     }
 
-    const acum = new Date()
-    const sfarsitulZilei = new Date(acum)
-    sfarsitulZilei.setHours(23, 59, 59, 999)
-
-    // Firmele scadente: au follow-up până la finalul zilei de azi și n-au fost
-    // încă anunțate pentru programarea curentă.
-    const scadente = await prisma.webLead.findMany({
-      where: {
-        nextFollowUpAt: { not: null, lte: sfarsitulZilei },
-        status: { notIn: ['REFUZ', 'NU_MA_SUNA'] },
-      },
-      orderBy: [{ nextFollowUpAt: 'asc' }],
-      select: {
-        id: true,
-        denumire: true,
-        telefon: true,
-        scor: true,
-        oras: true,
-        calitateSite: true,
-        nextFollowUpAt: true,
-        followUpNotificatLa: true,
-      },
-    })
-
-    // Sar peste cele deja anunțate DUPĂ ce s-a stabilit programarea curentă.
-    const deAnuntat = forteaza
-      ? scadente
-      : scadente.filter((l) => !l.followUpNotificatLa || l.followUpNotificatLa < l.nextFollowUpAt)
+    const { toate, deAnuntat } = await leaduriScadente({ forteaza })
 
     if (!deAnuntat.length) {
       return NextResponse.json({
         ok: true,
         trimise: 0,
-        scadenteGasite: scadente.length,
-        mesaj: scadente.length
-          ? `${scadente.length} firme sunt scadente, dar au fost deja anunțate. Folosește „forțează" ca să retrimiți.`
+        scadenteGasite: toate.length,
+        mesaj: toate.length
+          ? `${toate.length} firme sunt scadente, dar au fost deja anunțate. Apasă din nou cu „forțează" ca să retrimiți.`
           : 'Nicio firmă scadentă: nimeni n-are recontactare setată pentru azi sau mai devreme.',
       })
     }
 
-    const pregatite = deAnuntat.map((l) => ({
-      ...l,
-      restant: new Date(l.nextFollowUpAt) < acum,
-    }))
+    const { trimise, destinatari, esecuri } = await trimiteMementouri(deAnuntat)
 
-    const trimis = await notifyLeaduriFollowUp(pregatite)
-
-    // Marcăm doar dacă mesajul chiar a plecat — altfel reîncercăm la ora următoare.
-    if (trimis) {
+    // Marcăm doar dacă mesajul chiar a plecat — altfel reîncercăm data viitoare.
+    if (trimise) {
       await prisma.webLead.updateMany({
         where: { id: { in: deAnuntat.map((l) => l.id) } },
-        data: { followUpNotificatLa: acum },
+        data: { followUpNotificatLa: new Date() },
       })
     }
 
     return NextResponse.json({
-      ok: Boolean(trimis),
-      trimise: trimis ? deAnuntat.length : 0,
-      eroare: trimis
-        ? null
-        : 'Telegram a refuzat mesajul — verifică dacă botul are acces la chat-ul din TELEGRAM_ADMIN_CHAT_ID.',
+      ok: trimise > 0,
+      trimise,
+      destinatari,
+      eroare: esecuri.length ? esecuri.join('; ') : null,
       firme: deAnuntat.map((l) => l.denumire),
-      restante: pregatite.filter((l) => l.restant).length,
-      azi: pregatite.filter((l) => !l.restant).length,
+      restante: deAnuntat.filter((l) => l.restant).length,
+      azi: deAnuntat.filter((l) => !l.restant).length,
     })
   } catch (error) {
     console.error('Eroare la cron-ul de follow-up leaduri:', error)
-    return NextResponse.json({ error: 'Cron eșuat' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Cron eșuat' }, { status: 500 })
   }
 }

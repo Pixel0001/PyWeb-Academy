@@ -30,7 +30,7 @@ export default async function LeadsPage() {
   inceputLuna.setDate(1)
   inceputLuna.setHours(0, 0, 0, 0)
 
-  const [leaduri, total, peCalitate, rulari, apeluriLuna, rulareActiva] = await Promise.all([
+  const [leaduri, total, peCalitate, rulari, apeluriLuna, echipa, rulareActiva] = await Promise.all([
     prisma.webLead.findMany({
       orderBy: [{ scor: 'desc' }, { nrRecenzii: 'desc' }],
       take: 300,
@@ -65,6 +65,12 @@ export default async function LeadsPage() {
       where: { startedAt: { gte: inceputLuna } },
       _sum: { apeluriApi: true },
     }),
+    // Cine poate fi responsabil de un lead — și dacă are Telegram legat
+    prisma.user.findMany({
+      where: { active: true, role: { in: ['SUPERADMIN', 'ADMIN'] } },
+      select: { id: true, name: true, email: true, telegramChatId: true },
+      orderBy: { name: 'asc' },
+    }),
     prisma.leadRun.findFirst({
       where: { status: { in: ['QUEUED', 'RULEAZA'] } },
       select: { id: true, status: true, faza: true },
@@ -86,6 +92,12 @@ export default async function LeadsPage() {
       statistici={statistici}
       rulari={JSON.parse(JSON.stringify(rulari))}
       rulareActiva={rulareActiva}
+      echipa={echipa.map((o) => ({
+        id: o.id,
+        name: o.name,
+        email: o.email,
+        telegramLegat: Boolean(o.telegramChatId),
+      }))}
       optiuni={{
         toateOrasele: TOATE_ORASELE,
         oraseImplicite: ORASE,

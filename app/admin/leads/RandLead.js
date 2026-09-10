@@ -59,6 +59,8 @@ export default function RandLead({
   onAdaugaNota,
   onStergeNota,
   onCopiaza,
+  echipa,
+  onResponsabil,
 }) {
   const [deschis, setDeschis] = useState(false)
   const [notaNoua, setNotaNoua] = useState('')
@@ -138,6 +140,15 @@ export default function RandLead({
           </span>
         )}
 
+        {lead.responsabil && (
+          <span
+            className="hidden h-4 w-4 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-bold text-indigo-700 sm:flex"
+            title={`Se ocupă: ${lead.responsabil.name || lead.responsabil.email}`}
+          >
+            {(lead.responsabil.name || lead.responsabil.email).charAt(0).toUpperCase()}
+          </span>
+        )}
+
         {notite.length > 0 && (
           <span
             className="shrink-0 text-[10px] leading-tight text-gray-400"
@@ -200,6 +211,8 @@ export default function RandLead({
           onFollowUp={onFollowUp}
           onStergeNota={onStergeNota}
           onCopiaza={onCopiaza}
+          echipa={echipa}
+          onResponsabil={onResponsabil}
         />
       )}
     </div>

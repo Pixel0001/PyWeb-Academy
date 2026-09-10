@@ -55,6 +55,11 @@ export async function PATCH(request, { params }) {
       }
     }
 
+    // Cine se ocupă de firma asta — primește notificările în privat.
+    if (corp.responsabilId !== undefined) {
+      date.responsabilId = corp.responsabilId || null
+    }
+
     if (!Object.keys(date).length) {
       return NextResponse.json({ error: 'Nimic de actualizat' }, { status: 400 })
     }
@@ -62,7 +67,10 @@ export async function PATCH(request, { params }) {
     const lead = await prisma.webLead.update({
       where: { id },
       data: date,
-      include: { notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 } },
+      include: {
+        notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 },
+        responsabil: { select: { id: true, name: true, email: true } },
+      },
     })
     return NextResponse.json({ lead })
   } catch (error) {
