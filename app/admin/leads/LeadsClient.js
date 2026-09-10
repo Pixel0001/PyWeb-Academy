@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
-  PhoneIcon,
   ArrowDownTrayIcon,
   PlayIcon,
   StopIcon,
@@ -13,13 +12,10 @@ import {
   GlobeAltIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ChevronRightIcon,
-  ChatBubbleLeftRightIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline'
 import {
   STATUSURI,
-  getStatus,
   getCalitate,
   FILTRE_FOLLOWUP,
   PERIOADE,
@@ -28,6 +24,7 @@ import {
   formateazaFollowUp,
   STILURI_FOLLOWUP,
 } from '@/lib/leads/statusuri'
+import RandLead from './RandLead'
 
 /** Verde peste 70, galben 40–70, gri sub 40 — la fel ca în Excel. */
 function culoareScor(scor) {
@@ -331,6 +328,49 @@ export default function LeadsClient({
       return null
     }
     return (await raspuns.json()).lead
+  }
+
+  async function schimbaFollowUp(lead, nextFollowUpAt) {
+    const anterior = lead.nextFollowUpAt
+    actualizeazaLocal(lead.id, { nextFollowUpAt })
+    const salvat = await salveaza(lead, { nextFollowUpAt }, 'Nu am putut salva recontactarea')
+    if (!salvat) actualizeazaLocal(lead.id, { nextFollowUpAt: anterior })
+    else {
+      toast.success(
+        nextFollowUpAt ? `Recontactare: ${formateazaFollowUp(nextFollowUpAt)}` : 'Recontactare ștearsă'
+      )
+    }
+  }
+
+  async function adaugaNota(lead, continut) {
+    const raspuns = await fetch(`/api/admin/leads/${lead.id}/notite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ continut }),
+    })
+    if (!raspuns.ok) {
+      toast.error('Nu am putut salva notița')
+      return false
+    }
+    const { nota } = await raspuns.json()
+    actualizeazaLocal(lead.id, { notiteIstoric: [nota, ...(lead.notiteIstoric || [])] })
+    return true
+  }
+
+  async function stergeNota(lead, notaId) {
+    const raspuns = await fetch(`/api/admin/leads/notite/${notaId}`, { method: 'DELETE' })
+    if (!raspuns.ok) {
+      toast.error('Nu am putut șterge notița')
+      return
+    }
+    actualizeazaLocal(lead.id, {
+      notiteIstoric: (lead.notiteIstoric || []).filter((n) => n.id !== notaId),
+    })
+  }
+
+  function copiazaPitch(pitch) {
+    navigator.clipboard?.writeText(pitch)
+    toast.success('Pitch copiat')
   }
 
   async function schimbaStatus(lead, status) {
@@ -646,9 +686,17 @@ export default function LeadsClient({
           </p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-px">
           {leaduri.map((lead) => (
-            <RandLead key={lead.id} lead={lead} onStatus={schimbaStatus} />
+            <RandLead
+              key={lead.id}
+              lead={lead}
+              onStatus={schimbaStatus}
+              onFollowUp={schimbaFollowUp}
+              onAdaugaNota={adaugaNota}
+              onStergeNota={stergeNota}
+              onCopiaza={copiazaPitch}
+            />
           ))}
         </div>
       )}
@@ -680,117 +728,6 @@ function Cartonas({ titlu, valoare, subtitlu, accent = 'text-gray-900' }) {
  * scor, nume, ce e prost la site, rating, oraș, recontactare, telefon.
  * Restul — pitch, istoric, analiză — sunt la un clic distanță, pe pagina firmei.
  */
-function RandLead({ lead, onStatus }) {
-  const calitate = getCalitate(lead.calitateSite)
-  const status = getStatus(lead.status)
-  const social = contactSocial(lead)
-  const stareFU = stareFollowUp(lead.nextFollowUpAt)
-  const stilFU = stareFU ? STILURI_FOLLOWUP[stareFU] : null
-  const nrNotite = lead.notiteIstoric?.length || 0
-
-  return (
-    <div
-      className={`group flex items-center gap-2 rounded-lg bg-white px-2 py-1.5 shadow-sm transition hover:bg-indigo-50/40 hover:shadow ${
-        stareFU === 'restant' ? 'ring-1 ring-red-200' : ''
-      }`}
-    >
-      {/* Scorul */}
-      <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold ${culoareScor(lead.scor)}`}
-        title={`Scor ${lead.scor} din 100`}
-      >
-        {lead.scor}
-      </div>
-
-      {/* Numele + tot ce ține de firmă — zona pe care dai clic */}
-      <Link href={`/admin/leads/${lead.id}`} className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="truncate text-sm font-medium text-gray-900 group-hover:text-indigo-700">
-          {lead.denumire}
-        </span>
-
-        <span
-          className={`hidden shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium sm:inline ${calitate.color}`}
-          title={lead.observatiiSite || calitate.label}
-        >
-          {calitate.emoji} {calitate.label}
-        </span>
-
-        {lead.rating != null && (
-          <span className="hidden shrink-0 text-xs text-gray-500 md:inline">
-            ⭐ {ratingRo(lead.rating)}
-            <span className="text-gray-400">·{lead.nrRecenzii}</span>
-          </span>
-        )}
-
-        <span className="hidden shrink-0 text-xs text-gray-400 lg:inline">{lead.oras}</span>
-
-        {stilFU && (
-          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${stilFU.color}`}>
-            {stilFU.emoji} {formateazaFollowUp(lead.nextFollowUpAt)}
-          </span>
-        )}
-
-        {nrNotite > 0 && (
-          <span
-            className="hidden shrink-0 items-center gap-0.5 text-[10px] text-gray-400 sm:inline-flex"
-            title={`${nrNotite} notițe`}
-          >
-            💬{nrNotite}
-          </span>
-        )}
-      </Link>
-
-      {/* Contactul */}
-      {lead.telefon ? (
-        <a
-          href={`tel:${lead.telefon}`}
-          onClick={(e) => e.stopPropagation()}
-          className="hidden shrink-0 items-center gap-1 rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 sm:inline-flex"
-        >
-          <PhoneIcon className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">{lead.telefon}</span>
-        </a>
-      ) : (
-        social && (
-          <a
-            href={social.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="hidden shrink-0 items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 sm:inline-flex"
-            title={`Fără telefon — scrie pe ${social.nume}`}
-          >
-            <ChatBubbleLeftRightIcon className="h-3.5 w-3.5" />
-          </a>
-        )
-      )}
-
-      {/* Statusul — se schimbă direct din listă, fără să deschizi firma */}
-      <select
-        value={lead.status}
-        onChange={(e) => onStatus(lead, e.target.value)}
-        onClick={(e) => e.stopPropagation()}
-        className={`shrink-0 rounded border px-1 py-0.5 text-[11px] font-medium ${status.color}`}
-      >
-        {STATUSURI.map((s) => (
-          <option key={s.value} value={s.value}>
-            {s.emoji} {s.label}
-          </option>
-        ))}
-      </select>
-
-      <Link
-        href={`/admin/leads/${lead.id}`}
-        className="shrink-0 rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600"
-        title="Deschide firma"
-      >
-        <ChevronRightIcon className="h-4 w-4" />
-      </Link>
-    </div>
-  )
-}
-
-
 function PanouRulare({
   optiuni,
   oraseAlese,
