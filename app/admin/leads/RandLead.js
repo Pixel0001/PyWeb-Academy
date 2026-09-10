@@ -13,13 +13,9 @@
  */
 
 import { useState } from 'react'
-import Link from 'next/link'
 import {
   PhoneIcon,
   ChatBubbleLeftRightIcon,
-  ClipboardDocumentIcon,
-  TrashIcon,
-  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline'
 import {
   STATUSURI,
@@ -29,7 +25,7 @@ import {
   formateazaFollowUp,
   STILURI_FOLLOWUP,
 } from '@/lib/leads/statusuri'
-import FollowUpPicker from './FollowUpPicker'
+import PanouLead from './PanouLead'
 
 function culoareScor(scor) {
   if (scor > 70) return 'bg-green-600 text-white'
@@ -184,113 +180,20 @@ export default function RandLead({
 
       {/* ── DESCHIS — tot restul, fără să pleci din listă ─────── */}
       {deschis && (
-        <div className="space-y-3 border-t border-gray-100 px-3 py-2.5">
-          {lead.pitch && (
-            <div className="flex items-start gap-2 rounded bg-indigo-50 p-2">
-              <p className="flex-1 text-xs italic text-indigo-900">„{lead.pitch}&rdquo;</p>
-              <button
-                onClick={() => onCopiaza(lead.pitch)}
-                className="shrink-0 rounded p-0.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600"
-                title="Copiază pitch-ul"
-              >
-                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
-          {lead.observatiiSite && (
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Site:</span> {lead.observatiiSite}
-            </p>
-          )}
-
-          <FollowUpPicker valoare={lead.nextFollowUpAt} onChange={(v) => onFollowUp(lead, v)} />
-
-          {/* Notițele — câte vrei, fiecare cu ora ei */}
-          <div>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={notaNoua}
-                onChange={(e) => setNotaNoua(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && trimiteNota()}
-                placeholder="Ce s-a discutat la telefon..."
-                className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              />
-              <button
-                onClick={trimiteNota}
-                disabled={!notaNoua.trim() || salveaza}
-                className="rounded bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:bg-gray-300"
-              >
-                {salveaza ? '...' : 'Adaugă'}
-              </button>
-            </div>
-
-            {notite.length > 0 && (
-              <ul className="mt-1.5 space-y-1">
-                {notite.map((n) => (
-                  <li
-                    key={n.id}
-                    className="group flex items-start gap-1.5 rounded bg-gray-50 px-2 py-1 text-xs"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-gray-800">{n.continut}</p>
-                      <p className="text-[10px] text-gray-400">
-                        {new Date(n.createdAt).toLocaleString('ro-RO', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                        {n.autorNume ? ` · ${n.autorNume}` : ''}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => onStergeNota(lead, n.id)}
-                      className="shrink-0 rounded p-0.5 text-gray-300 opacity-0 transition group-hover:opacity-100 hover:text-red-600"
-                      title="Șterge notița"
-                    >
-                      <TrashIcon className="h-3 w-3" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
-            {lead.telefon && <span>{lead.telefon}</span>}
-            {lead.adresa && <span>{lead.adresa}</span>}
-            {lead.categoriePrincipala && <span>{lead.categoriePrincipala}</span>}
-            {lead.siteUrl && (
-              <a
-                href={lead.siteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-600 hover:underline"
-              >
-                site
-              </a>
-            )}
-            {lead.linkMaps && (
-              <a
-                href={lead.linkMaps}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-600 hover:underline"
-              >
-                Maps
-              </a>
-            )}
-            <Link
-              href={`/admin/leads/${lead.id}`}
-              className="ml-auto inline-flex items-center gap-1 text-indigo-600 hover:underline"
-            >
-              pagina firmei
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
+        <PanouLead
+          lead={lead}
+          calitate={calitate}
+          social={social}
+          rating={rating}
+          notite={notite}
+          notaNoua={notaNoua}
+          setNotaNoua={setNotaNoua}
+          salveaza={salveaza}
+          onTrimiteNota={trimiteNota}
+          onFollowUp={onFollowUp}
+          onStergeNota={onStergeNota}
+          onCopiaza={onCopiaza}
+        />
       )}
     </div>
   )
