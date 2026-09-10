@@ -30,6 +30,8 @@ export default function PanouLead({
   onFollowUp,
   onStergeNota,
   onCopiaza,
+  echipa = [],
+  onResponsabil,
 }) {
   return (
     <div className="space-y-2.5 border-t border-gray-100 bg-gray-50/50 px-3 py-2.5">
@@ -105,8 +107,30 @@ export default function PanouLead({
         )}
       </div>
 
-      {/* Recontactarea */}
-      <div className="rounded bg-white p-2">
+      {/* Cine se ocupă + recontactarea */}
+      <div className="space-y-2 rounded bg-white p-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-700">Se ocupă:</span>
+          <select
+            value={lead.responsabilId || ''}
+            onChange={(e) => onResponsabil?.(lead, e.target.value || null)}
+            className="rounded border border-gray-300 px-2 py-0.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">— nimeni —</option>
+            {echipa.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name || o.email}
+                {o.telegramLegat ? '' : ' (fără Telegram)'}
+              </option>
+            ))}
+          </select>
+          {lead.responsabilId && (
+            <span className="text-[11px] text-gray-400">
+              primește mementoul în privat pe Telegram
+            </span>
+          )}
+        </div>
+
         <FollowUpPicker valoare={lead.nextFollowUpAt} onChange={(v) => onFollowUp(lead, v)} />
       </div>
 

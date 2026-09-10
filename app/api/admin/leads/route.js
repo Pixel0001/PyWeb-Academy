@@ -33,6 +33,11 @@ export async function construiesteFiltre(searchParams) {
   if (calitate) where.calitateSite = calitate
   if (status) where.status = status
   if (categorie) where.categorii = { has: categorie }
+
+  // „doar firmele mele" / firmele unui anumit om
+  const responsabil = searchParams.get('responsabil')
+  if (responsabil === 'fara') where.responsabilId = null
+  else if (responsabil) where.responsabilId = responsabil
   if (scorMin > 0) where.scor = { gte: scorMin }
 
   if (cautare) {
@@ -132,6 +137,7 @@ export async function GET(request) {
         take: limita,
         include: {
           notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 },
+          responsabil: { select: { id: true, name: true, email: true } },
         },
       }),
       prisma.webLead.count({ where }),

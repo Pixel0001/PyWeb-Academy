@@ -17,7 +17,14 @@ model User {
   password          String?   // null for Google-only users (Argon2id hash)
   name              String?
   phone             String?   // Număr de telefon (opțional)
-  telegramChatId    String?   // Chat ID pentru notificări Telegram
+  // ── Telegram ──────────────────────────────────────────────────────
+  // Contul se leagă printr-un cod de unică folosință: omul apasă „Conectează"
+  // în panou, primește un link către bot, iar botul îi salvează chat-ul aici.
+  telegramChatId       String? // Chat ID pentru notificări Telegram
+  telegramUsername     String? // @username, doar ca să se vadă cine e legat
+  telegramLegatLa      DateTime? // când s-a făcut legătura
+  telegramCod          String? @unique // codul de conectare, de unică folosință
+  telegramCodExpiraLa  DateTime? // codul e valabil 15 minute
   image             String?
   role              Role      @default(TEACHER)
   permissions       String[]  @default([]) // Granular permissions for ADMIN
@@ -51,6 +58,7 @@ model User {
   createdProblems   Problem[]         @relation("CreatedProblems")
   createdSets       GeneratedSet[]    @relation("CreatedSets")
   bonusPointsAdded  BonusPoint[]      @relation("BonusPointsAdded")
+  leaduriResponsabil WebLead[]        @relation("LeaduriResponsabil")
 
   @@map("users")
 }
@@ -1561,6 +1569,11 @@ model WebLead {
   followUpNotificatLa DateTime? // când s-a trimis ultima notificare pe Telegram
   notite             String? // legacy — notițele noi stau în WebLeadNota
 
+  // Cine se ocupă de firma asta. Primește notificările de recontactare în
+  // privat, pe Telegram, dacă și-a legat contul.
+  responsabilId String? @db.ObjectId
+  responsabil   User?   @relation("LeaduriResponsabil", fields: [responsabilId], references: [id], onDelete: SetNull)
+
   runId             String?  @db.ObjectId // ultima rulare în care a apărut
   descoperitInRunId String?  @db.ObjectId // rularea care a găsit-o PRIMA dată (nu se mai schimbă)
   createdAt         DateTime @default(now())
@@ -1576,6 +1589,7 @@ model WebLead {
   @@index([descoperitInRunId])
   @@index([nextFollowUpAt])
   @@index([calitateSite])
+  @@index([responsabilId])
   @@map("web_leads")
 }
 

@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { usePermissions } from '@/hooks/usePermissions'
 import TwoFactorModal from '@/components/admin/TwoFactorModal'
+import ConectareTelegram from '@/components/admin/ConectareTelegram'
 import SecurityLoading from './loading'
 
 export default function SecurityPage() {
@@ -263,6 +264,9 @@ export default function SecurityPage() {
           </div>
         </div>
       )}
+
+      {/* Telegram — conectarea contului la bot */}
+      <ConectareTelegram />
 
       {/* 2FA Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

@@ -37,6 +37,64 @@ function buildKeyboard(contactId) {
   ]
 }
 
+/** Trimite un mesaj simplu înapoi în chat. */
+async function raspunde(chatId, text) {
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    })
+  } catch (e) {
+    console.error('Telegram sendMessage:', e.message)
+  }
+}
+
+/**
+ * Leagă un cont din panou de un chat Telegram.
+ *
+ * Omul apasă „Conectează Telegram" în /admin/security, primește un link către
+ * bot cu un cod de unică folosință, iar botul îl trimite înapoi aici prin
+ * /start <cod>. Codul e valabil 15 minute și se consumă la prima folosire —
+ * altfel oricine l-ar afla ar putea primi notificările altcuiva.
+ */
+async function conecteazaCont(chatId, cod, from) {
+  const utilizator = await prisma.user.findFirst({
+    where: { telegramCod: cod, telegramCodExpiraLa: { gt: new Date() } },
+    select: { id: true, name: true, email: true },
+  })
+
+  if (!utilizator) {
+    await raspunde(
+      chatId,
+      '❌ Cod invalid sau expirat.\n\nGenerează unul nou din panou: Securitate → Telegram.'
+    )
+    return
+  }
+
+  // Un chat Telegram nu poate fi legat de două conturi deodată.
+  await prisma.user.updateMany({
+    where: { telegramChatId: String(chatId), NOT: { id: utilizator.id } },
+    data: { telegramChatId: null, telegramLegatLa: null, telegramUsername: null },
+  })
+
+  await prisma.user.update({
+    where: { id: utilizator.id },
+    data: {
+      telegramChatId: String(chatId),
+      telegramUsername: from?.username || null,
+      telegramLegatLa: new Date(),
+      telegramCod: null, // consumăm codul
+      telegramCodExpiraLa: null,
+    },
+  })
+
+  await raspunde(
+    chatId,
+    `✅ <b>Conectat</b>\n\nContul <b>${utilizator.name || utilizator.email}</b> primește de acum notificările pe Telegram.\n\nPoți opri oricând din panou: Securitate → Telegram.`
+  )
+}
+
 async function answerCallback(callbackQueryId, text) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
     method: 'POST',
@@ -148,6 +206,37 @@ export async function POST(request) {
     }
 
     const body = await request.json()
+
+    // ── Mesaje text: /start <cod> pentru conectarea contului ──────
+    if (body.message?.text) {
+      const chatId = body.message.chat.id
+      const text = String(body.message.text).trim()
+
+      if (text.startsWith('/start')) {
+        const cod = text.split(/s+/)[1]
+
+        if (cod) {
+          await conecteazaCont(chatId, cod, body.message.from)
+        } else {
+          await raspunde(
+            chatId,
+            'Salut! 👋\n\nCa să primești notificări, deschide panoul PyWeb:\nSecuritate → Telegram → <b>Conectează</b>, apoi apasă linkul de acolo.'
+          )
+        }
+        return NextResponse.json({ ok: true })
+      }
+
+      if (text === '/stop' || text === '/deconecteaza') {
+        await prisma.user.updateMany({
+          where: { telegramChatId: String(chatId) },
+          data: { telegramChatId: null, telegramLegatLa: null, telegramUsername: null },
+        })
+        await raspunde(chatId, '🔕 Deconectat. Nu mai primești notificări pe acest chat.')
+        return NextResponse.json({ ok: true })
+      }
+
+      return NextResponse.json({ ok: true })
+    }
 
     // Procesare callback query (apăsare buton)
     if (body.callback_query) {

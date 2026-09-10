@@ -64,6 +64,7 @@ export default function LeadsClient({
   statistici,
   rulari,
   rulareActiva,
+  echipa = [],
   optiuni,
   areCheieGoogle,
   furnizorPitch,
@@ -352,6 +353,27 @@ export default function LeadsClient({
       return null
     }
     return (await raspuns.json()).lead
+  }
+
+  async function schimbaResponsabil(lead, responsabilId) {
+    const anterior = lead.responsabilId
+    const om = echipa.find((o) => o.id === responsabilId)
+    actualizeazaLocal(lead.id, { responsabilId, responsabil: om || null })
+
+    const salvat = await salveaza(lead, { responsabilId }, 'Nu am putut salva responsabilul')
+    if (!salvat) {
+      actualizeazaLocal(lead.id, { responsabilId: anterior })
+      return
+    }
+
+    if (om && !om.telegramLegat) {
+      toast(`${om.name || om.email} nu și-a legat Telegram — mementoul va merge în chat-ul comun.`, {
+        icon: '⚠️',
+        duration: 7000,
+      })
+    } else if (om) {
+      toast.success(`${om.name || om.email} primește mementourile în privat`)
+    }
   }
 
   async function schimbaFollowUp(lead, nextFollowUpAt) {
@@ -730,6 +752,8 @@ export default function LeadsClient({
               onAdaugaNota={adaugaNota}
               onStergeNota={stergeNota}
               onCopiaza={copiazaPitch}
+              echipa={echipa}
+              onResponsabil={schimbaResponsabil}
             />
           ))}
         </div>
