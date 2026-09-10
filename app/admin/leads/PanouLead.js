@@ -9,13 +9,11 @@
  * navigare dus-întors te costă timp și îți pierzi locul în listă.
  */
 
-import Link from 'next/link'
 import {
   PhoneIcon,
   ChatBubbleLeftRightIcon,
   ClipboardDocumentIcon,
   TrashIcon,
-  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline'
 import FollowUpPicker from './FollowUpPicker'
 
@@ -207,15 +205,6 @@ export default function PanouLead({
         <Camp eticheta="Ultimul apel">{dataScurta(lead.dataApel)}</Camp>
       </div>
 
-      <div className="flex justify-end">
-        <Link
-          href={`/admin/leads/${lead.id}`}
-          className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-indigo-600"
-        >
-          deschide pagina firmei
-          <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-        </Link>
-      </div>
     </div>
   )
 }
