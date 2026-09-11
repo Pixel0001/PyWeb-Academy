@@ -17,9 +17,9 @@ export async function PATCH(request, { params }) {
   try {
     await requireAdmin()
 
-    const permisiune = await checkPermission('leads.manage')
+    const permisiune = await checkPermission('sabloane.edit')
     if (!permisiune.allowed) {
-      return NextResponse.json({ error: 'Nu ai permisiunea necesară' }, { status: 403 })
+      return NextResponse.json({ error: 'Nu ai permisiunea să editezi șabloane' }, { status: 403 })
     }
 
     const { id } = await params
@@ -65,9 +65,9 @@ export async function DELETE(request, { params }) {
   try {
     await requireAdmin()
 
-    const permisiune = await checkPermission('leads.manage')
+    const permisiune = await checkPermission('sabloane.delete')
     if (!permisiune.allowed) {
-      return NextResponse.json({ error: 'Nu ai permisiunea necesară' }, { status: 403 })
+      return NextResponse.json({ error: 'Nu ai permisiunea să ștergi șabloane' }, { status: 403 })
     }
 
     const { id } = await params

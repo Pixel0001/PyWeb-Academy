@@ -418,6 +418,28 @@ export const PERMISSIONS = {
     label: 'Pornește rulări și editează lead-uri',
     description: 'Poate porni căutări pe Google Places (consumă buget API) și poate schimba status / notițe',
     category: 'Leaduri Web'
+  },
+
+  // Șabloane de mesaje (WhatsApp către lead-uri)
+  'sabloane.view': {
+    label: 'Vezi șabloanele',
+    description: 'Poate vedea pagina de șabloane de mesaje',
+    category: 'Șabloane mesaje'
+  },
+  'sabloane.create': {
+    label: 'Creează șabloane',
+    description: 'Poate adăuga șabloane noi de mesaje',
+    category: 'Șabloane mesaje'
+  },
+  'sabloane.edit': {
+    label: 'Editează șabloane',
+    description: 'Poate modifica textul șabloanelor și le poate ascunde / arăta',
+    category: 'Șabloane mesaje'
+  },
+  'sabloane.delete': {
+    label: 'Șterge șabloane',
+    description: 'Poate șterge definitiv șabloane de mesaje',
+    category: 'Șabloane mesaje'
   }
 }
 
@@ -481,6 +503,7 @@ export const PERMISSION_CATEGORIES = [
   'Module Învățare',
   'Submisii Probleme',
   'Leaduri Web',
+  'Șabloane mesaje',
   'Apollo',
   'Sistem'
 ]
