@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin, getCurrentUser } from '@/lib/session'
-import { checkPermission } from '@/lib/permissions'
+import { checkPermission, checkAnyPermission } from '@/lib/permissions'
 import { variabileNecunoscute } from '@/lib/leads/sabloane'
 
 export const runtime = 'nodejs'
@@ -16,7 +16,9 @@ export async function GET(request) {
   try {
     await requireAdmin()
 
-    const permisiune = await checkPermission('leads.view')
+    // Cine lucrează lead-urile trebuie să poată alege un șablon la butonul de
+    // WhatsApp, chiar dacă nu are acces la pagina de gestionare a șabloanelor.
+    const permisiune = await checkAnyPermission(['sabloane.view', 'leads.view'])
     if (!permisiune.allowed) {
       return NextResponse.json({ error: 'Nu ai permisiunea necesară' }, { status: 403 })
     }
@@ -42,7 +44,7 @@ export async function POST(request) {
   try {
     await requireAdmin()
 
-    const permisiune = await checkPermission('leads.manage')
+    const permisiune = await checkPermission('sabloane.create')
     if (!permisiune.allowed) {
       return NextResponse.json({ error: 'Nu ai permisiunea să creezi șabloane' }, { status: 403 })
     }

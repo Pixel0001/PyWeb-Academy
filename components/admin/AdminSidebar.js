@@ -54,7 +54,7 @@ const navigation = [
   { name: 'Submisii', href: '/admin/submissions', icon: 'clipboard', permission: 'submissions.view' },
   { name: 'Mr. PyWeb (AI)', href: '/admin/ai-usage', icon: 'puzzle', permission: 'submissions.view' },
   { name: '🎯 Leaduri Web', href: '/admin/leads', icon: 'target', permission: 'leads.view' },
-  { name: '💬 Șabloane mesaje', href: '/admin/sabloane', icon: 'chat', permission: 'leads.view' },
+  { name: '💬 Șabloane mesaje', href: '/admin/sabloane', icon: 'chat', permission: 'sabloane.view' },
   { name: '📧 Apollo & Email', href: '/admin/apollo', icon: 'envelope', permission: 'apollo.view' },
   { name: '🎮 Gamification', href: '/admin/abonamente', icon: 'star', permission: 'system.settings' },
   { name: 'Securitate', href: '/admin/security', icon: 'shield', permission: 'security.manage' },

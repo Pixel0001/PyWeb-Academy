@@ -48,7 +48,13 @@ const EXEMPLE = [
   },
 ]
 
-export default function SabloaneClient({ sabloaneInitiale, numeleMeu, poateEdita }) {
+export default function SabloaneClient({
+  sabloaneInitiale,
+  numeleMeu,
+  poateCrea,
+  poateEdita,
+  poateSterge,
+}) {
   const [sabloane, setSabloane] = useState(sabloaneInitiale)
   const [editat, setEditat] = useState(null) // null | 'nou' | id
   const [formular, setFormular] = useState(GOL)
@@ -151,7 +157,7 @@ export default function SabloaneClient({ sabloaneInitiale, numeleMeu, poateEdita
             Numele firmei și restul datelor se pun singure.
           </p>
         </div>
-        {poateEdita && !editat && (
+        {poateCrea && !editat && (
           <button
             onClick={() => deschideNou()}
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -272,7 +278,7 @@ export default function SabloaneClient({ sabloaneInitiale, numeleMeu, poateEdita
           <ChatBubbleLeftRightIcon className="mx-auto h-10 w-10 text-gray-300" />
           <p className="mt-3 font-medium text-gray-900">Niciun șablon încă</p>
           <p className="mt-1 text-sm text-gray-500">Pornește de la unul dintre exemplele de mai jos.</p>
-          {poateEdita && (
+          {poateCrea && (
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {EXEMPLE.map((e) => (
                 <button
@@ -314,29 +320,35 @@ export default function SabloaneClient({ sabloaneInitiale, numeleMeu, poateEdita
                   </p>
                 </div>
 
-                {poateEdita && (
+                {(poateEdita || poateSterge) && (
                   <div className="flex shrink-0 gap-1">
-                    <button
-                      onClick={() => deschideEditare(s)}
-                      className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600"
-                      title="Editează"
-                    >
-                      <PencilSquareIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => comutaActiv(s)}
-                      className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                      title={s.activ ? 'Ascunde din listă' : 'Arată în listă'}
-                    >
-                      {s.activ ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                    </button>
-                    <button
-                      onClick={() => sterge(s)}
-                      className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-                      title="Șterge"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                    {poateEdita && (
+                      <>
+                        <button
+                          onClick={() => deschideEditare(s)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600"
+                          title="Editează"
+                        >
+                          <PencilSquareIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => comutaActiv(s)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                          title={s.activ ? 'Ascunde din listă' : 'Arată în listă'}
+                        >
+                          {s.activ ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                        </button>
+                      </>
+                    )}
+                    {poateSterge && (
+                      <button
+                        onClick={() => sterge(s)}
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                        title="Șterge"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
