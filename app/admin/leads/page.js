@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
+import { getCurrentUser } from '@/lib/session'
 import { TOATE_ORASELE, ORASE, CATEGORII, CONFIG } from '@/lib/leads/config'
 import { furnizorPitch, modelCurent } from '@/lib/leads/pitch'
 import LeadsClient from './LeadsClient'
@@ -92,6 +93,7 @@ export default async function LeadsPage() {
       statistici={statistici}
       rulari={JSON.parse(JSON.stringify(rulari))}
       rulareActiva={rulareActiva}
+      numeleMeu={(await getCurrentUser())?.name || ''}
       echipa={echipa.map((o) => ({
         id: o.id,
         name: o.name,
