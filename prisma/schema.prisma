@@ -1770,3 +1770,24 @@ model ApolloCautare {
   @@index([createdAt])
   @@map("apollo_cautari")
 }
+
+// ==================== ȘABLOANE DE MESAJ ====================
+// Texte gata scrise pe care le trimiți pe WhatsApp unui lead dintr-un clic.
+// Variabilele de forma {{firma}} se înlocuiesc cu datele firmei la trimitere.
+
+model SablonMesaj {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nume      String // ce vezi în listă: „Primul contact", „Revenire după ofertă"
+  text      String // corpul mesajului, cu variabile {{firma}}, {{oras}}...
+  categorie String? // grupare opțională: primul contact / follow-up / ofertă
+  ordine    Int      @default(0) // ordinea în listă
+  activ     Boolean  @default(true)
+  folosit   Int      @default(0) // de câte ori a fost trimis — ca să vezi ce merge
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activ, ordine])
+  @@map("sabloane_mesaj")
+}

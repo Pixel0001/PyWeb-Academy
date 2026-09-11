@@ -25,6 +25,7 @@ import {
   STILURI_FOLLOWUP,
 } from '@/lib/leads/statusuri'
 import RandLead from './RandLead'
+import ModalWhatsApp from './ModalWhatsApp'
 
 /** Verde peste 70, galben 40–70, gri sub 40 — la fel ca în Excel. */
 function culoareScor(scor) {
@@ -65,6 +66,7 @@ export default function LeadsClient({
   rulari,
   rulareActiva,
   echipa = [],
+  numeleMeu = '',
   optiuni,
   areCheieGoogle,
   furnizorPitch,
@@ -99,6 +101,7 @@ export default function LeadsClient({
   const [progres, setProgres] = useState(null)
   const [loguri, setLoguri] = useState([])
   const [rulareBlocanta, setRulareBlocanta] = useState(null)
+  const [leadWhatsApp, setLeadWhatsApp] = useState(null)
   const opresteRef = useRef(false)
 
   // ============================================================
@@ -353,6 +356,11 @@ export default function LeadsClient({
       return null
     }
     return (await raspuns.json()).lead
+  }
+
+  // După trimiterea pe WhatsApp: o notiță pe lead, ca să știi că i-ai scris.
+  async function dupaWhatsApp(lead, numeSablon) {
+    await adaugaNota(lead, `💬 WhatsApp trimis — șablonul „${numeSablon}"`)
   }
 
   async function schimbaResponsabil(lead, responsabilId) {
@@ -754,12 +762,22 @@ export default function LeadsClient({
               onCopiaza={copiazaPitch}
               echipa={echipa}
               onResponsabil={schimbaResponsabil}
+              onWhatsApp={setLeadWhatsApp}
             />
           ))}
         </div>
       )}
 
       {istoric.length > 0 && <IstoricRulari rulari={istoric} />}
+
+      {leadWhatsApp && (
+        <ModalWhatsApp
+          lead={leadWhatsApp}
+          numeleMeu={numeleMeu}
+          onInchide={() => setLeadWhatsApp(null)}
+          onTrimis={dupaWhatsApp}
+        />
+      )}
     </div>
   )
 }

@@ -32,6 +32,7 @@ export default function PanouLead({
   onCopiaza,
   echipa = [],
   onResponsabil,
+  onWhatsApp,
 }) {
   return (
     <div className="space-y-2.5 border-t border-gray-100 bg-gray-50/50 px-3 py-2.5">
@@ -82,6 +83,15 @@ export default function PanouLead({
             <ChatBubbleLeftRightIcon className="h-4 w-4" />
             Scrie pe {social.nume}
           </a>
+        )}
+
+        {(lead.telefon || lead.telefonLocal) && (
+          <button
+            onClick={() => onWhatsApp?.(lead)}
+            className="inline-flex items-center gap-1.5 rounded bg-[#25D366] px-2.5 py-1 text-sm font-semibold text-white hover:bg-[#1ebe5a]"
+          >
+            💬 WhatsApp cu șablon
+          </button>
         )}
 
         {lead.linkMaps && (
