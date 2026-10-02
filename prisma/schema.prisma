@@ -1560,6 +1560,12 @@ model WebLead {
   pitch               String? // fraza de deschidere pentru apel
   linkMaps            String?
   businessStatus      String?
+
+  // De unde a venit: GOOGLE_MAPS (extragerea) sau ce s-a ales la „Lead nou".
+  // Gol = lead vechi, dinainte de câmp — tot din Google Maps.
+  sursa         String?
+  sursaDetaliu  String?
+  adaugatDe     String? // numele celui care l-a adăugat manual
   verificatLa         DateTime? // când a fost verificat ultima dată site-ul
 
   // Coloane de lucru — se completează manual în timpul apelurilor
@@ -1590,6 +1596,8 @@ model WebLead {
   @@index([nextFollowUpAt])
   @@index([calitateSite])
   @@index([responsabilId])
+  @@index([sursa])
+  @@index([createdAt])
   @@map("web_leads")
 }
 
@@ -1611,16 +1619,28 @@ model WebLeadNota {
 // Pipeline-ul unui lead, de la găsit până la client (sau pierdut).
 // Ordinea de aici e ordinea din toate dropdown-urile.
 enum LeadStatus {
-  DE_SUNAT // încă n-am sunat
-  FARA_RASPUNS // am sunat, n-a răspuns
-  SUNAT // am vorbit cu cineva
-  DE_REVENIT // mi-a zis să sun altă dată
-  INTERESAT // vrea să discutăm
-  OFERTA_TRIMISA // i-am trimis prețul
-  NEGOCIERE // discutăm condițiile
-  CLIENT // a semnat
-  REFUZ // a zis nu
-  NU_MA_SUNA // nu mai suna niciodată
+  // Etichetele afișate sunt în lib/leads/statusuri.js. Valorile vechi au
+  // rămas aceleași ca să nu fie nevoie de migrarea lead-urilor salvate.
+  DE_SUNAT // New lead
+  FARA_RASPUNS // Fără răspuns
+  SUNAT // Contactat
+  FOLLOW_UP_1
+  FOLLOW_UP_2
+  FOLLOW_UP_2_PLUS
+  INTERESAT
+  INTALNIRE_PROGRAMATA
+  OFERTA_TRIMISA
+  NEGOCIERE
+  SE_GANDESTE
+  DE_REVENIT // Interesat mai târziu
+  ASTEPTAM_PLATA // Așteptăm avansul
+  CLIENT // A plătit
+  IN_LUCRU // Site în lucru
+  LIVRAT // Site livrat
+  REFUZ
+  NU_MA_SUNA // Lead pierdut
+  NUMAR_GRESIT
+  TEST
 }
 
 // O rulare = produs cartezian CATEGORII × ORAȘE, executată în pași mici

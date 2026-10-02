@@ -31,17 +31,8 @@ export default async function LeadsPage() {
   inceputLuna.setDate(1)
   inceputLuna.setHours(0, 0, 0, 0)
 
-  const [leaduri, total, peCalitate, rulari, apeluriLuna, echipa, rulareActiva] = await Promise.all([
-    prisma.webLead.findMany({
-      orderBy: [{ scor: 'desc' }, { nrRecenzii: 'desc' }],
-      take: 300,
-      include: {
-        // Istoricul discuțiilor, ca să apară imediat la deschiderea unui lead
-        notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 },
-      },
-    }),
-    prisma.webLead.count(),
-    prisma.webLead.groupBy({ by: ['calitateSite'], _count: true }),
+  // Lead-urile nu se mai încarcă aici: lista le cere singură, filtrată și paginată
+  const [rulari, apeluriLuna, echipa, rulareActiva] = await Promise.all([
     prisma.leadRun.findMany({
       orderBy: { startedAt: 'desc' },
       take: 10,
@@ -78,19 +69,10 @@ export default async function LeadsPage() {
     }),
   ])
 
-  const statistici = {
-    total,
-    faraSite: peCalitate
-      .filter((g) => ['LIPSA', 'DOAR_SOCIAL'].includes(g.calitateSite))
-      .reduce((s, g) => s + g._count, 0),
-    peCalitate: Object.fromEntries(peCalitate.map((g) => [g.calitateSite || 'NEVERIFICAT', g._count])),
-    apeluriLunaCurenta: apeluriLuna._sum.apeluriApi || 0,
-  }
 
   return (
     <LeadsClient
-      leaduriInitiale={JSON.parse(JSON.stringify(leaduri))}
-      statistici={statistici}
+      statisticiInitiale={{ apeluriLunaCurenta: apeluriLuna._sum.apeluriApi || 0 }}
       rulari={JSON.parse(JSON.stringify(rulari))}
       rulareActiva={rulareActiva}
       numeleMeu={(await getCurrentUser())?.name || ''}
