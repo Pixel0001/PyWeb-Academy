@@ -1577,6 +1577,7 @@ model WebLead {
 
   // Coloane de lucru — se completează manual în timpul apelurilor
   status         LeadStatus @default(DE_SUNAT)
+  urgent         Boolean? // marcat de mână 🔥 — ca să-l găsești ușor; nu schimbă statusul
   dataApel       DateTime?
   nextFollowUpAt     DateTime? // când trebuie recontactată firma
   followUpNotificatLa DateTime? // când s-a trimis ultima notificare pe Telegram
@@ -1604,6 +1605,7 @@ model WebLead {
   @@index([calitateSite])
   @@index([responsabilId])
   @@index([sursa])
+  @@index([urgent])
   @@index([placeIds])
   @@index([tara])
   @@index([createdAt])
