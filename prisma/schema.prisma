@@ -1544,6 +1544,11 @@ model RewardClaim {
 model WebLead {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
   placeId             String   @unique // cheia de deduplicare între rulări
+  // O firmă = un lead. Când Google dă mai multe locații ale aceleiași firme
+  // (Fornetti × 10), toate stau aici, iar placeId e locația principală.
+  placeIds            String[] @default([]) // toate locațiile unite în lead
+  locatii             Json? // [{ placeId, denumire, adresa, oras, telefon, rating, nrRecenzii, linkMaps }]
+  nrLocatii           Int? // gol = o singură locație
   denumire            String
   telefon             String? // format internațional +373...
   telefonLocal        String?
@@ -1599,6 +1604,7 @@ model WebLead {
   @@index([calitateSite])
   @@index([responsabilId])
   @@index([sursa])
+  @@index([placeIds])
   @@index([tara])
   @@index([createdAt])
   @@map("web_leads")

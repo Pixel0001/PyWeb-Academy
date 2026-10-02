@@ -16,6 +16,7 @@ import { verificaSite } from '@/lib/leads/site-check'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
+export const preferredRegion = 'fra1' // aproape de Moldova: verificări de site mai exacte
 
 const MARIMI_PAGINA = [25, 50, 100]
 
@@ -190,7 +191,7 @@ export async function GET(request) {
       prisma.webLead.groupBy({ by: ['oras'], _count: true }),
       prisma.webLead.groupBy({ by: ['categoriePrincipala'], _count: true }),
       prisma.webLead.groupBy({ by: ['tara'], _count: true }),
-      prisma.webLead.count({ where: { calitateSite: 'MORT', siteUrl: { not: null } } }),
+      prisma.webLead.count({ where: { calitateSite: { in: ['MORT', 'NEADAPTAT_MOBIL'] }, siteUrl: { not: null } } }),
     ])
 
     const optiuniDinDate = (grupuri, camp) =>

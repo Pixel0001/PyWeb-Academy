@@ -16,6 +16,7 @@ import { INCLUDE_LISTA, normalizeazaSite } from '../route'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
+export const preferredRegion = 'fra1' // aproape de Moldova: verificări de site mai exacte
 
 /** Textul tăiat la o lungime rezonabilă; gol → null. */
 const text = (v, max) => String(v ?? '').trim().slice(0, max) || null

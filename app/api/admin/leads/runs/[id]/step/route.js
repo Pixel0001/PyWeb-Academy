@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic'
 // Pe planul Hobby limita e 60: dacă treci pe Hobby, pune 60 aici ȘI
 // bugetPasSecunde pe 45 în config.
 export const maxDuration = 300
+export const preferredRegion = 'fra1' // aproape de Moldova: verificări de site mai exacte
 
 export async function POST(request, { params }) {
   try {

@@ -110,6 +110,15 @@ export default function RandLead({
             {lead.denumire}
           </Link>
 
+          {lead.nrLocatii > 1 && (
+            <span
+              className="shrink-0 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-800"
+              title={`${lead.nrLocatii} locații ale aceleiași firme`}
+            >
+              📍{lead.nrLocatii}
+            </span>
+          )}
+
           {lead.tara && lead.tara !== 'MD' && (
             <span className="shrink-0 text-xs" title={lead.tara}>
               {steagTara(lead.tara)}

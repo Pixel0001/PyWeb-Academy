@@ -1,6 +1,6 @@
 /**
  * POST /api/admin/leads/reverifica
- * Verifică din nou site-urile marcate MORT (sau altă calitate cerută).
+ * Verifică din nou site-urile marcate MORT sau NEADAPTAT_MOBIL (sau altă calitate cerută).
  *
  * Gratuit — nu atinge Google, doar deschide site-urile. Folosit după ce am
  * învățat să recunoaștem site-urile protejate de roboți (Cloudflare etc.):
@@ -19,6 +19,7 @@ import { calculeazaScor } from '@/lib/leads/scoring'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+export const preferredRegion = 'fra1' // aproape de Moldova: verificări de site mai exacte
 
 const BUGET_MS = 240 * 1000
 const CONCURENTA = 10
@@ -34,12 +35,16 @@ export async function POST(request) {
     }
 
     const corp = await request.json().catch(() => ({}))
-    const calitate = CALITATI_PERMISE.includes(corp.calitate) ? corp.calitate : 'MORT'
+    // Implicit: cele „moarte" (multe erau protejate de Cloudflare) și cele „nemobile"
+    // (multe aveau design pentru telefon, lipsea doar eticheta viewport)
+    const cerute = Array.isArray(corp.calitati) ? corp.calitati : [corp.calitate || 'MORT', 'NEADAPTAT_MOBIL']
+    const calitati = cerute.filter((c) => CALITATI_PERMISE.includes(c))
+    const calitate = calitati[0] || 'MORT'
     // Ce am verificat deja în runda asta nu se mai ia o dată (ar rămâne MORT și s-ar relua la infinit)
     const inceputRunda = corp.inceputRunda ? new Date(corp.inceputRunda) : new Date()
 
     const where = {
-      calitateSite: calitate,
+      calitateSite: { in: calitati.length ? calitati : ['MORT'] },
       siteUrl: { not: null },
       OR: [{ verificatLa: null }, { verificatLa: { lt: inceputRunda } }],
     }
