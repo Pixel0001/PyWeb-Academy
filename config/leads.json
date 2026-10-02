@@ -116,7 +116,8 @@
       "FARA_HTTPS": 25,
       "NEADAPTAT_MOBIL": 20,
       "LENT": 15,
-      "OK": 0
+      "OK": 0,
+      "NECLAR": 10
     },
     "puncteRating": [
       {
@@ -189,5 +190,678 @@
     "interogariPePas": 20,
     "siteuriPePas": 100,
     "loturiPitchPePas": 5
-  }
+  },
+  "_tari": "Țările din care se pot căuta firme. Orice altă țară se poate scrie în pagină — e verificată pe OpenStreetMap înainte de căutare.",
+  "tari": [
+    {
+      "cod": "MD",
+      "nume": "Moldova",
+      "steag": "🇲🇩",
+      "limba": "ro",
+      "prefix": "373",
+      "orase": [
+        "Chișinău",
+        "Bălți",
+        "Tiraspol",
+        "Cahul",
+        "Orhei",
+        "Ungheni",
+        "Soroca",
+        "Comrat",
+        "Căușeni",
+        "Strășeni",
+        "Edineț",
+        "Hîncești",
+        "Ialoveni",
+        "Florești",
+        "Drochia"
+      ],
+      "oraseImplicite": [
+        "Chișinău",
+        "Bălți",
+        "Tiraspol",
+        "Cahul",
+        "Orhei"
+      ]
+    },
+    {
+      "cod": "RO",
+      "nume": "România",
+      "steag": "🇷🇴",
+      "limba": "ro",
+      "prefix": "40",
+      "orase": [
+        "București",
+        "Cluj-Napoca",
+        "Timișoara",
+        "Iași",
+        "Constanța",
+        "Craiova",
+        "Brașov",
+        "Galați",
+        "Ploiești",
+        "Oradea",
+        "Brăila",
+        "Arad",
+        "Pitești",
+        "Sibiu",
+        "Bacău",
+        "Târgu Mureș",
+        "Baia Mare",
+        "Buzău",
+        "Botoșani",
+        "Satu Mare",
+        "Suceava",
+        "Focșani",
+        "Piatra Neamț",
+        "Vaslui"
+      ],
+      "oraseImplicite": [
+        "București",
+        "Cluj-Napoca",
+        "Timișoara",
+        "Iași",
+        "Brașov"
+      ]
+    },
+    {
+      "cod": "GB",
+      "nume": "Marea Britanie",
+      "steag": "🇬🇧",
+      "limba": "en",
+      "prefix": "44",
+      "orase": [
+        "London",
+        "Manchester",
+        "Birmingham",
+        "Leeds",
+        "Liverpool",
+        "Bristol",
+        "Sheffield",
+        "Newcastle upon Tyne",
+        "Nottingham",
+        "Leicester",
+        "Brighton",
+        "Reading",
+        "Oxford",
+        "Cambridge",
+        "Edinburgh",
+        "Glasgow",
+        "Cardiff",
+        "Belfast"
+      ],
+      "oraseImplicite": [
+        "London",
+        "Manchester",
+        "Birmingham"
+      ]
+    },
+    {
+      "cod": "US",
+      "nume": "SUA",
+      "steag": "🇺🇸",
+      "limba": "en",
+      "prefix": "1",
+      "orase": [
+        "New York",
+        "Los Angeles",
+        "Chicago",
+        "Houston",
+        "Phoenix",
+        "Philadelphia",
+        "San Antonio",
+        "San Diego",
+        "Dallas",
+        "Austin",
+        "Miami",
+        "Atlanta",
+        "Boston",
+        "Seattle",
+        "Denver",
+        "Las Vegas",
+        "San Francisco",
+        "Orlando",
+        "Sacramento"
+      ],
+      "oraseImplicite": [
+        "New York",
+        "Los Angeles",
+        "Chicago",
+        "Miami"
+      ]
+    },
+    {
+      "cod": "IE",
+      "nume": "Irlanda",
+      "steag": "🇮🇪",
+      "limba": "en",
+      "prefix": "353",
+      "orase": [
+        "Dublin",
+        "Cork",
+        "Galway",
+        "Limerick",
+        "Waterford"
+      ],
+      "oraseImplicite": [
+        "Dublin"
+      ]
+    },
+    {
+      "cod": "IT",
+      "nume": "Italia",
+      "steag": "🇮🇹",
+      "limba": "it",
+      "prefix": "39",
+      "orase": [
+        "Roma",
+        "Milano",
+        "Torino",
+        "Napoli",
+        "Bologna",
+        "Firenze",
+        "Verona",
+        "Padova",
+        "Genova",
+        "Venezia"
+      ],
+      "oraseImplicite": [
+        "Roma",
+        "Milano"
+      ]
+    },
+    {
+      "cod": "DE",
+      "nume": "Germania",
+      "steag": "🇩🇪",
+      "limba": "de",
+      "prefix": "49",
+      "orase": [
+        "Berlin",
+        "München",
+        "Hamburg",
+        "Köln",
+        "Frankfurt am Main",
+        "Stuttgart",
+        "Düsseldorf",
+        "Leipzig",
+        "Nürnberg"
+      ],
+      "oraseImplicite": [
+        "Berlin",
+        "München"
+      ]
+    },
+    {
+      "cod": "ES",
+      "nume": "Spania",
+      "steag": "🇪🇸",
+      "limba": "es",
+      "prefix": "34",
+      "orase": [
+        "Madrid",
+        "Barcelona",
+        "Valencia",
+        "Sevilla",
+        "Málaga",
+        "Zaragoza",
+        "Bilbao"
+      ],
+      "oraseImplicite": [
+        "Madrid",
+        "Barcelona"
+      ]
+    },
+    {
+      "cod": "FR",
+      "nume": "Franța",
+      "steag": "🇫🇷",
+      "limba": "fr",
+      "prefix": "33",
+      "orase": [
+        "Paris",
+        "Lyon",
+        "Marseille",
+        "Toulouse",
+        "Nice",
+        "Nantes",
+        "Bordeaux",
+        "Lille"
+      ],
+      "oraseImplicite": [
+        "Paris",
+        "Lyon"
+      ]
+    }
+  ],
+  "_grupuriCategorii": "Categoriile din pagină, pe grupe. Poți adăuga oricâte; `ro` trebuie să fie unic.",
+  "grupuriCategorii": [
+    {
+      "grup": "Magazine",
+      "emoji": "🛍️",
+      "categorii": [
+        {
+          "ro": "magazin de haine",
+          "en": "clothing store",
+          "tip": "clothing_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de haine pentru copii",
+          "en": "children's clothing store",
+          "tip": "clothing_store",
+          "strict": true
+        },
+        {
+          "ro": "boutique de haine",
+          "en": "fashion boutique",
+          "tip": "clothing_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de lenjerie",
+          "en": "lingerie store",
+          "tip": "clothing_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de încălțăminte",
+          "en": "shoe store",
+          "tip": "shoe_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de bijuterii",
+          "en": "jewelry store",
+          "tip": "jewelry_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de cosmetice",
+          "en": "cosmetics store",
+          "tip": "store"
+        },
+        {
+          "ro": "magazin de electronice",
+          "en": "electronics store",
+          "tip": "electronics_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de telefoane",
+          "en": "cell phone store",
+          "tip": "cell_phone_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de mobilă",
+          "en": "furniture store",
+          "tip": "furniture_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de articole pentru casă",
+          "en": "home goods store",
+          "tip": "home_goods_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de materiale de construcție",
+          "en": "building materials store",
+          "tip": "hardware_store"
+        },
+        {
+          "ro": "florărie",
+          "en": "florist",
+          "tip": "florist",
+          "strict": true
+        },
+        {
+          "ro": "magazin de jucării",
+          "en": "toy store",
+          "tip": "store"
+        },
+        {
+          "ro": "magazin de articole sportive",
+          "en": "sporting goods store",
+          "tip": "sporting_goods_store",
+          "strict": true
+        },
+        {
+          "ro": "librărie",
+          "en": "book store",
+          "tip": "book_store",
+          "strict": true
+        },
+        {
+          "ro": "pet shop",
+          "en": "pet store",
+          "tip": "pet_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de biciclete",
+          "en": "bicycle store",
+          "tip": "bicycle_store",
+          "strict": true
+        },
+        {
+          "ro": "magazin de cadouri",
+          "en": "gift shop",
+          "tip": "gift_shop",
+          "strict": true
+        },
+        {
+          "ro": "magazin de vinuri",
+          "en": "wine shop",
+          "tip": "liquor_store"
+        },
+        {
+          "ro": "magazin de piese auto",
+          "en": "auto parts store",
+          "tip": "auto_parts_store",
+          "strict": true
+        },
+        {
+          "ro": "optică medicală",
+          "en": "optician"
+        }
+      ]
+    },
+    {
+      "grup": "Școli private și educație",
+      "emoji": "🎓",
+      "categorii": [
+        {
+          "ro": "centru de limbi străine",
+          "en": "language school"
+        },
+        {
+          "ro": "școală de engleză",
+          "en": "English language school"
+        },
+        {
+          "ro": "școală de programare pentru copii",
+          "en": "coding school for kids"
+        },
+        {
+          "ro": "centru de robotică pentru copii",
+          "en": "robotics school for kids"
+        },
+        {
+          "ro": "școală privată",
+          "en": "private school"
+        },
+        {
+          "ro": "liceu privat",
+          "en": "private high school"
+        },
+        {
+          "ro": "școală primară privată",
+          "en": "private primary school"
+        },
+        {
+          "ro": "grădiniță privată",
+          "en": "private kindergarten"
+        },
+        {
+          "ro": "after school",
+          "en": "after school program"
+        },
+        {
+          "ro": "centru de meditații",
+          "en": "tutoring center"
+        },
+        {
+          "ro": "centru educațional",
+          "en": "education center"
+        },
+        {
+          "ro": "centru de dezvoltare pentru copii",
+          "en": "kids development center"
+        },
+        {
+          "ro": "școală online",
+          "en": "online school"
+        },
+        {
+          "ro": "școală de dans",
+          "en": "dance school"
+        },
+        {
+          "ro": "școală de muzică",
+          "en": "music school"
+        },
+        {
+          "ro": "școală de șah",
+          "en": "chess school"
+        },
+        {
+          "ro": "școală de șoferi",
+          "en": "driving school"
+        }
+      ]
+    },
+    {
+      "grup": "Frumusețe și sănătate",
+      "emoji": "💅",
+      "categorii": [
+        {
+          "ro": "salon de înfrumusețare",
+          "en": "beauty salon",
+          "tip": "beauty_salon"
+        },
+        {
+          "ro": "salon de unghii",
+          "en": "nail salon",
+          "tip": "beauty_salon"
+        },
+        {
+          "ro": "frizerie",
+          "en": "barber shop",
+          "tip": "hair_care"
+        },
+        {
+          "ro": "cabinet de cosmetologie",
+          "en": "cosmetologist",
+          "tip": "beauty_salon"
+        },
+        {
+          "ro": "centru de masaj",
+          "en": "massage center",
+          "tip": "spa"
+        },
+        {
+          "ro": "spa",
+          "en": "day spa",
+          "tip": "spa"
+        },
+        {
+          "ro": "sală de fitness",
+          "en": "gym",
+          "tip": "gym",
+          "strict": true
+        },
+        {
+          "ro": "cabinet stomatologic",
+          "en": "dental clinic",
+          "tip": "dentist",
+          "strict": true
+        },
+        {
+          "ro": "clinică privată",
+          "en": "private medical clinic"
+        },
+        {
+          "ro": "cabinet veterinar",
+          "en": "veterinary clinic",
+          "tip": "veterinary_care",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "grup": "Restaurante și HoReCa",
+      "emoji": "🍽️",
+      "categorii": [
+        {
+          "ro": "restaurant",
+          "en": "restaurant",
+          "tip": "restaurant",
+          "strict": true
+        },
+        {
+          "ro": "cafenea",
+          "en": "cafe",
+          "tip": "cafe"
+        },
+        {
+          "ro": "pizzerie",
+          "en": "pizza restaurant",
+          "tip": "restaurant"
+        },
+        {
+          "ro": "bar",
+          "en": "bar",
+          "tip": "bar"
+        },
+        {
+          "ro": "brutărie",
+          "en": "bakery",
+          "tip": "bakery",
+          "strict": true
+        },
+        {
+          "ro": "cofetărie",
+          "en": "pastry shop",
+          "tip": "bakery"
+        },
+        {
+          "ro": "catering",
+          "en": "catering service"
+        },
+        {
+          "ro": "hotel",
+          "en": "hotel",
+          "tip": "lodging"
+        },
+        {
+          "ro": "pensiune",
+          "en": "guest house",
+          "tip": "lodging"
+        }
+      ]
+    },
+    {
+      "grup": "Auto",
+      "emoji": "🚗",
+      "categorii": [
+        {
+          "ro": "service auto",
+          "en": "car repair shop",
+          "tip": "car_repair",
+          "strict": true
+        },
+        {
+          "ro": "spălătorie auto",
+          "en": "car wash",
+          "tip": "car_wash",
+          "strict": true
+        },
+        {
+          "ro": "vulcanizare",
+          "en": "tire shop",
+          "tip": "car_repair"
+        },
+        {
+          "ro": "chirie auto",
+          "en": "car rental",
+          "tip": "car_rental",
+          "strict": true
+        },
+        {
+          "ro": "dealer auto",
+          "en": "car dealer",
+          "tip": "car_dealer",
+          "strict": true
+        }
+      ]
+    },
+    {
+      "grup": "Servicii",
+      "emoji": "🧰",
+      "categorii": [
+        {
+          "ro": "agenție imobiliară",
+          "en": "real estate agency",
+          "tip": "real_estate_agency",
+          "strict": true
+        },
+        {
+          "ro": "agenție de turism",
+          "en": "travel agency",
+          "tip": "travel_agency",
+          "strict": true
+        },
+        {
+          "ro": "cabinet avocat",
+          "en": "law firm",
+          "tip": "lawyer"
+        },
+        {
+          "ro": "birou notarial",
+          "en": "notary"
+        },
+        {
+          "ro": "servicii contabile",
+          "en": "accounting firm",
+          "tip": "accounting"
+        },
+        {
+          "ro": "fotograf",
+          "en": "photographer"
+        },
+        {
+          "ro": "agenție evenimente",
+          "en": "event planner"
+        },
+        {
+          "ro": "curățătorie chimică",
+          "en": "dry cleaner"
+        },
+        {
+          "ro": "atelier croitorie",
+          "en": "tailor"
+        },
+        {
+          "ro": "tipografie",
+          "en": "printing shop"
+        },
+        {
+          "ro": "firmă de construcții",
+          "en": "construction company"
+        },
+        {
+          "ro": "instalator",
+          "en": "plumber",
+          "tip": "plumber"
+        },
+        {
+          "ro": "electrician",
+          "en": "electrician",
+          "tip": "electrician"
+        },
+        {
+          "ro": "firmă de curățenie",
+          "en": "cleaning service"
+        },
+        {
+          "ro": "firmă de mutări",
+          "en": "moving company",
+          "tip": "moving_company"
+        }
+      ]
+    }
+  ],
+  "_categorii": "Categoriile bifate implicit la o căutare nouă în Moldova."
 }

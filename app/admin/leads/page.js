@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
 import { getCurrentUser } from '@/lib/session'
-import { TOATE_ORASELE, ORASE, CATEGORII, CONFIG } from '@/lib/leads/config'
+import { CATEGORII, CONFIG, TARI, GRUPURI_CATEGORII } from '@/lib/leads/config'
 import { furnizorPitch, modelCurent } from '@/lib/leads/pitch'
 import LeadsClient from './LeadsClient'
 
@@ -31,17 +31,8 @@ export default async function LeadsPage() {
   inceputLuna.setDate(1)
   inceputLuna.setHours(0, 0, 0, 0)
 
-  const [leaduri, total, peCalitate, rulari, apeluriLuna, echipa, rulareActiva] = await Promise.all([
-    prisma.webLead.findMany({
-      orderBy: [{ scor: 'desc' }, { nrRecenzii: 'desc' }],
-      take: 300,
-      include: {
-        // Istoricul discuțiilor, ca să apară imediat la deschiderea unui lead
-        notiteIstoric: { orderBy: { createdAt: 'desc' }, take: 20 },
-      },
-    }),
-    prisma.webLead.count(),
-    prisma.webLead.groupBy({ by: ['calitateSite'], _count: true }),
+  // Lead-urile nu se mai încarcă aici: lista le cere singură, filtrată și paginată
+  const [rulari, apeluriLuna, echipa, rulareActiva] = await Promise.all([
     prisma.leadRun.findMany({
       orderBy: { startedAt: 'desc' },
       take: 10,
@@ -51,6 +42,7 @@ export default async function LeadsPage() {
         faza: true,
         orase: true,
         categorii: true,
+        tara: true,
         apeluriApi: true,
         interogariSarite: true,
         firmeTotal: true,
@@ -78,19 +70,10 @@ export default async function LeadsPage() {
     }),
   ])
 
-  const statistici = {
-    total,
-    faraSite: peCalitate
-      .filter((g) => ['LIPSA', 'DOAR_SOCIAL'].includes(g.calitateSite))
-      .reduce((s, g) => s + g._count, 0),
-    peCalitate: Object.fromEntries(peCalitate.map((g) => [g.calitateSite || 'NEVERIFICAT', g._count])),
-    apeluriLunaCurenta: apeluriLuna._sum.apeluriApi || 0,
-  }
 
   return (
     <LeadsClient
-      leaduriInitiale={JSON.parse(JSON.stringify(leaduri))}
-      statistici={statistici}
+      statisticiInitiale={{ apeluriLunaCurenta: apeluriLuna._sum.apeluriApi || 0 }}
       rulari={JSON.parse(JSON.stringify(rulari))}
       rulareActiva={rulareActiva}
       numeleMeu={(await getCurrentUser())?.name || ''}
@@ -101,9 +84,13 @@ export default async function LeadsPage() {
         telegramLegat: Boolean(o.telegramChatId),
       }))}
       optiuni={{
-        toateOrasele: TOATE_ORASELE,
-        oraseImplicite: ORASE,
-        categorii: CATEGORII,
+        tari: TARI,
+        grupuriCategorii: GRUPURI_CATEGORII,
+        // Toate categoriile predefinite — pentru filtrul din listă
+        categorii: GRUPURI_CATEGORII.flatMap((g) => g.categorii.map((c) => c.ro)),
+        // Bifate implicit la prima căutare: cele de până acum
+        categoriiImplicite: CATEGORII,
+        areOpenAI: Boolean(process.env.OPENAI_API_KEY),
         buget: CONFIG.buget,
         marimePagina: CONFIG.cautare.pageSize,
         paginiMax: CONFIG.cautare.paginiMax,

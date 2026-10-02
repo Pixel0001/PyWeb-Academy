@@ -1,7 +1,13 @@
 'use client'
 
+/**
+ * /admin/leads — CRM-ul lead-urilor web, construit după lista din Olla English:
+ * un rând pe lead, status schimbat din rând, filtre multiple care rămân puse,
+ * paginare pe server, „Lead nou" de mână. Plus ce e specific aici: extragerea
+ * firmelor din Google Maps, scorul și verificarea site-ului.
+ */
+
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   ArrowDownTrayIcon,
@@ -12,57 +18,63 @@ import {
   GlobeAltIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PlusIcon,
+  XMarkIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline'
 import {
   STATUSURI,
-  getCalitate,
+  SURSE,
+  CALITATI,
   FILTRE_FOLLOWUP,
   PERIOADE,
   SORTARI,
-  stareFollowUp,
+  SCORURI_MINIME,
   formateazaFollowUp,
-  STILURI_FOLLOWUP,
+  steagTara,
 } from '@/lib/leads/statusuri'
 import RandLead from './RandLead'
 import ModalWhatsApp from './ModalWhatsApp'
+import FormularLead from './FormularLead'
+import PanouCautare from './PanouCautare'
 
-/** Verde peste 70, galben 40–70, gri sub 40 — la fel ca în Excel. */
-function culoareScor(scor) {
-  if (scor > 70) return 'bg-green-600 text-white'
-  if (scor >= 40) return 'bg-yellow-400 text-yellow-950'
-  return 'bg-gray-200 text-gray-600'
-}
+const MARIMI_PAGINA = [25, 50, 100, 'toate']
 
-function ratingRo(rating) {
-  return typeof rating === 'number' ? String(rating).replace('.', ',') : '—'
-}
+// Filtrele rămân puse și după ce închizi pagina
+const CHEIE_FILTRE = 'pyweb:leaduri:filtre'
 
-// Rețelele pe care pot scrie unei firme care nu și-a lăsat numărul în Maps.
-const RETELE = [
-  { potrivire: /facebook\.com/i, nume: 'Facebook' },
-  { potrivire: /instagram\.com/i, nume: 'Instagram' },
-  { potrivire: /ok\.ru/i, nume: 'OK' },
-  { potrivire: /vk\.com/i, nume: 'VK' },
-  { potrivire: /linktr\.ee/i, nume: 'Linktree' },
-]
-
-function contactSocial(lead) {
-  if (!lead.siteUrl) return null
-  const retea = RETELE.find((r) => r.potrivire.test(lead.siteUrl))
-  return retea ? { url: lead.siteUrl, nume: retea.nume } : null
+const FILTRE_GOALE = {
+  statusuri: [],
+  tara: '',
+  sursa: '',
+  oras: '',
+  calitate: '',
+  categorie: '',
+  responsabil: '',
+  scorMin: '',
+  followUp: '',
+  perioada: '',
+  de: '',
+  pana: '',
+  sortare: 'scor',
+  doarNoi: false,
 }
 
 const selectClass =
-  'rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+  'rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500'
+
+// Un filtru pus se colorează, ca să nu te întrebi de ce lipsesc lead-uri din listă
+const selectActivClass =
+  'rounded-lg border border-indigo-400 bg-indigo-50 px-2 py-1.5 text-xs font-semibold text-indigo-800 ring-1 ring-indigo-200 focus:ring-2 focus:ring-indigo-500'
+
+const alege = (activ) => (activ ? selectActivClass : selectClass)
 
 // ============================================================
 // COMPONENTA PRINCIPALĂ
 // ============================================================
 
 export default function LeadsClient({
-  leaduriInitiale,
-  statistici,
+  statisticiInitiale,
   rulari,
   rulareActiva,
   echipa = [],
@@ -73,51 +85,57 @@ export default function LeadsClient({
   modelPitch,
   poateRula,
 }) {
-  const [leaduri, setLeaduri] = useState(leaduriInitiale)
-  const [stats, setStats] = useState(statistici)
+  const [leaduri, setLeaduri] = useState([])
+  const [seIncarca, setSeIncarca] = useState(true)
+  const [stats, setStats] = useState(statisticiInitiale)
+  const [statServer, setStatServer] = useState(null)
+  const [oraseDB, setOraseDB] = useState([])
+  const [categoriiDB, setCategoriiDB] = useState([])
+  const [tariDB, setTariDB] = useState([])
   const [istoric, setIstoric] = useState(rulari)
-  const [seIncarca, setSeIncarca] = useState(false)
 
-  // ── Filtre (se aplică pe server) ──────────────────────────────────
+  // ── Filtre + paginare (se aplică pe server) ───────────────────────
   const [cautare, setCautare] = useState('')
-  const [filtre, setFiltre] = useState({
-    status: '',
-    oras: '',
-    calitate: '',
-    categorie: '',
-    perioada: '',
-    followUp: '',
-    sortare: 'scor',
-    scorMin: 0,
-    doarNoi: false,
-  })
+  const [filtre, setFiltre] = useState(FILTRE_GOALE)
+  const [pagina, setPagina] = useState(1)
+  const [marime, setMarime] = useState(50)
+  const [totalFiltrat, setTotalFiltrat] = useState(0)
+  const [totalPagini, setTotalPagini] = useState(1)
+  // Până citim filtrele salvate nu cerem nimic: altfel prima listă ar fi nefiltrată și ar clipi
+  const [restaurat, setRestaurat] = useState(false)
 
-  // ── Rulare ────────────────────────────────────────────────────────
+  const [deschisId, setDeschisId] = useState(null)
+  const [formular, setFormular] = useState(null) // null | 'nou' | lead
+  const [leadWhatsApp, setLeadWhatsApp] = useState(null)
+
+  // ── Rulare (extragerea din Google Maps) ───────────────────────────
   const [panouRulare, setPanouRulare] = useState(false)
-  const [oraseAlese, setOraseAlese] = useState(optiuni.oraseImplicite)
-  const [categoriiAlese, setCategoriiAlese] = useState(optiuni.categorii)
   const [ruleaza, setRuleaza] = useState(Boolean(rulareActiva))
   const [runId, setRunId] = useState(rulareActiva?.id || null)
   const [progres, setProgres] = useState(null)
   const [loguri, setLoguri] = useState([])
   const [rulareBlocanta, setRulareBlocanta] = useState(null)
-  const [leadWhatsApp, setLeadWhatsApp] = useState(null)
   const opresteRef = useRef(false)
 
   // ============================================================
-  // ÎNCĂRCAREA LISTEI (filtrarea se face pe server)
+  // ÎNCĂRCAREA LISTEI
   // ============================================================
+
+  // Aceiași parametri merg și la export: ce vezi pe ecran e ce iese în Excel
   const parametri = useMemo(() => {
     const p = new URLSearchParams()
     if (cautare.trim()) p.set('q', cautare.trim())
-    if (filtre.status) p.set('status', filtre.status)
-    if (filtre.oras) p.set('oras', filtre.oras)
-    if (filtre.calitate) p.set('calitate', filtre.calitate)
-    if (filtre.categorie) p.set('categorie', filtre.categorie)
-    if (filtre.perioada) p.set('perioada', filtre.perioada)
-    if (filtre.followUp) p.set('followUp', filtre.followUp)
-    if (filtre.sortare) p.set('sortare', filtre.sortare)
-    if (filtre.scorMin > 0) p.set('scorMin', String(filtre.scorMin))
+    if (filtre.statusuri.length) p.set('status', filtre.statusuri.join(','))
+    for (const cheie of ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
+      if (filtre[cheie]) p.set(cheie, filtre[cheie])
+    }
+    if (filtre.perioada === 'interval') {
+      p.set('perioada', 'interval')
+      if (filtre.de) p.set('de', filtre.de)
+      if (filtre.pana) p.set('pana', filtre.pana)
+    } else if (filtre.perioada) {
+      p.set('perioada', filtre.perioada)
+    }
     if (filtre.doarNoi) p.set('doarNoi', '1')
     return p
   }, [cautare, filtre])
@@ -125,28 +143,92 @@ export default function LeadsClient({
   const incarca = useCallback(async () => {
     setSeIncarca(true)
     try {
-      const raspuns = await fetch(`/api/admin/leads?${parametri.toString()}&limita=300`)
-      if (!raspuns.ok) return
+      const p = new URLSearchParams(parametri)
+      p.set('pagina', String(pagina))
+      p.set('marime', String(marime))
+
+      const raspuns = await fetch(`/api/admin/leads?${p}`)
       const date = await raspuns.json()
-      setLeaduri(date.leaduri)
-      setStats((s) => ({ ...s, afisate: date.total }))
-    } catch {
-      /* rețeaua a picat — lista rămâne cum era */
+      if (!raspuns.ok) throw new Error(date.error || 'Nu am putut încărca lead-urile')
+
+      setLeaduri(date.leaduri || [])
+      setTotalFiltrat(date.totalFiltrat ?? 0)
+      setTotalPagini(date.totalPagini ?? 1)
+      setStatServer(date.statistici || null)
+      setOraseDB(date.orase || [])
+      setCategoriiDB(date.categorii || [])
+      setTariDB(date.tari || [])
+      if (date.pagina && date.pagina !== pagina) setPagina(date.pagina)
+    } catch (err) {
+      toast.error(err.message)
     } finally {
       setSeIncarca(false)
     }
-  }, [parametri])
+  }, [parametri, pagina, marime])
 
-  // Reîncărcăm la schimbarea filtrelor, cu o pauză scurtă pentru scris.
-  const primaRandare = useRef(true)
+  // Filtrele salvate se iau din browser la deschidere
   useEffect(() => {
-    if (primaRandare.current) {
-      primaRandare.current = false
-      return
+    try {
+      const salvate = JSON.parse(localStorage.getItem(CHEIE_FILTRE) || 'null')
+      if (salvate?.filtre) setFiltre({ ...FILTRE_GOALE, ...salvate.filtre })
+      if (MARIMI_PAGINA.includes(salvate?.marime)) setMarime(salvate.marime)
+    } catch {
+      /* browser fără localStorage — pornim fără filtre */
     }
-    const t = setTimeout(incarca, 300)
+    setRestaurat(true)
+  }, [])
+
+  // …și se scriu înapoi la fiecare schimbare
+  useEffect(() => {
+    if (!restaurat) return
+    try {
+      localStorage.setItem(CHEIE_FILTRE, JSON.stringify({ filtre, marime }))
+    } catch {
+      /* nu e grav */
+    }
+  }, [restaurat, filtre, marime])
+
+  // Filtrele se aplică imediat; scrisul în căutare, după o pauză
+  useEffect(() => {
+    if (!restaurat) return
+    const t = setTimeout(incarca, cautare ? 350 : 0)
     return () => clearTimeout(t)
-  }, [incarca])
+  }, [restaurat, incarca, cautare])
+
+  // Orice filtru nou readuce lista la prima pagină
+  const setFiltru = (cheie, valoare) => {
+    setFiltre((f) => ({ ...f, [cheie]: valoare }))
+    setPagina(1)
+  }
+
+  const comutaStatus = (valoare) => {
+    setFiltre((f) => ({
+      ...f,
+      statusuri: f.statusuri.includes(valoare)
+        ? f.statusuri.filter((s) => s !== valoare)
+        : [...f.statusuri, valoare],
+    }))
+    setPagina(1)
+  }
+
+  const reseteazaTot = () => {
+    setCautare('')
+    setFiltre(FILTRE_GOALE)
+    setPagina(1)
+    try {
+      localStorage.removeItem(CHEIE_FILTRE)
+    } catch {
+      /* nu e grav */
+    }
+  }
+
+  const nrFiltreActive =
+    (cautare ? 1 : 0) +
+    filtre.statusuri.length +
+    ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
+      (c) => filtre[c]
+    ).length +
+    (filtre.doarNoi ? 1 : 0)
 
   // ============================================================
   // BUCLA DE EXECUȚIE A RULĂRII
@@ -210,6 +292,7 @@ export default function LeadsClient({
       setRuleaza(false)
       // După o rulare, arătăm implicit doar firmele noi.
       setFiltre((f) => ({ ...f, doarNoi: true }))
+      setPagina(1)
       await incarca()
       await reincarcaRulari()
     },
@@ -257,26 +340,13 @@ export default function LeadsClient({
     }
   }
 
-  const estimare = useMemo(() => {
-    const interogari = oraseAlese.length * categoriiAlese.length
-    const apeluriMax = interogari * optiuni.paginiMax
-    return {
-      interogari,
-      apeluriMin: interogari,
-      apeluriMax,
-      costMin: (interogari * optiuni.buget.costPerApelUsd).toFixed(2),
-      costMax: (apeluriMax * optiuni.buget.costPerApelUsd).toFixed(2),
-      firmeMax: interogari * optiuni.paginiMax * optiuni.marimePagina,
-      depaseste: apeluriMax > optiuni.buget.maxApeluriPeRulare,
-    }
-  }, [oraseAlese, categoriiAlese, optiuni])
-
-  async function porneste() {
+  // Panoul de căutare trimite țara, orașele (verificate) și categoriile
+  async function porneste(cerere) {
     if (!areCheieGoogle) {
       toast.error('Lipsește GOOGLE_API_KEY. Vezi README-LEADURI.md.')
       return
     }
-    if (!oraseAlese.length || !categoriiAlese.length) {
+    if (!cerere.orase.length || !cerere.categorii.length) {
       toast.error('Alege cel puțin un oraș și o categorie')
       return
     }
@@ -284,7 +354,7 @@ export default function LeadsClient({
     const raspuns = await fetch('/api/admin/leads/runs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orase: oraseAlese, categorii: categoriiAlese }),
+      body: JSON.stringify(cerere),
     })
     const date = await raspuns.json()
 
@@ -296,7 +366,7 @@ export default function LeadsClient({
         setPanouRulare(false)
         return
       }
-      toast.error(date.error || 'Nu am putut porni rularea')
+      toast.error(date.error || 'Nu am putut porni căutarea', { duration: 8000 })
       return
     }
 
@@ -304,8 +374,43 @@ export default function LeadsClient({
     setLoguri([])
     setProgres(null)
     setPanouRulare(false)
-    toast.success(`Rulare pornită: ${date.estimare.interogari} interogări`)
+    toast.success(`Căutare pornită: ${date.estimare.interogari} interogări`)
     ruleazaPasi(date.rulare.id)
+  }
+
+  // ── Reverificarea gratuită a site-urilor „moarte" ─────────────────
+  // Multe erau de fapt protejate de Cloudflare; acum le recunoaștem.
+  const [reverifica, setReverifica] = useState(null)
+
+  async function reverificaMoarte() {
+    if (reverifica) return
+    const inceputRunda = new Date().toISOString()
+    const rezumat = {}
+    let ramase = sv.moarte
+    setReverifica({ facute: 0, total: ramase })
+    try {
+      for (let runda = 0; runda < 30 && ramase > 0; runda++) {
+        const r = await fetch('/api/admin/leads/reverifica', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ calitate: 'MORT', inceputRunda }),
+        })
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error || 'Reverificarea a eșuat')
+        for (const [k, v] of Object.entries(d.schimbari || {})) rezumat[k] = (rezumat[k] || 0) + v
+        ramase = d.ramase
+        setReverifica((x) => ({ ...x, facute: (x?.facute || 0) + d.verificate }))
+      }
+      const text = Object.entries(rezumat)
+        .map(([k, v]) => `${CALITATI.find((c) => c.value === k)?.label || k}: ${v}`)
+        .join(', ')
+      toast.success(text ? `Reverificate — ${text}` : 'Nimic de reverificat', { duration: 10000 })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setReverifica(null)
+      incarca()
+    }
   }
 
   async function reiaBlocanta() {
@@ -352,25 +457,44 @@ export default function LeadsClient({
       body: JSON.stringify(date),
     })
     if (!raspuns.ok) {
-      toast.error(mesajEroare)
+      const d = await raspuns.json().catch(() => ({}))
+      toast.error(d.error || mesajEroare)
       return null
     }
     return (await raspuns.json()).lead
   }
 
-  // După trimiterea pe WhatsApp: o notiță pe lead, ca să știi că i-ai scris.
-  async function dupaWhatsApp(lead, numeSablon) {
-    await adaugaNota(lead, `💬 WhatsApp trimis — șablonul „${numeSablon}"`)
+  async function schimbaStatus(lead, status) {
+    const anterior = lead.status
+    actualizeazaLocal(lead.id, { status })
+    const salvat = await salveaza(lead, { status }, 'Nu am putut salva statusul')
+    if (!salvat) actualizeazaLocal(lead.id, { status: anterior })
+    else {
+      actualizeazaLocal(lead.id, { dataApel: salvat.dataApel })
+      // Cifrele de sus se mută odată cu statusul
+      setStatServer((s) =>
+        s
+          ? {
+              ...s,
+              peStatus: {
+                ...s.peStatus,
+                [anterior]: Math.max((s.peStatus[anterior] || 1) - 1, 0),
+                [status]: (s.peStatus[status] || 0) + 1,
+              },
+            }
+          : s
+      )
+    }
   }
 
   async function schimbaResponsabil(lead, responsabilId) {
-    const anterior = lead.responsabilId
+    const anterior = { responsabilId: lead.responsabilId, responsabil: lead.responsabil }
     const om = echipa.find((o) => o.id === responsabilId)
     actualizeazaLocal(lead.id, { responsabilId, responsabil: om || null })
 
     const salvat = await salveaza(lead, { responsabilId }, 'Nu am putut salva responsabilul')
     if (!salvat) {
-      actualizeazaLocal(lead.id, { responsabilId: anterior })
+      actualizeazaLocal(lead.id, anterior)
       return
     }
 
@@ -381,6 +505,8 @@ export default function LeadsClient({
       })
     } else if (om) {
       toast.success(`${om.name || om.email} primește mementourile în privat`)
+    } else {
+      toast.success('Responsabil eliminat')
     }
   }
 
@@ -407,7 +533,17 @@ export default function LeadsClient({
       return false
     }
     const { nota } = await raspuns.json()
-    actualizeazaLocal(lead.id, { notiteIstoric: [nota, ...(lead.notiteIstoric || [])] })
+    setLeaduri((l) =>
+      l.map((x) =>
+        x.id === lead.id
+          ? {
+              ...x,
+              notiteIstoric: [nota, ...(x.notiteIstoric || [])],
+              _count: { notiteIstoric: (x._count?.notiteIstoric || 0) + 1 },
+            }
+          : x
+      )
+    )
     return true
   }
 
@@ -417,136 +553,249 @@ export default function LeadsClient({
       toast.error('Nu am putut șterge notița')
       return
     }
-    actualizeazaLocal(lead.id, {
-      notiteIstoric: (lead.notiteIstoric || []).filter((n) => n.id !== notaId),
-    })
+    setLeaduri((l) =>
+      l.map((x) =>
+        x.id === lead.id
+          ? {
+              ...x,
+              notiteIstoric: (x.notiteIstoric || []).filter((n) => n.id !== notaId),
+              _count: { notiteIstoric: Math.max((x._count?.notiteIstoric || 1) - 1, 0) },
+            }
+          : x
+      )
+    )
   }
 
-  function copiazaPitch(pitch) {
-    navigator.clipboard?.writeText(pitch)
-    toast.success('Pitch copiat')
-  }
-
-  async function schimbaStatus(lead, status) {
-    const anterior = lead.status
-    actualizeazaLocal(lead.id, { status })
-    const salvat = await salveaza(lead, { status }, 'Nu am putut salva statusul')
-    if (!salvat) actualizeazaLocal(lead.id, { status: anterior })
-    else actualizeazaLocal(lead.id, { dataApel: salvat.dataApel })
-  }
-
-  // ── Numărătoarea de follow-up din lista curentă ──────────────────
-  const contorFollowUp = useMemo(() => {
-    const c = { restant: 0, azi: 0, urmeaza: 0 }
-    for (const l of leaduri) {
-      const s = stareFollowUp(l.nextFollowUpAt)
-      if (s) c[s]++
+  async function stergeLead(lead) {
+    if (!confirm(`Ștergi lead-ul „${lead.denumire}"? Notițele lui se pierd definitiv.`)) return
+    const raspuns = await fetch(`/api/admin/leads/${lead.id}`, { method: 'DELETE' })
+    if (!raspuns.ok) {
+      toast.error('Nu am putut șterge lead-ul')
+      return
     }
-    return c
-  }, [leaduri])
+    setLeaduri((l) => l.filter((x) => x.id !== lead.id))
+    setTotalFiltrat((t) => Math.max(t - 1, 0))
+    toast.success('Lead șters')
+  }
 
-  const oraseleDinDate = useMemo(
-    () => [...new Set(leaduri.map((l) => l.oras).filter(Boolean))].sort(),
-    [leaduri]
-  )
+  function copiaza(text, mesaj = 'Copiat') {
+    navigator.clipboard?.writeText(text)
+    toast.success(mesaj)
+  }
 
-  const setFiltru = (cheie, valoare) => setFiltre((f) => ({ ...f, [cheie]: valoare }))
+  // După trimiterea pe WhatsApp: o notiță pe lead, ca să știi că i-ai scris.
+  async function dupaWhatsApp(lead, numeSablon) {
+    await adaugaNota(lead, `💬 WhatsApp trimis — șablonul „${numeSablon}"`)
+  }
+
+  function dupaSalvare(lead) {
+    const eraEditare = formular && formular !== 'nou'
+    setFormular(null)
+    if (eraEditare && lead) {
+      actualizeazaLocal(lead.id, lead)
+    } else {
+      // Lead nou: îl arătăm deschis, în capul listei
+      if (lead) setDeschisId(lead.id)
+      incarca()
+    }
+  }
+
+  // ── Butoanele de pagină: 1 … 4 5 [6] 7 8 … 20 ───────────────────
+  const numerePagini = useMemo(() => {
+    if (totalPagini <= 7) return Array.from({ length: totalPagini }, (_, i) => i + 1)
+    const rez = [1]
+    const inceput = Math.max(2, pagina - 1)
+    const sfarsit = Math.min(totalPagini - 1, pagina + 1)
+    if (inceput > 2) rez.push('…')
+    for (let i = inceput; i <= sfarsit; i++) rez.push(i)
+    if (sfarsit < totalPagini - 1) rez.push('…')
+    rez.push(totalPagini)
+    return rez
+  }, [pagina, totalPagini])
+
+  // Categoriile: cele căutate în rulări + cele scrise de mână în lead-uri
+  const toateCategoriile = useMemo(() => {
+    const numar = new Map(categoriiDB.map((c) => [c.value, c.count]))
+    const toate = new Set([...optiuni.categorii, ...categoriiDB.map((c) => c.value)])
+    return [...toate]
+      .sort((a, b) => a.localeCompare(b, 'ro'))
+      .map((value) => ({ value, count: numar.get(value) }))
+  }, [categoriiDB, optiuni.categorii])
+
+  const sv = statServer || { total: 0, peStatus: {}, restante: 0, faraSite: 0, moarte: 0 }
 
   // ============================================================
   // RANDARE
   // ============================================================
 
   return (
-    <div className="space-y-5">
-      {/* ── Antet ─────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Leaduri Web</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Firme din Moldova cu prezență online slabă — sortate după cât de mult au nevoie de un site.
-          </p>
-        </div>
+    <div className="space-y-2.5">
+      {/* ── Antet + statistici pe același rând ───────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-lg font-bold text-gray-900">Leaduri Web</h1>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ChipStat eticheta="Total" valoare={sv.total} />
+          <ChipStat
+            eticheta="🔵 New lead"
+            valoare={sv.peStatus.DE_SUNAT || 0}
+            culoare="text-blue-600"
+            activ={filtre.statusuri.includes('DE_SUNAT')}
+            onClick={() => comutaStatus('DE_SUNAT')}
+          />
+          <ChipStat
+            eticheta="🟢 Interesat"
+            valoare={sv.peStatus.INTERESAT || 0}
+            culoare="text-green-600"
+            activ={filtre.statusuri.includes('INTERESAT')}
+            onClick={() => comutaStatus('INTERESAT')}
+          />
+          <ChipStat
+            eticheta="📄 Ofertă"
+            valoare={sv.peStatus.OFERTA_TRIMISA || 0}
+            culoare="text-indigo-600"
+            activ={filtre.statusuri.includes('OFERTA_TRIMISA')}
+            onClick={() => comutaStatus('OFERTA_TRIMISA')}
+          />
+          <ChipStat
+            eticheta="💰 A plătit"
+            valoare={sv.peStatus.CLIENT || 0}
+            culoare="text-emerald-600"
+            activ={filtre.statusuri.includes('CLIENT')}
+            onClick={() => comutaStatus('CLIENT')}
+          />
+          <ChipStat
+            eticheta="🟣 În lucru"
+            valoare={sv.peStatus.IN_LUCRU || 0}
+            culoare="text-purple-600"
+            activ={filtre.statusuri.includes('IN_LUCRU')}
+            onClick={() => comutaStatus('IN_LUCRU')}
+          />
+          <ChipStat
+            eticheta="🔴 Restante"
+            valoare={sv.restante}
+            culoare="text-red-600"
+            activ={filtre.followUp === 'restante'}
+            onClick={() => setFiltru('followUp', filtre.followUp === 'restante' ? '' : 'restante')}
+          />
+          <ChipStat eticheta="🚫 Fără site" valoare={sv.faraSite} culoare="text-red-700" />
+          {poateRula && sv.moarte > 0 && (
+            <button
+              type="button"
+              onClick={reverificaMoarte}
+              disabled={Boolean(reverifica)}
+              title="Deschide din nou site-urile marcate „mort” (gratuit, fără Google). Cele protejate de Cloudflare trec la „Neclar”, cele care merg își primesc calitatea reală."
+              className="inline-flex items-center gap-1 rounded-lg border border-orange-300 bg-orange-50 px-2 py-1 text-[11px] font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-70"
+            >
+              {reverifica
+                ? `🔁 Reverific… ${reverifica.facute}/${reverifica.total}`
+                : `🔁 Reverifică ${sv.moarte} site-uri „moarte”`}
+            </button>
+          )}
+          <ChipStat
+            eticheta="🔎 API luna"
+            valoare={`${stats.apeluriLunaCurenta}/1000`}
+            culoare={stats.apeluriLunaCurenta > 800 ? 'text-red-600' : 'text-gray-700'}
+            titlu={`Apeluri Google Places luna asta. Pitch-uri: ${
+              furnizorPitch === 'openai' ? modelPitch || 'OpenAI' : 'șabloane'
+            }`}
+          />
 
-        <div className="flex flex-wrap gap-2">
-          <a
-            href={`/api/admin/leads/export?format=xlsx&${parametri.toString()}`}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            <ArrowDownTrayIcon className="h-4 w-4" />
-            Excel
-          </a>
-          <a
-            href={`/api/admin/leads/export?format=csv&${parametri.toString()}`}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <ArrowDownTrayIcon className="h-4 w-4" />
-            CSV
-          </a>
+          {poateRula && (
+            <button
+              type="button"
+              onClick={() => setFormular('nou')}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              Lead nou
+            </button>
+          )}
           {poateRula && !ruleaza && (
             <button
+              type="button"
               onClick={() => setPanouRulare((v) => !v)}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-700"
             >
-              <PlayIcon className="h-4 w-4" />
+              <PlayIcon className="h-3.5 w-3.5" />
               Caută firme noi
             </button>
           )}
           {ruleaza && (
             <button
+              type="button"
               onClick={opreste}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
             >
-              <StopIcon className="h-4 w-4" />
-              Oprește
+              <StopIcon className="h-3.5 w-3.5" />
+              Oprește căutarea
+            </button>
+          )}
+          <a
+            href={`/api/admin/leads/export?format=xlsx&${parametri}`}
+            title="Exportă în Excel exact ce e filtrat acum"
+            className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+          >
+            <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+            Excel
+          </a>
+          <a
+            href={`/api/admin/leads/export?format=csv&${parametri}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            CSV
+          </a>
+          {poateRula && (
+            <button
+              type="button"
+              onClick={testeazaNotificarea}
+              className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+              title="Trimite ACUM pe Telegram lista de recontactat, fără să aștepți cron-ul"
+            >
+              📨
             </button>
           )}
         </div>
       </div>
 
       {!areCheieGoogle && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <div className="text-sm text-amber-900">
-            <p className="font-semibold">Lipsește GOOGLE_API_KEY</p>
-            <p className="mt-0.5">
-              Fără ea nu pot căuta firme noi. Tabelul și exportul funcționează normal cu ce e deja
-              salvat. Instrucțiuni în <code className="font-mono">README-LEADURI.md</code>.
-            </p>
-          </div>
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <ExclamationTriangleIcon className="mt-px h-4 w-4 shrink-0 text-amber-600" />
+          <p>
+            <b>Lipsește GOOGLE_API_KEY</b> — nu pot căuta firme noi. Lista, lead-urile adăugate de
+            mână și exportul funcționează normal.
+          </p>
         </div>
       )}
 
       {/* ── Rulare neterminată ─────────────────────────────────── */}
       {rulareBlocanta && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-          <div className="flex items-start gap-3">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+          <div className="flex items-start gap-2">
             <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
             <div className="flex-1">
-              <p className="font-semibold text-amber-900">Ai o rulare neterminată</p>
-              <p className="mt-0.5 text-sm text-amber-800">
+              <p className="text-sm font-semibold text-amber-900">Ai o căutare neterminată</p>
+              <p className="mt-0.5 text-xs text-amber-800">
                 Faza <b>{rulareBlocanta.faza}</b> · {rulareBlocanta.interogariFacute} din{' '}
                 {rulareBlocanta.totalInterogari} interogări ({rulareBlocanta.procent}%) ·{' '}
                 {rulareBlocanta.firmeNoi} firme noi găsite · ultima mișcare acum{' '}
-                {rulareBlocanta.minuteDeLaUltimaMiscare} min.
+                {rulareBlocanta.minuteDeLaUltimaMiscare} min. Reluarea continuă de unde a rămas — nu
+                plătești din nou interogările deja făcute.
               </p>
-              <p className="mt-1 text-xs text-amber-700">
-                Nu poți porni alta până n-o rezolvi pe asta. Reluarea continuă exact de unde a
-                rămas — nu plătești din nou pentru interogările deja făcute.
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <button
+                  type="button"
                   onClick={reiaBlocanta}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700"
                 >
-                  <PlayIcon className="h-4 w-4" />
+                  <PlayIcon className="h-3.5 w-3.5" />
                   Reia de unde a rămas
                 </button>
                 <button
+                  type="button"
                   onClick={anuleazaBlocanta}
-                  className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                  className="rounded-lg border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
                 >
-                  Anulează rularea
+                  Anulează căutarea
                 </button>
               </div>
             </div>
@@ -554,221 +803,327 @@ export default function LeadsClient({
         </div>
       )}
 
-      {/* ── Cartonașe ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Cartonas titlu="Total lead-uri" valoare={stats.total} />
-        <Cartonas
-          titlu="Fără site propriu"
-          valoare={stats.faraSite}
-          accent="text-red-600"
-          subtitlu="LIPSA + DOAR_SOCIAL"
-        />
-        <Cartonas
-          titlu="Apeluri API luna asta"
-          valoare={`${stats.apeluriLunaCurenta} / 1000`}
-          accent={stats.apeluriLunaCurenta > 800 ? 'text-red-600' : 'text-gray-900'}
-          subtitlu="limita gratuită Google"
-        />
-        <Cartonas
-          titlu="Pitch generat de"
-          valoare={furnizorPitch === 'openai' ? modelPitch || 'OpenAI' : 'Șabloane'}
-          subtitlu={
-            furnizorPitch === 'openai' ? 'validat: fără cifre inventate' : 'fără cheie OpenAI — gratis'
-          }
-        />
-      </div>
-
-      {/* ── Bara de recontactare ──────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow-sm">
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          De recontactat
-        </span>
-        {[
-          { cheie: 'restante', stare: 'restant', eticheta: 'Restante' },
-          { cheie: 'azi', stare: 'azi', eticheta: 'Azi' },
-          { cheie: 'urmeaza', stare: 'urmeaza', eticheta: 'Urmează' },
-        ].map(({ cheie, stare, eticheta }) => {
-          const stil = STILURI_FOLLOWUP[stare]
-          const activ = filtre.followUp === cheie
-          return (
-            <button
-              key={cheie}
-              onClick={() => setFiltru('followUp', activ ? '' : cheie)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                activ ? `${stil.color} ring-2 ring-offset-1 ring-indigo-400` : stil.color
-              }`}
-            >
-              {stil.emoji} {eticheta}
-              <span className="font-bold">{contorFollowUp[stare]}</span>
-            </button>
-          )
-        })}
-        {filtre.followUp && (
-          <button
-            onClick={() => setFiltru('followUp', '')}
-            className="text-xs text-gray-500 hover:text-gray-800"
-          >
-            arată tot
-          </button>
-        )}
-
-        {poateRula && (
-          <button
-            onClick={testeazaNotificarea}
-            className="ml-auto rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-            title="Trimite ACUM pe Telegram lista de recontactat, fără să aștepți cron-ul"
-          >
-            📨 Testează notificarea
-          </button>
-        )}
-      </div>
-
       {panouRulare && poateRula && !ruleaza && (
-        <PanouRulare
-          optiuni={optiuni}
-          oraseAlese={oraseAlese}
-          setOraseAlese={setOraseAlese}
-          categoriiAlese={categoriiAlese}
-          setCategoriiAlese={setCategoriiAlese}
-          estimare={estimare}
-          onPornire={porneste}
-          onAnulare={() => setPanouRulare(false)}
-        />
+        <PanouCautare optiuni={optiuni} onPornire={porneste} onAnulare={() => setPanouRulare(false)} />
       )}
 
       {ruleaza && <PanouProgres progres={progres} loguri={loguri} />}
 
-      {/* ── Filtre ─────────────────────────────────────────────── */}
-      <div className="rounded-xl bg-white p-4 shadow-sm">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative lg:col-span-2">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={cautare}
-              onChange={(e) => setCautare(e.target.value)}
-              placeholder="Caută după nume, telefon, adresă..."
-              className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
+      {/* ── Bară unică de filtre ───────────────────────────────── */}
+      <div
+        className={`flex flex-wrap items-center gap-1.5 rounded-lg border px-2 py-2 transition-colors ${
+          nrFiltreActive > 0 ? 'border-indigo-300 bg-indigo-50/60' : 'border-gray-200 bg-white'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setFiltru('statusuri', [])}
+          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+            filtre.statusuri.length === 0
+              ? 'bg-indigo-600 text-white'
+              : 'border border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-400'
+          }`}
+        >
+          Toate
+        </button>
+        {STATUSURI.map((s) => {
+          const activ = filtre.statusuri.includes(s.value)
+          const numar = sv.peStatus[s.value] || 0
+          return (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => comutaStatus(s.value)}
+              title={activ ? `${s.label} — apasă din nou ca să scoți filtrul` : s.label}
+              className={`rounded-full px-2 py-1 text-xs font-medium transition-colors ${
+                activ
+                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-200'
+                  : 'border border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-400'
+              }`}
+            >
+              {s.emoji} {s.label}
+              {numar > 0 && <span className={`ml-1 ${activ ? 'opacity-80' : 'text-gray-400'}`}>{numar}</span>}
+              {activ && <span className="ml-1 opacity-80">×</span>}
+            </button>
+          )
+        })}
 
-          <select value={filtre.status} onChange={(e) => setFiltru('status', e.target.value)} className={selectClass}>
-            <option value="">Orice status</option>
-            {STATUSURI.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.emoji} {s.label}
-              </option>
-            ))}
-          </select>
-
-          <select value={filtre.sortare} onChange={(e) => setFiltru('sortare', e.target.value)} className={selectClass}>
-            {SORTARI.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-
-          <select value={filtre.oras} onChange={(e) => setFiltru('oras', e.target.value)} className={selectClass}>
-            <option value="">Toate orașele</option>
-            {oraseleDinDate.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </select>
-
-          <select value={filtre.calitate} onChange={(e) => setFiltru('calitate', e.target.value)} className={selectClass}>
-            <option value="">Orice calitate site</option>
-            {['LIPSA', 'MORT', 'DOAR_SOCIAL', 'FARA_HTTPS', 'NEADAPTAT_MOBIL', 'LENT', 'OK'].map((c) => {
-              const info = getCalitate(c)
-              return (
-                <option key={c} value={c}>
-                  {info.emoji} {info.label} (+{info.puncte})
-                </option>
-              )
-            })}
-          </select>
-
-          <select value={filtre.categorie} onChange={(e) => setFiltru('categorie', e.target.value)} className={selectClass}>
-            <option value="">Orice categorie</option>
-            {optiuni.categorii.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-
-          <select value={filtre.perioada} onChange={(e) => setFiltru('perioada', e.target.value)} className={selectClass}>
-            {PERIOADE.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.value ? `Găsite: ${p.label.toLowerCase()}` : 'Găsite: oricând'}
-              </option>
-            ))}
-          </select>
+        <div className="relative w-44">
+          <MagnifyingGlassIcon className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Caută nume, telefon, site…"
+            value={cautare}
+            onChange={(e) => {
+              setCautare(e.target.value)
+              setPagina(1)
+            }}
+            className="w-full rounded-lg border border-gray-300 py-1.5 pl-7 pr-2 text-xs text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={filtre.doarNoi}
-              onChange={(e) => setFiltru('doarNoi', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
-              <SparklesIcon className="h-3.5 w-3.5 text-indigo-500" />
-              Doar firme noi
-            </span>
-            <span className="text-[11px] text-gray-400">(din ultima rulare)</span>
-          </label>
+        {(tariDB.length > 1 || filtre.tara) && (
+          <select value={filtre.tara} onChange={(e) => setFiltru('tara', e.target.value)} className={alege(filtre.tara)} aria-label="Țară">
+            <option value="">Țară: toate</option>
+            {tariDB.map((t) => (
+              <option key={t.value} value={t.value}>
+                {steagTara(t.value)} {optiuni.tari.find((x) => x.cod === t.value)?.nume || t.value} ({t.count})
+              </option>
+            ))}
+          </select>
+        )}
 
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600">
-              Scor minim: <b>{filtre.scorMin}</b>
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={filtre.scorMin}
-              onChange={(e) => setFiltru('scorMin', Number(e.target.value))}
-              className="h-2 w-32 cursor-pointer accent-indigo-600"
-            />
-          </div>
+        <select value={filtre.sursa} onChange={(e) => setFiltru('sursa', e.target.value)} className={alege(filtre.sursa)} aria-label="Sursă">
+          <option value="">Sursă: toate</option>
+          {SURSE.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.emoji} {s.label}
+            </option>
+          ))}
+        </select>
 
-          <span className="ml-auto text-xs text-gray-500">
-            {seIncarca ? 'se încarcă...' : `${leaduri.length} afișate`}
+        <select value={filtre.oras} onChange={(e) => setFiltru('oras', e.target.value)} className={alege(filtre.oras)} aria-label="Oraș">
+          <option value="">Oraș: toate</option>
+          {oraseDB.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.value} ({o.count})
+            </option>
+          ))}
+        </select>
+
+        <select value={filtre.calitate} onChange={(e) => setFiltru('calitate', e.target.value)} className={alege(filtre.calitate)} aria-label="Calitate site">
+          <option value="">Site: oricum</option>
+          {CALITATI.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.emoji} {c.label}
+            </option>
+          ))}
+          <option value="NEVERIFICAT">⏳ Neverificat</option>
+        </select>
+
+        <select value={filtre.categorie} onChange={(e) => setFiltru('categorie', e.target.value)} className={`${alege(filtre.categorie)} max-w-[11rem]`} aria-label="Categorie">
+          <option value="">Categorie: toate</option>
+          {toateCategoriile.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.value}
+              {c.count ? ` (${c.count})` : ''}
+            </option>
+          ))}
+        </select>
+
+        <select value={filtre.responsabil} onChange={(e) => setFiltru('responsabil', e.target.value)} className={alege(filtre.responsabil)} aria-label="Responsabil">
+          <option value="">Responsabil: oricine</option>
+          {echipa.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name || o.email}
+            </option>
+          ))}
+          <option value="fara">Fără responsabil</option>
+        </select>
+
+        <select value={filtre.scorMin} onChange={(e) => setFiltru('scorMin', e.target.value)} className={alege(filtre.scorMin)} aria-label="Scor minim">
+          {SCORURI_MINIME.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <select value={filtre.followUp} onChange={(e) => setFiltru('followUp', e.target.value)} className={alege(filtre.followUp)} aria-label="Follow-up">
+          {FILTRE_FOLLOWUP.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+
+        <select value={filtre.perioada} onChange={(e) => setFiltru('perioada', e.target.value)} className={alege(filtre.perioada)} aria-label="Perioadă">
+          {PERIOADE.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+
+        {filtre.perioada === 'interval' && (
+          <span className="flex items-center gap-1">
+            <input type="date" value={filtre.de} onChange={(e) => setFiltru('de', e.target.value)} className={alege(filtre.de)} aria-label="De la data" />
+            <span className="text-xs text-gray-400">→</span>
+            <input type="date" value={filtre.pana} onChange={(e) => setFiltru('pana', e.target.value)} className={alege(filtre.pana)} aria-label="Până la data" />
           </span>
-        </div>
+        )}
+
+        <select value={filtre.sortare} onChange={(e) => setFiltru('sortare', e.target.value)} className={alege(filtre.sortare !== 'scor')} aria-label="Sortare">
+          {SORTARI.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onClick={() => setFiltru('doarNoi', !filtre.doarNoi)}
+          title="Doar firmele găsite prima dată în ultima căutare"
+          className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+            filtre.doarNoi
+              ? 'bg-indigo-600 text-white'
+              : 'border border-gray-300 bg-white text-gray-700 hover:border-indigo-400'
+          }`}
+        >
+          <SparklesIcon className="h-3.5 w-3.5" />
+          Doar noi
+        </button>
+
+        <span className="ml-auto flex items-center gap-2 text-[11px] text-gray-500">
+          {seIncarca
+            ? 'se încarcă…'
+            : totalFiltrat === sv.total
+              ? `${totalFiltrat} lead-uri`
+              : `${totalFiltrat} din ${sv.total}`}
+          {nrFiltreActive > 0 && (
+            <>
+              <span className="rounded-full bg-indigo-600 px-1.5 py-0.5 font-semibold text-white">
+                {nrFiltreActive} {nrFiltreActive === 1 ? 'filtru' : 'filtre'}
+              </span>
+              <button
+                type="button"
+                onClick={reseteazaTot}
+                className="inline-flex items-center gap-0.5 font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                <XMarkIcon className="h-3 w-3" />
+                Resetează
+              </button>
+            </>
+          )}
+        </span>
       </div>
 
       {/* ── Lista ──────────────────────────────────────────────── */}
-      {leaduri.length === 0 ? (
-        <div className="rounded-xl bg-white p-10 text-center shadow-sm">
-          <GlobeAltIcon className="mx-auto h-10 w-10 text-gray-300" />
-          <p className="mt-3 font-medium text-gray-900">Niciun lead</p>
-          <p className="mt-1 text-sm text-gray-500">
-            {stats.total === 0
-              ? 'Apasă „Caută firme noi" ca să pornești prima rulare.'
-              : 'Niciun lead nu se potrivește cu filtrele.'}
+      {seIncarca && leaduri.length === 0 ? (
+        <div className="space-y-1">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex animate-pulse items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-3">
+              <div className="h-4 w-4 rounded bg-gray-100" />
+              <div className="h-3 w-40 rounded bg-gray-100" />
+              <div className="h-3 w-24 rounded bg-gray-100" />
+              <div className="ml-auto h-3 w-16 rounded bg-gray-100" />
+            </div>
+          ))}
+        </div>
+      ) : leaduri.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
+          <GlobeAltIcon className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+          <p className="text-sm text-gray-500">
+            {nrFiltreActive > 0
+              ? 'Niciun lead nu corespunde filtrelor'
+              : 'Niciun lead încă — pornește o căutare sau adaugă unul cu „Lead nou"'}
           </p>
         </div>
       ) : (
-        <div className="space-y-px">
+        <div className={`space-y-1 transition-opacity ${seIncarca ? 'opacity-60' : ''}`}>
           {leaduri.map((lead) => (
             <RandLead
               key={lead.id}
               lead={lead}
+              deschis={deschisId === lead.id}
+              onComuta={() => setDeschisId(deschisId === lead.id ? null : lead.id)}
               onStatus={schimbaStatus}
+              onEditeaza={(l) => setFormular(l)}
+              onSterge={stergeLead}
+              onWhatsApp={setLeadWhatsApp}
+              poateEdita={poateRula}
+              echipa={echipa}
+              onResponsabil={schimbaResponsabil}
               onFollowUp={schimbaFollowUp}
               onAdaugaNota={adaugaNota}
               onStergeNota={stergeNota}
-              onCopiaza={copiazaPitch}
-              echipa={echipa}
-              onResponsabil={schimbaResponsabil}
-              onWhatsApp={setLeadWhatsApp}
+              onCopiaza={copiaza}
             />
           ))}
         </div>
       )}
 
+      {/* ── Paginare ───────────────────────────────────────────── */}
+      {totalFiltrat > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>Pe pagină:</span>
+            <select
+              value={String(marime)}
+              onChange={(e) => {
+                setMarime(e.target.value === 'toate' ? 'toate' : parseInt(e.target.value, 10))
+                setPagina(1)
+              }}
+              className={selectClass}
+              aria-label="Lead-uri pe pagină"
+            >
+              {MARIMI_PAGINA.map((n) => (
+                <option key={n} value={n}>
+                  {n === 'toate' ? 'Toate' : n}
+                </option>
+              ))}
+            </select>
+            <span>
+              {marime === 'toate'
+                ? `toate cele ${totalFiltrat}`
+                : `${(pagina - 1) * marime + 1}–${Math.min(pagina * marime, totalFiltrat)} din ${totalFiltrat}`}
+            </span>
+          </div>
+
+          {marime !== 'toate' && totalPagini > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPagina((p) => Math.max(p - 1, 1))}
+                disabled={pagina === 1}
+                className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+              >
+                ‹ Înapoi
+              </button>
+              {numerePagini.map((n, i) =>
+                n === '…' ? (
+                  <span key={`gol-${i}`} className="px-1 text-xs text-gray-400">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPagina(n)}
+                    className={`min-w-[2rem] rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                      n === pagina ? 'bg-indigo-600 text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+              <button
+                type="button"
+                onClick={() => setPagina((p) => Math.min(p + 1, totalPagini))}
+                disabled={pagina === totalPagini}
+                className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+              >
+                Înainte ›
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {istoric.length > 0 && <IstoricRulari rulari={istoric} />}
+
+      {formular && (
+        <FormularLead
+          lead={formular === 'nou' ? null : formular}
+          echipa={echipa}
+          orase={oraseDB}
+          categorii={toateCategoriile}
+          onInchide={() => setFormular(null)}
+          onSalvat={dupaSalvare}
+        />
+      )}
 
       {leadWhatsApp && (
         <ModalWhatsApp
@@ -786,143 +1141,27 @@ export default function LeadsClient({
 // SUBCOMPONENTE
 // ============================================================
 
-function Cartonas({ titlu, valoare, subtitlu, accent = 'text-gray-900' }) {
-  return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{titlu}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent}`}>{valoare}</p>
-      {subtitlu && <p className="mt-0.5 text-xs text-gray-400">{subtitlu}</p>}
-    </div>
+function ChipStat({ eticheta, valoare, culoare = 'text-gray-900', activ = false, onClick, titlu }) {
+  const clasa = `inline-flex items-baseline gap-1 rounded-lg border px-2 py-1 ${
+    activ ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-200' : 'border-gray-200 bg-white'
+  }`
+  const continut = (
+    <>
+      <span className="text-[10px] text-gray-500">{eticheta}</span>
+      <span className={`text-xs font-bold ${culoare}`}>{valoare}</span>
+    </>
   )
-}
-
-/**
- * Un lead pe UN SINGUR RÂND.
- *
- * Când ai 300 de firme de sunat, cardurile mari te obligă să derulezi la
- * nesfârșit. Aici încape tot ce-ți trebuie ca să decizi dacă suni acum:
- * scor, nume, ce e prost la site, rating, oraș, recontactare, telefon.
- * Restul — pitch, istoric, analiză — sunt la un clic distanță, pe pagina firmei.
- */
-function PanouRulare({
-  optiuni,
-  oraseAlese,
-  setOraseAlese,
-  categoriiAlese,
-  setCategoriiAlese,
-  estimare,
-  onPornire,
-  onAnulare,
-}) {
-  function comuta(lista, setLista, valoare) {
-    setLista(lista.includes(valoare) ? lista.filter((x) => x !== valoare) : [...lista, valoare])
+  if (!onClick) {
+    return (
+      <span className={clasa} title={titlu}>
+        {continut}
+      </span>
+    )
   }
-
   return (
-    <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-sm">
-      <h2 className="font-semibold text-gray-900">Rulare nouă</h2>
-      <p className="mt-0.5 text-sm text-gray-600">
-        Se caută fiecare categorie în fiecare oraș. Interogările rulate în ultimele 30 de zile sunt
-        sărite automat, iar firmele deja găsite nu se salvează a doua oară.
-      </p>
-
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-700">Orașe ({oraseAlese.length})</p>
-          <div className="flex gap-2 text-xs">
-            <button onClick={() => setOraseAlese(optiuni.toateOrasele)} className="text-indigo-600 hover:underline">toate</button>
-            <button onClick={() => setOraseAlese(optiuni.oraseImplicite)} className="text-indigo-600 hover:underline">implicite</button>
-            <button onClick={() => setOraseAlese([])} className="text-gray-500 hover:underline">niciunul</button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {optiuni.toateOrasele.map((oras) => (
-            <button
-              key={oras}
-              onClick={() => comuta(oraseAlese, setOraseAlese, oras)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                oraseAlese.includes(oras)
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {oras}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-700">Categorii ({categoriiAlese.length})</p>
-          <div className="flex gap-2 text-xs">
-            <button onClick={() => setCategoriiAlese(optiuni.categorii)} className="text-indigo-600 hover:underline">toate</button>
-            <button onClick={() => setCategoriiAlese([])} className="text-gray-500 hover:underline">niciuna</button>
-          </div>
-        </div>
-        <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg bg-white/60 p-2">
-          {optiuni.categorii.map((categorie) => (
-            <button
-              key={categorie}
-              onClick={() => comuta(categoriiAlese, setCategoriiAlese, categorie)}
-              className={`rounded-full px-2.5 py-1 text-xs transition ${
-                categoriiAlese.includes(categorie)
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {categorie}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-lg bg-white p-3 text-sm">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-gray-500">Interogări</p>
-            <p className="font-semibold text-gray-900">{estimare.interogari}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Apeluri API</p>
-            <p className="font-semibold text-gray-900">{estimare.apeluriMin}–{estimare.apeluriMax}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Cost estimat</p>
-            <p className="font-semibold text-gray-900">{estimare.costMin}–{estimare.costMax} $</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Firme (maxim)</p>
-            <p className="font-semibold text-gray-900">~{estimare.firmeMax}</p>
-          </div>
-        </div>
-
-        {estimare.depaseste && (
-          <p className="mt-2 flex items-start gap-1.5 rounded bg-red-50 p-2 text-xs text-red-700">
-            <ExclamationTriangleIcon className="mt-px h-4 w-4 shrink-0" />
-            Selecția depășește plafonul de {optiuni.buget.maxApeluriPeRulare} apeluri pe rulare.
-            Alege mai puține orașe sau categorii.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={onPornire}
-          disabled={estimare.depaseste || !estimare.interogari}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-        >
-          <PlayIcon className="h-4 w-4" />
-          Pornește rularea
-        </button>
-        <button
-          onClick={onAnulare}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Renunță
-        </button>
-      </div>
-    </div>
+    <button type="button" onClick={onClick} title={titlu || 'Filtrează'} className={`${clasa} hover:border-indigo-300`}>
+      {continut}
+    </button>
   )
 }
 
@@ -1002,6 +1241,7 @@ function IstoricRulari({ rulari }) {
               {rulari.map((r) => (
                 <tr key={r.id}>
                   <td className="py-2 pr-3 text-gray-600">
+                    {r.tara && r.tara !== 'MD' ? `${steagTara(r.tara)} ` : ''}
                     {new Date(r.startedAt).toLocaleDateString('ro-RO', {
                       day: '2-digit',
                       month: '2-digit',

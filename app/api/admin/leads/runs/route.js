@@ -8,10 +8,67 @@ import prisma from '@/lib/prisma'
 import { requireAdmin, getCurrentUser } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
 import { creeazaRulare } from '@/lib/leads/runner'
-import { CONFIG, construiesteInterogari, estimeazaCost } from '@/lib/leads/config'
+import {
+  CONFIG,
+  construiesteInterogari,
+  estimeazaCost,
+  getTara,
+  getCategorie,
+  TIPURI_GOOGLE,
+  TARA_IMPLICITA,
+} from '@/lib/leads/config'
+import { valideazaOras, steagDinCod, normalizeaza } from '@/lib/leads/validare'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
+const taie = (v, max) => String(v ?? '').trim().slice(0, max)
+
+/** Țara din cerere: una din config, sau una scrisă de mână (validată în pagină). */
+function rezolvaTara(t) {
+  if (!t) return TARA_IMPLICITA
+  const cod = String(typeof t === 'string' ? t : t.cod || '').toUpperCase()
+  if (!/^[A-Z]{2}$/.test(cod)) return null
+  const dinConfig = getTara(cod)
+  if (dinConfig) return dinConfig
+  return {
+    cod,
+    nume: taie(t.nume, 60) || cod,
+    steag: steagDinCod(cod),
+    limba: /^[a-z]{2}$/.test(t.limba || '') ? t.limba : 'en',
+    prefix: null,
+    orase: [],
+  }
+}
+
+/**
+ * Categoriile din cerere: numele unei categorii predefinite, sau una proprie
+ * deja validată în pagină ({ ro, query, tip, strict }).
+ */
+function rezolvaCategorii(lista) {
+  const rezultat = []
+  const vazute = new Set()
+  for (const c of Array.isArray(lista) ? lista.slice(0, 200) : []) {
+    let def = null
+    if (typeof c === 'string') {
+      def = getCategorie(c) ? c : null
+    } else if (c && typeof c === 'object') {
+      const ro = taie(c.ro, 60).toLowerCase()
+      const query = taie(c.query, 80)
+      if (ro && query) {
+        const tip = TIPURI_GOOGLE.includes(c.tip) ? c.tip : null
+        def = getCategorie(ro) ? ro : { ro, query, tip, strict: Boolean(c.strict && tip) }
+      }
+    }
+    const cheie = typeof def === 'string' ? def : def?.ro
+    if (def && !vazute.has(cheie)) {
+      vazute.add(cheie)
+      rezultat.push(def)
+    }
+  }
+  return rezultat
+}
 
 export async function GET() {
   try {
@@ -31,6 +88,7 @@ export async function GET() {
         faza: true,
         orase: true,
         categorii: true,
+        tara: true,
         idxInterogare: true,
         apeluriApi: true,
         interogariSarite: true,
@@ -92,17 +150,49 @@ export async function POST(request) {
     }
 
     const utilizator = await getCurrentUser()
-    const { orase, categorii } = await request.json()
+    const corp = await request.json()
 
-    if (!Array.isArray(orase) || !orase.length) {
-      return NextResponse.json({ error: 'Alege cel puțin un oraș' }, { status: 400 })
+    const tara = rezolvaTara(corp.tara)
+    if (!tara) {
+      return NextResponse.json({ error: 'Țară invalidă' }, { status: 400 })
     }
-    if (!Array.isArray(categorii) || !categorii.length) {
+
+    const categorii = rezolvaCategorii(corp.categorii)
+    if (!categorii.length) {
       return NextResponse.json({ error: 'Alege cel puțin o categorie' }, { status: 400 })
     }
 
+    // Orașele: cele din listă trec direct; cele scrise de mână se verifică și
+    // aici (nu doar în pagină), ca să nu plătim căutări în locuri inexistente.
+    const cerute = [...new Set((Array.isArray(corp.orase) ? corp.orase : []).map((o) => taie(o, 80)).filter(Boolean))]
+    if (!cerute.length) {
+      return NextResponse.json({ error: 'Alege cel puțin un oraș' }, { status: 400 })
+    }
+    if (cerute.length > 60) {
+      return NextResponse.json({ error: 'Maximum 60 de orașe într-o căutare' }, { status: 400 })
+    }
+
+    const predefinite = new Set((tara.orase || []).map(normalizeaza))
+    const orase = []
+    const invalide = []
+    for (const oras of cerute) {
+      if (predefinite.has(normalizeaza(oras))) {
+        orase.push(oras)
+        continue
+      }
+      const v = await valideazaOras(oras, tara).catch(() => null)
+      if (v?.valid) orase.push(v.nume)
+      else invalide.push(oras)
+    }
+    if (invalide.length) {
+      return NextResponse.json(
+        { error: `Nu găsesc în ${tara.nume}: ${invalide.join(', ')}. Scoate-le sau corectează-le.` },
+        { status: 400 }
+      )
+    }
+
     // Nu lăsăm pe cineva să pornească din greșeală o rulare care depășește plafonul.
-    const estimarePrealabila = estimeazaCost(construiesteInterogari(orase, categorii).length)
+    const estimarePrealabila = estimeazaCost(construiesteInterogari(orase, categorii, tara).length)
     if (estimarePrealabila.depasesteLimita) {
       return NextResponse.json(
         {
@@ -167,8 +257,9 @@ export async function POST(request) {
     }
 
     const { rulare, estimare } = await creeazaRulare({
-      orase,
+      orase: [...new Set(orase)],
       categorii,
+      tara,
       createdBy: utilizator?.email || null,
     })
 
