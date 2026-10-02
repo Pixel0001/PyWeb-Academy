@@ -378,6 +378,51 @@ export default function LeadsClient({
     ruleazaPasi(date.rulare.id)
   }
 
+  // ── Unirea dublurilor: aceeași firmă salvată de mai multe ori ──────
+  // (Fornetti × 10 — o locație = un rezultat Google). Întâi arătăm ce s-ar
+  // uni, abia apoi unim; notițele, statusul și responsabilul se păstrează.
+  const [unire, setUnire] = useState(false)
+
+  async function unesteDublurile() {
+    if (unire) return
+    setUnire(true)
+    try {
+      const r = await fetch('/api/admin/leads/uneste')
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Nu am putut căuta dublurile')
+
+      if (!d.grupe) {
+        toast.success('Nicio dublură — fiecare firmă apare o singură dată')
+        return
+      }
+
+      const exemple = d.exemple.map((e) => `• ${e.denumire} — ${e.nr} lead-uri`).join('\n')
+      const intrebare =
+        `Am găsit ${d.grupe} firme salvate de mai multe ori (${d.leaduri} lead-uri → ${d.grupe}).\n\n` +
+        `${exemple}${d.grupe > d.exemple.length ? '\n• …' : ''}\n\n` +
+        'Fiecare firmă rămâne un singur lead, cu toate locațiile în el. Se păstrează lead-ul pe care ' +
+        's-a lucrat cel mai mult; notițele celorlalte se mută pe el, nimic nu se pierde.\n\nUnesc?'
+      if (!confirm(intrebare)) return
+
+      let unite = 0
+      let sterse = 0
+      for (let runda = 0; runda < 20; runda++) {
+        const p = await fetch('/api/admin/leads/uneste', { method: 'POST' })
+        const rez = await p.json()
+        if (!p.ok) throw new Error(rez.error || 'Unirea a eșuat')
+        unite += rez.unite
+        sterse += rez.sterse
+        if (!rez.ramase || !rez.unite) break
+      }
+      toast.success(`Gata: ${unite} firme unite, ${sterse} dubluri scoase din listă`, { duration: 8000 })
+      incarca()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setUnire(false)
+    }
+  }
+
   // ── Reverificarea gratuită a site-urilor „moarte" ─────────────────
   // Multe erau de fapt protejate de Cloudflare; acum le recunoaștem.
   const [reverifica, setReverifica] = useState(null)
@@ -393,7 +438,7 @@ export default function LeadsClient({
         const r = await fetch('/api/admin/leads/reverifica', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ calitate: 'MORT', inceputRunda }),
+          body: JSON.stringify({ calitati: ['MORT', 'NEADAPTAT_MOBIL'], inceputRunda }),
         })
         const d = await r.json()
         if (!r.ok) throw new Error(d.error || 'Reverificarea a eșuat')
@@ -678,17 +723,28 @@ export default function LeadsClient({
             onClick={() => setFiltru('followUp', filtre.followUp === 'restante' ? '' : 'restante')}
           />
           <ChipStat eticheta="🚫 Fără site" valoare={sv.faraSite} culoare="text-red-700" />
+          {poateRula && (
+            <button
+              type="button"
+              onClick={unesteDublurile}
+              disabled={unire}
+              title="Aceeași firmă cu mai multe locații (ex. Fornetti) devine un singur lead. Îți arăt întâi ce unesc."
+              className="inline-flex items-center gap-1 rounded-lg border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] font-medium text-sky-800 hover:bg-sky-100 disabled:opacity-70"
+            >
+              {unire ? '🔗 Caut dublurile…' : '🔗 Unește dublurile'}
+            </button>
+          )}
           {poateRula && sv.moarte > 0 && (
             <button
               type="button"
               onClick={reverificaMoarte}
               disabled={Boolean(reverifica)}
-              title="Deschide din nou site-urile marcate „mort” (gratuit, fără Google). Cele protejate de Cloudflare trec la „Neclar”, cele care merg își primesc calitatea reală."
+              title="Deschide din nou site-urile marcate „mort” sau „nemobil” (gratuit, fără Google), cu regulile noi: cele protejate de Cloudflare trec la „Neclar”, cele cu design pentru telefon nu mai sunt „nemobile”."
               className="inline-flex items-center gap-1 rounded-lg border border-orange-300 bg-orange-50 px-2 py-1 text-[11px] font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-70"
             >
               {reverifica
                 ? `🔁 Reverific… ${reverifica.facute}/${reverifica.total}`
-                : `🔁 Reverifică ${sv.moarte} site-uri „moarte”`}
+                : `🔁 Reverifică ${sv.moarte} site-uri „moarte” / „nemobile”`}
             </button>
           )}
           <ChipStat

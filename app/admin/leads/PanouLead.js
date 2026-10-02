@@ -206,6 +206,11 @@ export default function PanouLead({
         )}
       </div>
 
+      {/* Locațiile firmei (Fornetti × 10 → un singur lead) */}
+      {Array.isArray(lead.locatii) && lead.locatii.length > 1 && (
+        <Locatii locatii={lead.locatii} />
+      )}
+
       {/* Responsabil */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] uppercase tracking-wide text-gray-400">Responsabil</span>
@@ -405,6 +410,50 @@ export default function PanouLead({
           Fișa completă
         </Link>
       </div>
+    </div>
+  )
+}
+
+function Locatii({ locatii }) {
+  const [toate, setToate] = useState(false)
+  const vizibile = toate ? locatii : locatii.slice(0, 4)
+  // Cele cu cele mai multe recenzii, primele
+  const ordonate = [...vizibile].sort((a, b) => (b.nrRecenzii || 0) - (a.nrRecenzii || 0))
+
+  return (
+    <div className="rounded-lg bg-sky-50/60 p-2">
+      <p className="mb-1 text-[10px] uppercase tracking-wide text-sky-700">
+        📍 {locatii.length} locații — recenziile și ratingul de mai sus sunt pe toată firma
+      </p>
+      <ul className="space-y-0.5">
+        {ordonate.map((l) => (
+          <li key={l.placeId} className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-700">
+            <span className="min-w-0 flex-1 truncate">
+              {l.adresa || l.denumire || 'fără adresă'}
+            </span>
+            {l.telefon && (
+              <a href={`tel:${l.telefon}`} className="text-indigo-600 hover:underline">
+                {l.telefon}
+              </a>
+            )}
+            {typeof l.rating === 'number' && (
+              <span className="text-gray-500">
+                ⭐{String(l.rating).replace('.', ',')} · {l.nrRecenzii}
+              </span>
+            )}
+            {l.linkMaps && (
+              <a href={l.linkMaps} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600">
+                Maps ↗
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+      {locatii.length > 4 && (
+        <button type="button" onClick={() => setToate((v) => !v)} className="mt-1 text-[11px] font-medium text-sky-700 hover:underline">
+          {toate ? 'arată mai puține' : `arată toate cele ${locatii.length}`}
+        </button>
+      )}
     </div>
   )
 }
