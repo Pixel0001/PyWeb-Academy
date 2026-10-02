@@ -63,6 +63,9 @@ export async function PATCH(request, { params }) {
       }
     }
 
+    // 🔥 Urgent — un semn pus de mână, independent de status
+    if (corp.urgent !== undefined) date.urgent = Boolean(corp.urgent)
+
     // Cine se ocupă de firma asta — primește notificările în privat.
     if (corp.responsabilId !== undefined) {
       date.responsabilId = corp.responsabilId || null

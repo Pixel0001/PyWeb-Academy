@@ -51,6 +51,8 @@ export async function construiesteFiltre(searchParams) {
     conditii.push({ tara })
   }
 
+  if (searchParams.get('urgent') === '1') conditii.push({ urgent: true })
+
   const oras = searchParams.get('oras')
   if (oras) conditii.push({ oras })
 
@@ -179,7 +181,7 @@ export async function GET(request) {
     const paginaCeruta = Math.max(1, parseInt(searchParams.get('pagina') || '1', 10) || 1)
 
     const acum = new Date()
-    const [totalFiltrat, total, peStatus, restante, faraSite, peOras, peCategorie, peTara, moarte] = await Promise.all([
+    const [totalFiltrat, total, peStatus, restante, faraSite, peOras, peCategorie, peTara, moarte, urgente, multiLocatie] = await Promise.all([
       prisma.webLead.count({ where }),
       prisma.webLead.count(),
       prisma.webLead.groupBy({ by: ['status'], _count: true }),
@@ -192,6 +194,9 @@ export async function GET(request) {
       prisma.webLead.groupBy({ by: ['categoriePrincipala'], _count: true }),
       prisma.webLead.groupBy({ by: ['tara'], _count: true }),
       prisma.webLead.count({ where: { calitateSite: { in: ['MORT', 'NEADAPTAT_MOBIL'] }, siteUrl: { not: null } } }),
+      prisma.webLead.count({ where: { urgent: true } }),
+      // Firmele cu mai multe locații — ca să se vadă câte locații Google sunt în spatele lead-urilor
+      prisma.webLead.aggregate({ where: { nrLocatii: { gt: 1 } }, _sum: { nrLocatii: true }, _count: true }),
     ])
 
     const optiuniDinDate = (grupuri, camp) =>
@@ -221,6 +226,9 @@ export async function GET(request) {
         restante,
         faraSite,
         moarte,
+        urgente,
+        // 1 lead = 1 firmă; o firmă poate avea mai multe locații pe Google
+        locatii: total - multiLocatie._count + (multiLocatie._sum.nrLocatii || 0),
         peStatus: Object.fromEntries(peStatus.map((g) => [g.status, g._count])),
       },
       orase: optiuniDinDate(peOras, 'oras'),

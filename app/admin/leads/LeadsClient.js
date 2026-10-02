@@ -58,6 +58,7 @@ const FILTRE_GOALE = {
   pana: '',
   sortare: 'scor',
   doarNoi: false,
+  urgent: false,
 }
 
 const selectClass =
@@ -137,6 +138,7 @@ export default function LeadsClient({
       p.set('perioada', filtre.perioada)
     }
     if (filtre.doarNoi) p.set('doarNoi', '1')
+    if (filtre.urgent) p.set('urgent', '1')
     return p
   }, [cautare, filtre])
 
@@ -228,7 +230,8 @@ export default function LeadsClient({
     ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
       (c) => filtre[c]
     ).length +
-    (filtre.doarNoi ? 1 : 0)
+    (filtre.doarNoi ? 1 : 0) +
+    (filtre.urgent ? 1 : 0)
 
   // ============================================================
   // BUCLA DE EXECUȚIE A RULĂRII
@@ -532,6 +535,58 @@ export default function LeadsClient({
     }
   }
 
+  async function comutaUrgent(lead) {
+    const urgent = !lead.urgent
+    actualizeazaLocal(lead.id, { urgent })
+    setStatServer((s) => (s ? { ...s, urgente: Math.max((s.urgente || 0) + (urgent ? 1 : -1), 0) } : s))
+    const salvat = await salveaza(lead, { urgent }, 'Nu am putut salva semnul de urgent')
+    if (!salvat) {
+      actualizeazaLocal(lead.id, { urgent: !urgent })
+      setStatServer((s) => (s ? { ...s, urgente: Math.max((s.urgente || 0) + (urgent ? -1 : 1), 0) } : s))
+    }
+  }
+
+  // ── Pitch-urile ieșite din șablon, refăcute cu AI ─────────────────
+  const [refacPitch, setRefacPitch] = useState(false)
+
+  async function refaPitchurile() {
+    if (refacPitch) return
+    setRefacPitch(true)
+    try {
+      const r = await fetch('/api/admin/leads/pitch-refa')
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Nu am putut număra pitch-urile')
+      if (!d.areAI) throw new Error('Lipsește OPENAI_API_KEY — pitch-urile nu se pot face cu AI')
+      if (!d.deRefacut) {
+        toast.success('Toate pitch-urile sunt deja scrise de AI')
+        return
+      }
+      if (!confirm(`${d.deRefacut} pitch-uri au ieșit din șablon (AI-ul nu mergea atunci). Le refac cu AI? Costă câțiva cenți.`)) return
+
+      let refacute = 0
+      let cost = 0
+      for (let runda = 0; runda < 40; runda++) {
+        const p = await fetch('/api/admin/leads/pitch-refa', { method: 'POST' })
+        const rez = await p.json()
+        if (!p.ok) throw new Error(rez.error || 'Refacerea a eșuat')
+        refacute += rez.refacute
+        cost += rez.cost || 0
+        toast.loading(`Refac pitch-urile… ${refacute}/${d.deRefacut}`, { id: 'pitch-refa' })
+        if (!rez.refacute) {
+          if (rez.erori?.length) throw new Error(`AI-ul nu răspunde: ${rez.erori[0].slice(0, 160)}`)
+          break
+        }
+        if (!rez.ramase) break
+      }
+      toast.success(`${refacute} pitch-uri refăcute cu AI (cost ~${cost.toFixed(2)} $)`, { id: 'pitch-refa', duration: 8000 })
+      incarca()
+    } catch (err) {
+      toast.error(err.message, { id: 'pitch-refa', duration: 10000 })
+    } finally {
+      setRefacPitch(false)
+    }
+  }
+
   async function schimbaResponsabil(lead, responsabilId) {
     const anterior = { responsabilId: lead.responsabilId, responsabil: lead.responsabil }
     const om = echipa.find((o) => o.id === responsabilId)
@@ -667,7 +722,7 @@ export default function LeadsClient({
       .map((value) => ({ value, count: numar.get(value) }))
   }, [categoriiDB, optiuni.categorii])
 
-  const sv = statServer || { total: 0, peStatus: {}, restante: 0, faraSite: 0, moarte: 0 }
+  const sv = statServer || { total: 0, peStatus: {}, restante: 0, faraSite: 0, moarte: 0, urgente: 0, locatii: 0 }
 
   // ============================================================
   // RANDARE
@@ -679,7 +734,26 @@ export default function LeadsClient({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold text-gray-900">Leaduri Web</h1>
         <div className="flex flex-wrap items-center gap-1.5">
-          <ChipStat eticheta="Total" valoare={sv.total} />
+          <ChipStat
+            eticheta="Total"
+            valoare={sv.total}
+            titlu={sv.locatii > sv.total ? `${sv.total} firme = ${sv.locatii} locații pe Google (locațiile aceleiași firme sunt unite într-un lead)` : undefined}
+          />
+          {sv.locatii > sv.total && (
+            <ChipStat
+              eticheta="📍 Locații"
+              valoare={sv.locatii}
+              culoare="text-sky-700"
+              titlu={`${sv.locatii - sv.total} locații sunt unite cu firma lor (ex. Fornetti × 10 = 1 lead)`}
+            />
+          )}
+          <ChipStat
+            eticheta="🔥 Urgente"
+            valoare={sv.urgente || 0}
+            culoare="text-orange-600"
+            activ={filtre.urgent}
+            onClick={() => setFiltru('urgent', !filtre.urgent)}
+          />
           <ChipStat
             eticheta="🔵 New lead"
             valoare={sv.peStatus.DE_SUNAT || 0}
@@ -732,6 +806,17 @@ export default function LeadsClient({
               className="inline-flex items-center gap-1 rounded-lg border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] font-medium text-sky-800 hover:bg-sky-100 disabled:opacity-70"
             >
               {unire ? '🔗 Caut dublurile…' : '🔗 Unește dublurile'}
+            </button>
+          )}
+          {poateRula && (
+            <button
+              type="button"
+              onClick={refaPitchurile}
+              disabled={refacPitch}
+              title="Pitch-urile care au ieșit din șablon (când AI-ul nu mergea) se rescriu cu AI"
+              className="inline-flex items-center gap-1 rounded-lg border border-violet-300 bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-100 disabled:opacity-70"
+            >
+              {refacPitch ? '✨ Refac…' : '✨ Refă pitch-urile'}
             </button>
           )}
           {poateRula && sv.moarte > 0 && (
@@ -1088,6 +1173,7 @@ export default function LeadsClient({
               onEditeaza={(l) => setFormular(l)}
               onSterge={stergeLead}
               onWhatsApp={setLeadWhatsApp}
+              onUrgent={comutaUrgent}
               poateEdita={poateRula}
               echipa={echipa}
               onResponsabil={schimbaResponsabil}

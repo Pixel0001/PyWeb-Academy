@@ -57,6 +57,7 @@ export default function RandLead({
   onEditeaza,
   onSterge,
   onWhatsApp,
+  onUrgent,
   poateEdita,
   ...panou
 }) {
@@ -72,7 +73,9 @@ export default function RandLead({
       className={`rounded-lg border bg-white transition-colors ${
         deschis
           ? 'border-indigo-400 shadow-sm'
-          : stareFU === 'restant'
+          : lead.urgent
+            ? 'border-orange-400 bg-orange-50/40 hover:border-indigo-300'
+            : stareFU === 'restant'
             ? 'border-red-300 hover:border-indigo-300'
             : status.grup === 'nou'
               ? 'border-blue-300 hover:border-indigo-300'
@@ -208,6 +211,20 @@ export default function RandLead({
         )}
 
         <div className="flex shrink-0 items-center gap-0.5 pl-1 pr-1.5">
+          {poateEdita && (
+            <button
+              type="button"
+              onClick={() => onUrgent(lead)}
+              title={lead.urgent ? 'Urgent — apasă ca să scoți semnul' : 'Marchează urgent (îl găsești ușor cu filtrul 🔥)'}
+              aria-label="Urgent"
+              aria-pressed={Boolean(lead.urgent)}
+              className={`rounded p-1 text-sm leading-none transition ${
+                lead.urgent ? 'bg-orange-100' : 'opacity-25 grayscale hover:opacity-100 hover:grayscale-0'
+              }`}
+            >
+              🔥
+            </button>
+          )}
           {telefon && (
             <button
               type="button"
