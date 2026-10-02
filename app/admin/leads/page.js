@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
 import { getCurrentUser } from '@/lib/session'
-import { TOATE_ORASELE, ORASE, CATEGORII, CONFIG } from '@/lib/leads/config'
+import { CATEGORII, CONFIG, TARI, GRUPURI_CATEGORII } from '@/lib/leads/config'
 import { furnizorPitch, modelCurent } from '@/lib/leads/pitch'
 import LeadsClient from './LeadsClient'
 
@@ -42,6 +42,7 @@ export default async function LeadsPage() {
         faza: true,
         orase: true,
         categorii: true,
+        tara: true,
         apeluriApi: true,
         interogariSarite: true,
         firmeTotal: true,
@@ -83,9 +84,13 @@ export default async function LeadsPage() {
         telegramLegat: Boolean(o.telegramChatId),
       }))}
       optiuni={{
-        toateOrasele: TOATE_ORASELE,
-        oraseImplicite: ORASE,
-        categorii: CATEGORII,
+        tari: TARI,
+        grupuriCategorii: GRUPURI_CATEGORII,
+        // Toate categoriile predefinite — pentru filtrul din listă
+        categorii: GRUPURI_CATEGORII.flatMap((g) => g.categorii.map((c) => c.ro)),
+        // Bifate implicit la prima căutare: cele de până acum
+        categoriiImplicite: CATEGORII,
+        areOpenAI: Boolean(process.env.OPENAI_API_KEY),
         buget: CONFIG.buget,
         marimePagina: CONFIG.cautare.pageSize,
         paginiMax: CONFIG.cautare.paginiMax,

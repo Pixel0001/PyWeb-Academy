@@ -1561,6 +1561,8 @@ model WebLead {
   linkMaps            String?
   businessStatus      String?
 
+  tara                String? // codul țării (MD, RO, GB...); gol = Moldova
+
   // De unde a venit: GOOGLE_MAPS (extragerea) sau ce s-a ales la „Lead nou".
   // Gol = lead vechi, dinainte de câmp — tot din Google Maps.
   sursa         String?
@@ -1597,6 +1599,7 @@ model WebLead {
   @@index([calitateSite])
   @@index([responsabilId])
   @@index([sursa])
+  @@index([tara])
   @@index([createdAt])
   @@map("web_leads")
 }
@@ -1652,6 +1655,7 @@ model LeadRun {
 
   orase     String[] @default([])
   categorii String[] @default([])
+  tara      String? // codul țării căutate; gol = Moldova
 
   interogari    Json // [{ q, oras, categorie, stare, apeluri, gasite, eroare }]
   idxInterogare Int  @default(0) // unde am rămas în listă

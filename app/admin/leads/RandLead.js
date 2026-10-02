@@ -25,6 +25,7 @@ import {
   getCalitate,
   stareFollowUp,
   formateazaFollowUp,
+  steagTara,
 } from '@/lib/leads/statusuri'
 import PanouLead from './PanouLead'
 
@@ -108,6 +109,12 @@ export default function RandLead({
           >
             {lead.denumire}
           </Link>
+
+          {lead.tara && lead.tara !== 'MD' && (
+            <span className="shrink-0 text-xs" title={lead.tara}>
+              {steagTara(lead.tara)}
+            </span>
+          )}
 
           <span
             className={`hidden shrink-0 rounded px-1.5 text-[10px] font-medium md:inline ${sursa.color}`}

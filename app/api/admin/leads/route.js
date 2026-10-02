@@ -42,6 +42,14 @@ export async function construiesteFiltre(searchParams) {
     conditii.push({ sursa })
   }
 
+  const tara = searchParams.get('tara')
+  if (tara === 'MD') {
+    // Lead-urile dinainte de câmpul „țară" sunt toate din Moldova
+    conditii.push({ OR: [{ tara: 'MD' }, { tara: null }, { tara: { isSet: false } }] })
+  } else if (/^[A-Z]{2}$/.test(tara || '')) {
+    conditii.push({ tara })
+  }
+
   const oras = searchParams.get('oras')
   if (oras) conditii.push({ oras })
 
@@ -170,7 +178,7 @@ export async function GET(request) {
     const paginaCeruta = Math.max(1, parseInt(searchParams.get('pagina') || '1', 10) || 1)
 
     const acum = new Date()
-    const [totalFiltrat, total, peStatus, restante, faraSite, peOras, peCategorie] = await Promise.all([
+    const [totalFiltrat, total, peStatus, restante, faraSite, peOras, peCategorie, peTara, moarte] = await Promise.all([
       prisma.webLead.count({ where }),
       prisma.webLead.count(),
       prisma.webLead.groupBy({ by: ['status'], _count: true }),
@@ -181,6 +189,8 @@ export async function GET(request) {
       // Ce orașe și categorii există deja în bază — pentru filtre
       prisma.webLead.groupBy({ by: ['oras'], _count: true }),
       prisma.webLead.groupBy({ by: ['categoriePrincipala'], _count: true }),
+      prisma.webLead.groupBy({ by: ['tara'], _count: true }),
+      prisma.webLead.count({ where: { calitateSite: 'MORT', siteUrl: { not: null } } }),
     ])
 
     const optiuniDinDate = (grupuri, camp) =>
@@ -209,10 +219,19 @@ export async function GET(request) {
         total,
         restante,
         faraSite,
+        moarte,
         peStatus: Object.fromEntries(peStatus.map((g) => [g.status, g._count])),
       },
       orase: optiuniDinDate(peOras, 'oras'),
       categorii: optiuniDinDate(peCategorie, 'categoriePrincipala'),
+      // Fără țară = Moldova (lead-urile dinainte de câmp)
+      tari: Object.entries(
+        peTara.reduce((acc, g) => {
+          const cod = g.tara || 'MD'
+          acc[cod] = (acc[cod] || 0) + g._count
+          return acc
+        }, {})
+      ).map(([value, count]) => ({ value, count })),
     })
   } catch (error) {
     if (['Unauthorized', 'Forbidden'].includes(error.message)) {

@@ -31,10 +31,12 @@ import {
   SORTARI,
   SCORURI_MINIME,
   formateazaFollowUp,
+  steagTara,
 } from '@/lib/leads/statusuri'
 import RandLead from './RandLead'
 import ModalWhatsApp from './ModalWhatsApp'
 import FormularLead from './FormularLead'
+import PanouCautare from './PanouCautare'
 
 const MARIMI_PAGINA = [25, 50, 100, 'toate']
 
@@ -43,6 +45,7 @@ const CHEIE_FILTRE = 'pyweb:leaduri:filtre'
 
 const FILTRE_GOALE = {
   statusuri: [],
+  tara: '',
   sursa: '',
   oras: '',
   calitate: '',
@@ -88,6 +91,7 @@ export default function LeadsClient({
   const [statServer, setStatServer] = useState(null)
   const [oraseDB, setOraseDB] = useState([])
   const [categoriiDB, setCategoriiDB] = useState([])
+  const [tariDB, setTariDB] = useState([])
   const [istoric, setIstoric] = useState(rulari)
 
   // ── Filtre + paginare (se aplică pe server) ───────────────────────
@@ -106,8 +110,6 @@ export default function LeadsClient({
 
   // ── Rulare (extragerea din Google Maps) ───────────────────────────
   const [panouRulare, setPanouRulare] = useState(false)
-  const [oraseAlese, setOraseAlese] = useState(optiuni.oraseImplicite)
-  const [categoriiAlese, setCategoriiAlese] = useState(optiuni.categorii)
   const [ruleaza, setRuleaza] = useState(Boolean(rulareActiva))
   const [runId, setRunId] = useState(rulareActiva?.id || null)
   const [progres, setProgres] = useState(null)
@@ -124,7 +126,7 @@ export default function LeadsClient({
     const p = new URLSearchParams()
     if (cautare.trim()) p.set('q', cautare.trim())
     if (filtre.statusuri.length) p.set('status', filtre.statusuri.join(','))
-    for (const cheie of ['sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
+    for (const cheie of ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
       if (filtre[cheie]) p.set(cheie, filtre[cheie])
     }
     if (filtre.perioada === 'interval') {
@@ -155,6 +157,7 @@ export default function LeadsClient({
       setStatServer(date.statistici || null)
       setOraseDB(date.orase || [])
       setCategoriiDB(date.categorii || [])
+      setTariDB(date.tari || [])
       if (date.pagina && date.pagina !== pagina) setPagina(date.pagina)
     } catch (err) {
       toast.error(err.message)
@@ -222,7 +225,7 @@ export default function LeadsClient({
   const nrFiltreActive =
     (cautare ? 1 : 0) +
     filtre.statusuri.length +
-    ['sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
+    ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
       (c) => filtre[c]
     ).length +
     (filtre.doarNoi ? 1 : 0)
@@ -337,26 +340,13 @@ export default function LeadsClient({
     }
   }
 
-  const estimare = useMemo(() => {
-    const interogari = oraseAlese.length * categoriiAlese.length
-    const apeluriMax = interogari * optiuni.paginiMax
-    return {
-      interogari,
-      apeluriMin: interogari,
-      apeluriMax,
-      costMin: (interogari * optiuni.buget.costPerApelUsd).toFixed(2),
-      costMax: (apeluriMax * optiuni.buget.costPerApelUsd).toFixed(2),
-      firmeMax: interogari * optiuni.paginiMax * optiuni.marimePagina,
-      depaseste: apeluriMax > optiuni.buget.maxApeluriPeRulare,
-    }
-  }, [oraseAlese, categoriiAlese, optiuni])
-
-  async function porneste() {
+  // Panoul de căutare trimite țara, orașele (verificate) și categoriile
+  async function porneste(cerere) {
     if (!areCheieGoogle) {
       toast.error('Lipsește GOOGLE_API_KEY. Vezi README-LEADURI.md.')
       return
     }
-    if (!oraseAlese.length || !categoriiAlese.length) {
+    if (!cerere.orase.length || !cerere.categorii.length) {
       toast.error('Alege cel puțin un oraș și o categorie')
       return
     }
@@ -364,7 +354,7 @@ export default function LeadsClient({
     const raspuns = await fetch('/api/admin/leads/runs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orase: oraseAlese, categorii: categoriiAlese }),
+      body: JSON.stringify(cerere),
     })
     const date = await raspuns.json()
 
@@ -376,7 +366,7 @@ export default function LeadsClient({
         setPanouRulare(false)
         return
       }
-      toast.error(date.error || 'Nu am putut porni rularea')
+      toast.error(date.error || 'Nu am putut porni căutarea', { duration: 8000 })
       return
     }
 
@@ -384,8 +374,43 @@ export default function LeadsClient({
     setLoguri([])
     setProgres(null)
     setPanouRulare(false)
-    toast.success(`Rulare pornită: ${date.estimare.interogari} interogări`)
+    toast.success(`Căutare pornită: ${date.estimare.interogari} interogări`)
     ruleazaPasi(date.rulare.id)
+  }
+
+  // ── Reverificarea gratuită a site-urilor „moarte" ─────────────────
+  // Multe erau de fapt protejate de Cloudflare; acum le recunoaștem.
+  const [reverifica, setReverifica] = useState(null)
+
+  async function reverificaMoarte() {
+    if (reverifica) return
+    const inceputRunda = new Date().toISOString()
+    const rezumat = {}
+    let ramase = sv.moarte
+    setReverifica({ facute: 0, total: ramase })
+    try {
+      for (let runda = 0; runda < 30 && ramase > 0; runda++) {
+        const r = await fetch('/api/admin/leads/reverifica', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ calitate: 'MORT', inceputRunda }),
+        })
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error || 'Reverificarea a eșuat')
+        for (const [k, v] of Object.entries(d.schimbari || {})) rezumat[k] = (rezumat[k] || 0) + v
+        ramase = d.ramase
+        setReverifica((x) => ({ ...x, facute: (x?.facute || 0) + d.verificate }))
+      }
+      const text = Object.entries(rezumat)
+        .map(([k, v]) => `${CALITATI.find((c) => c.value === k)?.label || k}: ${v}`)
+        .join(', ')
+      toast.success(text ? `Reverificate — ${text}` : 'Nimic de reverificat', { duration: 10000 })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setReverifica(null)
+      incarca()
+    }
   }
 
   async function reiaBlocanta() {
@@ -597,7 +622,7 @@ export default function LeadsClient({
       .map((value) => ({ value, count: numar.get(value) }))
   }, [categoriiDB, optiuni.categorii])
 
-  const sv = statServer || { total: 0, peStatus: {}, restante: 0, faraSite: 0 }
+  const sv = statServer || { total: 0, peStatus: {}, restante: 0, faraSite: 0, moarte: 0 }
 
   // ============================================================
   // RANDARE
@@ -653,6 +678,19 @@ export default function LeadsClient({
             onClick={() => setFiltru('followUp', filtre.followUp === 'restante' ? '' : 'restante')}
           />
           <ChipStat eticheta="🚫 Fără site" valoare={sv.faraSite} culoare="text-red-700" />
+          {poateRula && sv.moarte > 0 && (
+            <button
+              type="button"
+              onClick={reverificaMoarte}
+              disabled={Boolean(reverifica)}
+              title="Deschide din nou site-urile marcate „mort” (gratuit, fără Google). Cele protejate de Cloudflare trec la „Neclar”, cele care merg își primesc calitatea reală."
+              className="inline-flex items-center gap-1 rounded-lg border border-orange-300 bg-orange-50 px-2 py-1 text-[11px] font-medium text-orange-800 hover:bg-orange-100 disabled:opacity-70"
+            >
+              {reverifica
+                ? `🔁 Reverific… ${reverifica.facute}/${reverifica.total}`
+                : `🔁 Reverifică ${sv.moarte} site-uri „moarte”`}
+            </button>
+          )}
           <ChipStat
             eticheta="🔎 API luna"
             valoare={`${stats.apeluriLunaCurenta}/1000`}
@@ -766,16 +804,7 @@ export default function LeadsClient({
       )}
 
       {panouRulare && poateRula && !ruleaza && (
-        <PanouRulare
-          optiuni={optiuni}
-          oraseAlese={oraseAlese}
-          setOraseAlese={setOraseAlese}
-          categoriiAlese={categoriiAlese}
-          setCategoriiAlese={setCategoriiAlese}
-          estimare={estimare}
-          onPornire={porneste}
-          onAnulare={() => setPanouRulare(false)}
-        />
+        <PanouCautare optiuni={optiuni} onPornire={porneste} onAnulare={() => setPanouRulare(false)} />
       )}
 
       {ruleaza && <PanouProgres progres={progres} loguri={loguri} />}
@@ -832,6 +861,17 @@ export default function LeadsClient({
             className="w-full rounded-lg border border-gray-300 py-1.5 pl-7 pr-2 text-xs text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+
+        {(tariDB.length > 1 || filtre.tara) && (
+          <select value={filtre.tara} onChange={(e) => setFiltru('tara', e.target.value)} className={alege(filtre.tara)} aria-label="Țară">
+            <option value="">Țară: toate</option>
+            {tariDB.map((t) => (
+              <option key={t.value} value={t.value}>
+                {steagTara(t.value)} {optiuni.tari.find((x) => x.cod === t.value)?.nume || t.value} ({t.count})
+              </option>
+            ))}
+          </select>
+        )}
 
         <select value={filtre.sursa} onChange={(e) => setFiltru('sursa', e.target.value)} className={alege(filtre.sursa)} aria-label="Sursă">
           <option value="">Sursă: toate</option>
@@ -1125,128 +1165,6 @@ function ChipStat({ eticheta, valoare, culoare = 'text-gray-900', activ = false,
   )
 }
 
-function PanouRulare({
-  optiuni,
-  oraseAlese,
-  setOraseAlese,
-  categoriiAlese,
-  setCategoriiAlese,
-  estimare,
-  onPornire,
-  onAnulare,
-}) {
-  function comuta(lista, setLista, valoare) {
-    setLista(lista.includes(valoare) ? lista.filter((x) => x !== valoare) : [...lista, valoare])
-  }
-
-  return (
-    <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-sm">
-      <h2 className="font-semibold text-gray-900">Rulare nouă</h2>
-      <p className="mt-0.5 text-sm text-gray-600">
-        Se caută fiecare categorie în fiecare oraș. Interogările rulate în ultimele 30 de zile sunt
-        sărite automat, iar firmele deja găsite nu se salvează a doua oară.
-      </p>
-
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-700">Orașe ({oraseAlese.length})</p>
-          <div className="flex gap-2 text-xs">
-            <button onClick={() => setOraseAlese(optiuni.toateOrasele)} className="text-indigo-600 hover:underline">toate</button>
-            <button onClick={() => setOraseAlese(optiuni.oraseImplicite)} className="text-indigo-600 hover:underline">implicite</button>
-            <button onClick={() => setOraseAlese([])} className="text-gray-500 hover:underline">niciunul</button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {optiuni.toateOrasele.map((oras) => (
-            <button
-              key={oras}
-              onClick={() => comuta(oraseAlese, setOraseAlese, oras)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                oraseAlese.includes(oras)
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {oras}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-700">Categorii ({categoriiAlese.length})</p>
-          <div className="flex gap-2 text-xs">
-            <button onClick={() => setCategoriiAlese(optiuni.categorii)} className="text-indigo-600 hover:underline">toate</button>
-            <button onClick={() => setCategoriiAlese([])} className="text-gray-500 hover:underline">niciuna</button>
-          </div>
-        </div>
-        <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg bg-white/60 p-2">
-          {optiuni.categorii.map((categorie) => (
-            <button
-              key={categorie}
-              onClick={() => comuta(categoriiAlese, setCategoriiAlese, categorie)}
-              className={`rounded-full px-2.5 py-1 text-xs transition ${
-                categoriiAlese.includes(categorie)
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {categorie}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-lg bg-white p-3 text-sm">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-gray-500">Interogări</p>
-            <p className="font-semibold text-gray-900">{estimare.interogari}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Apeluri API</p>
-            <p className="font-semibold text-gray-900">{estimare.apeluriMin}–{estimare.apeluriMax}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Cost estimat</p>
-            <p className="font-semibold text-gray-900">{estimare.costMin}–{estimare.costMax} $</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Firme (maxim)</p>
-            <p className="font-semibold text-gray-900">~{estimare.firmeMax}</p>
-          </div>
-        </div>
-
-        {estimare.depaseste && (
-          <p className="mt-2 flex items-start gap-1.5 rounded bg-red-50 p-2 text-xs text-red-700">
-            <ExclamationTriangleIcon className="mt-px h-4 w-4 shrink-0" />
-            Selecția depășește plafonul de {optiuni.buget.maxApeluriPeRulare} apeluri pe rulare.
-            Alege mai puține orașe sau categorii.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={onPornire}
-          disabled={estimare.depaseste || !estimare.interogari}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-        >
-          <PlayIcon className="h-4 w-4" />
-          Pornește rularea
-        </button>
-        <button
-          onClick={onAnulare}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Renunță
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function PanouProgres({ progres, loguri }) {
   const faze = {
     SEARCH: 'Caut firme pe Google Maps',
@@ -1323,6 +1241,7 @@ function IstoricRulari({ rulari }) {
               {rulari.map((r) => (
                 <tr key={r.id}>
                   <td className="py-2 pr-3 text-gray-600">
+                    {r.tara && r.tara !== 'MD' ? `${steagTara(r.tara)} ` : ''}
                     {new Date(r.startedAt).toLocaleDateString('ro-RO', {
                       day: '2-digit',
                       month: '2-digit',
