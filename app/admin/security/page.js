@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { usePermissions } from '@/hooks/usePermissions'
 import TwoFactorModal from '@/components/admin/TwoFactorModal'
 import ConectareTelegram from '@/components/admin/ConectareTelegram'
+import NumeCont from '@/components/admin/NumeCont'
 import SecurityLoading from './loading'
 
 export default function SecurityPage() {
@@ -446,9 +447,10 @@ export default function SecurityPage() {
             <span className="text-gray-600">Email</span>
             <span className="font-medium text-gray-900">{session?.user?.email}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100">
             <span className="text-gray-600">Nume</span>
-            <span className="font-medium text-gray-900">{session?.user?.name}</span>
+            {/* Editabil: e și numele cu care se semnează mesajele de WhatsApp */}
+            <NumeCont nume={session?.user?.name} onSalvat={() => updateSession()} />
           </div>
           <div className="flex justify-between py-2">
             <span className="text-gray-600">Rol</span>
