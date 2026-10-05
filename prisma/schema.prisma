@@ -1811,7 +1811,12 @@ model SablonMesaj {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   nume      String // ce vezi în listă: „Primul contact", „Revenire după ofertă"
   text      String // corpul mesajului, cu variabile {{firma}}, {{oras}}...
-  categorie String? // grupare opțională: primul contact / follow-up / ofertă
+  categorie String? // domeniul: o grupă din config/leads.json („Magazine"...) sau „Orice firmă"
+  etapa     String? // PRIMUL_CONTACT (gol) | NU_RASPUNDE | DUPA_APEL | REVENIRE | DUPA_RASPUNS
+  limba     String? // ro (gol) | ru | en
+  situatii  String[] @default([]) // pentru ce site e scris (LIPSA, MORT...); gol = orice
+  cuvinte   String[] @default([]) // cuvintele nișei („cofet", „tort") — urcă șablonul la firmele potrivite
+  cheie     String? // cheia din biblioteca de șabloane gata scrise, dacă vine de acolo
   ordine    Int      @default(0) // ordinea în listă
   activ     Boolean  @default(true)
   folosit   Int      @default(0) // de câte ori a fost trimis — ca să vezi ce merge

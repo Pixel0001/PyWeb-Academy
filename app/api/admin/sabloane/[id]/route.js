@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
-import { variabileNecunoscute } from '@/lib/leads/sabloane'
+import { problemeSablon, metaSablon } from '@/lib/leads/sabloane'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,12 +37,9 @@ export async function PATCH(request, { params }) {
       if (!String(corp.text).trim()) {
         return NextResponse.json({ error: 'Textul nu poate fi gol' }, { status: 400 })
       }
-      const gresite = variabileNecunoscute(corp.text)
-      if (gresite.length) {
-        return NextResponse.json(
-          { error: `Variabile necunoscute: ${gresite.map((g) => `{{${g}}}`).join(', ')}` },
-          { status: 400 }
-        )
+      const probleme = problemeSablon(corp.text)
+      if (probleme.length) {
+        return NextResponse.json({ error: probleme.join('. ') }, { status: 400 })
       }
       date.text = String(corp.text).trim().slice(0, 4000)
     }
@@ -50,6 +47,8 @@ export async function PATCH(request, { params }) {
     if (corp.categorie !== undefined) date.categorie = corp.categorie?.trim() || null
     if (corp.activ !== undefined) date.activ = Boolean(corp.activ)
     if (corp.ordine !== undefined) date.ordine = Number(corp.ordine) || 0
+    // Etapa, limba, situațiile site-ului și cuvintele cheie
+    Object.assign(date, metaSablon(corp))
 
     const sablon = await prisma.sablonMesaj.update({ where: { id }, data: date })
     return NextResponse.json({ sablon })
