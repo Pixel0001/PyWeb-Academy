@@ -1,4 +1,4 @@
-import { Space_Grotesk, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "@/components/providers/AuthProvider";
@@ -6,16 +6,21 @@ import ThemeProvider from "@/components/providers/ThemeProvider";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const spaceGrotesk = Space_Grotesk({
+// Fonturile stau în proiect (app/fonts), nu se mai descarcă de la Google la
+// fiecare build: Google a început să întoarcă serverelor Vercel adrese de forma
+// „/l/font?kit=…&skey=…", pe care Next 16.1 + Turbopack nu le poate citi, și
+// build-ul pica. Sunt aceleași fișiere (variabile, setul latin) ca înainte.
+const spaceGrotesk = localFont({
+  src: "./fonts/space-grotesk-latin.woff2",
   variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "300 700",
   display: "swap",
 });
 
-const inter = Inter({
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
 });
 
