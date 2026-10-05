@@ -92,6 +92,7 @@ export default function SabloaneClient({
   const [varianta, setVarianta] = useState(0)
   const [bibliotecaDeschisa, setBibliotecaDeschisa] = useState(sabloaneInitiale.length === 0)
   const [adaug, setAdaug] = useState(false)
+  const [deschis, setDeschis] = useState(null) // șablonul cu previzualizarea deschisă
 
   const exemplu = useMemo(() => valoriExemplu(numeleMeu, formular.limba), [numeleMeu, formular.limba])
   const previzualizare = useMemo(
@@ -137,6 +138,7 @@ export default function SabloaneClient({
   function deschideEditare(s) {
     setFormular(inFormular(s))
     setVarianta(0)
+    setDeschis(s.id)
     setEditat(s.id)
   }
 
@@ -229,6 +231,174 @@ export default function SabloaneClient({
     [sabloane]
   )
 
+  // Editorul — sus pentru un șablon nou, chiar sub rând când editezi unul existent
+  const editor = editat ? (
+      <div className="grid gap-4 rounded-xl border border-indigo-200 bg-white p-4 shadow-sm lg:grid-cols-2">
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Camp eticheta="Nume">
+              <input
+                className={input}
+                value={formular.nume}
+                onChange={(e) => setFormular((f) => ({ ...f, nume: e.target.value }))}
+                placeholder="ex. Primul contact · cofetărie"
+              />
+            </Camp>
+            <Camp eticheta="Domeniul firmei">
+              <input
+                className={input}
+                list="domenii-sablon"
+                value={formular.categorie}
+                onChange={(e) => setFormular((f) => ({ ...f, categorie: e.target.value }))}
+              />
+              <datalist id="domenii-sablon">
+                {domenii.map((d) => (
+                  <option key={d} value={d} />
+                ))}
+              </datalist>
+            </Camp>
+            <Camp eticheta="Când se trimite">
+              <select
+                className={input}
+                value={formular.etapa}
+                onChange={(e) => setFormular((f) => ({ ...f, etapa: e.target.value }))}
+              >
+                {ETAPE.map((e) => (
+                  <option key={e.value} value={e.value}>
+                    {e.emoji} {e.label}
+                  </option>
+                ))}
+              </select>
+            </Camp>
+            <Camp eticheta="Limba">
+              <select
+                className={input}
+                value={formular.limba}
+                onChange={(e) => setFormular((f) => ({ ...f, limba: e.target.value }))}
+              >
+                {LIMBI.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </Camp>
+          </div>
+
+          <Camp eticheta="Pentru ce fel de site (nimic bifat = orice)">
+            <div className="flex flex-wrap gap-1">
+              {SITUATII.map((s) => {
+                const ales = formular.situatii.includes(s.value)
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => comutaSituatie(s.value)}
+                    className={`rounded-full px-2.5 py-0.5 text-xs transition ${
+                      ales ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                )
+              })}
+            </div>
+          </Camp>
+
+          <Camp eticheta="Cuvinte cheie ale nișei (opțional) — urcă șablonul primul la firmele potrivite">
+            <input
+              className={input}
+              value={formular.cuvinte}
+              onChange={(e) => setFormular((f) => ({ ...f, cuvinte: e.target.value }))}
+              placeholder="ex. cofet, tort, patiser"
+            />
+          </Camp>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">
+              Variabile — clic ca s-o pui unde e cursorul
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {VARIABILE.map((v) => (
+                <button
+                  key={v.cod}
+                  type="button"
+                  onClick={() => insereazaVariabila(v.cod)}
+                  title={`${v.descriere} — ex. „${v.exemplu}"`}
+                  className="rounded bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100"
+                >
+                  {v.cod}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-gray-500">
+              <code className="rounded bg-gray-100 px-1">[[ ... ]]</code> = frază care dispare dacă îi lipsesc
+              datele (ex. <code className="rounded bg-gray-100 px-1">[[ (aveți {'{{nota_google}}'})]]</code>) ·{' '}
+              <code className="rounded bg-gray-100 px-1">((Sunt|Mă numesc))</code> = variante, una aleasă la
+              fiecare firmă, ca mesajele să nu fie identice
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">Textul mesajului</label>
+            <textarea
+              id="text-sablon"
+              className={input}
+              rows={10}
+              value={formular.text}
+              onChange={(e) => setFormular((f) => ({ ...f, text: e.target.value }))}
+              onSelect={(e) => setCursor({ start: e.target.selectionStart, sfarsit: e.target.selectionEnd })}
+              placeholder="{{salut}}! Am văzut {{firma}} pe Google Maps..."
+            />
+            {probleme.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-xs text-red-600">
+                {probleme.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={salveazaSablon}
+              disabled={salveaza}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-300"
+            >
+              {salveaza ? 'Salvez...' : 'Salvează'}
+            </button>
+            <button
+              onClick={inchide}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Renunță
+            </button>
+          </div>
+        </div>
+
+        {/* Previzualizarea — cum arată pe telefonul omului */}
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-700">Așa arată pe WhatsApp (cu date de exemplu)</p>
+            {/\(\(/.test(formular.text) && (
+              <button
+                type="button"
+                onClick={() => setVarianta((v) => v + 1)}
+                className="text-xs font-medium text-indigo-600 hover:underline"
+              >
+                🎲 altă variantă
+              </button>
+            )}
+          </div>
+          <BulaWhatsApp text={previzualizare} />
+          <p className="mt-2 text-[11px] text-gray-400">
+            Dacă o firmă n-are o valoare (de ex. rating), variabila dispare curat din text. Pune lauda
+            din recenzii în [[ ]], ca să dispară cu totul la firmele cu puține recenzii.
+          </p>
+        </div>
+      </div>
+  ) : null
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -262,173 +432,8 @@ export default function SabloaneClient({
         </div>
       </div>
 
-      {/* ── Editorul ──────────────────────────────────────────── */}
-      {editat && (
-        <div className="grid gap-4 rounded-xl border border-indigo-200 bg-white p-4 shadow-sm lg:grid-cols-2">
-          <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Camp eticheta="Nume">
-                <input
-                  className={input}
-                  value={formular.nume}
-                  onChange={(e) => setFormular((f) => ({ ...f, nume: e.target.value }))}
-                  placeholder="ex. Primul contact · cofetărie"
-                />
-              </Camp>
-              <Camp eticheta="Domeniul firmei">
-                <input
-                  className={input}
-                  list="domenii-sablon"
-                  value={formular.categorie}
-                  onChange={(e) => setFormular((f) => ({ ...f, categorie: e.target.value }))}
-                />
-                <datalist id="domenii-sablon">
-                  {domenii.map((d) => (
-                    <option key={d} value={d} />
-                  ))}
-                </datalist>
-              </Camp>
-              <Camp eticheta="Când se trimite">
-                <select
-                  className={input}
-                  value={formular.etapa}
-                  onChange={(e) => setFormular((f) => ({ ...f, etapa: e.target.value }))}
-                >
-                  {ETAPE.map((e) => (
-                    <option key={e.value} value={e.value}>
-                      {e.emoji} {e.label}
-                    </option>
-                  ))}
-                </select>
-              </Camp>
-              <Camp eticheta="Limba">
-                <select
-                  className={input}
-                  value={formular.limba}
-                  onChange={(e) => setFormular((f) => ({ ...f, limba: e.target.value }))}
-                >
-                  {LIMBI.map((l) => (
-                    <option key={l.value} value={l.value}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </Camp>
-            </div>
-
-            <Camp eticheta="Pentru ce fel de site (nimic bifat = orice)">
-              <div className="flex flex-wrap gap-1">
-                {SITUATII.map((s) => {
-                  const ales = formular.situatii.includes(s.value)
-                  return (
-                    <button
-                      key={s.value}
-                      type="button"
-                      onClick={() => comutaSituatie(s.value)}
-                      className={`rounded-full px-2.5 py-0.5 text-xs transition ${
-                        ales ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </Camp>
-
-            <Camp eticheta="Cuvinte cheie ale nișei (opțional) — urcă șablonul primul la firmele potrivite">
-              <input
-                className={input}
-                value={formular.cuvinte}
-                onChange={(e) => setFormular((f) => ({ ...f, cuvinte: e.target.value }))}
-                placeholder="ex. cofet, tort, patiser"
-              />
-            </Camp>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">
-                Variabile — clic ca s-o pui unde e cursorul
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {VARIABILE.map((v) => (
-                  <button
-                    key={v.cod}
-                    type="button"
-                    onClick={() => insereazaVariabila(v.cod)}
-                    title={`${v.descriere} — ex. „${v.exemplu}"`}
-                    className="rounded bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-100"
-                  >
-                    {v.cod}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-[11px] leading-snug text-gray-500">
-                <code className="rounded bg-gray-100 px-1">[[ ... ]]</code> = frază care dispare dacă îi lipsesc
-                datele (ex. <code className="rounded bg-gray-100 px-1">[[ (aveți {'{{nota_google}}'})]]</code>) ·{' '}
-                <code className="rounded bg-gray-100 px-1">((Sunt|Mă numesc))</code> = variante, una aleasă la
-                fiecare firmă, ca mesajele să nu fie identice
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">Textul mesajului</label>
-              <textarea
-                id="text-sablon"
-                className={input}
-                rows={10}
-                value={formular.text}
-                onChange={(e) => setFormular((f) => ({ ...f, text: e.target.value }))}
-                onSelect={(e) => setCursor({ start: e.target.selectionStart, sfarsit: e.target.selectionEnd })}
-                placeholder="{{salut}}! Am văzut {{firma}} pe Google Maps..."
-              />
-              {probleme.length > 0 && (
-                <ul className="mt-1 space-y-0.5 text-xs text-red-600">
-                  {probleme.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={salveazaSablon}
-                disabled={salveaza}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-300"
-              >
-                {salveaza ? 'Salvez...' : 'Salvează'}
-              </button>
-              <button
-                onClick={inchide}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Renunță
-              </button>
-            </div>
-          </div>
-
-          {/* Previzualizarea — cum arată pe telefonul omului */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-xs font-medium text-gray-700">Așa arată pe WhatsApp (cu date de exemplu)</p>
-              {/\(\(/.test(formular.text) && (
-                <button
-                  type="button"
-                  onClick={() => setVarianta((v) => v + 1)}
-                  className="text-xs font-medium text-indigo-600 hover:underline"
-                >
-                  🎲 altă variantă
-                </button>
-              )}
-            </div>
-            <BulaWhatsApp text={previzualizare} />
-            <p className="mt-2 text-[11px] text-gray-400">
-              Dacă o firmă n-are o valoare (de ex. rating), variabila dispare curat din text. Pune lauda
-              din recenzii în [[ ]], ca să dispară cu totul la firmele cu puține recenzii.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* ── Editorul pentru un șablon nou ─────────────────────── */}
+      {editat === 'nou' && editor}
 
       {/* ── Lista, pe etape ───────────────────────────────────── */}
       {sabloane.length === 0 && !editat ? (
@@ -445,56 +450,89 @@ export default function SabloaneClient({
             <h2 className="mb-1.5 text-sm font-semibold text-gray-700">
               {e.emoji} {e.label} <span className="font-normal text-gray-400">({e.sabloane.length})</span>
             </h2>
-            <div className="space-y-1.5">
-              {e.sabloane.map((s) => (
-                <div key={s.id} className={`rounded-xl bg-white p-3 shadow-sm ${s.activ ? '' : 'opacity-60'}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <h3 className="font-semibold text-gray-900">{s.nume}</h3>
-                        <Etichete sablon={s} />
+            <div className="space-y-1">
+              {e.sabloane.map((s) => {
+                const deschisAcum = deschis === s.id
+                return (
+                  <div
+                    key={s.id}
+                    className={`rounded-lg bg-white shadow-sm ${s.activ ? '' : 'opacity-60'} ${
+                      editat === s.id ? 'ring-1 ring-indigo-300' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => setDeschis(deschisAcum ? null : s.id)}
+                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                      >
+                        <ChevronDownIcon
+                          className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition ${deschisAcum ? 'rotate-180' : ''}`}
+                        />
+                        <span className="truncate text-[13px] font-medium text-gray-900">{s.nume}</span>
+                        <span className="hidden shrink-0 items-center gap-1 sm:flex">
+                          <Etichete sablon={s} />
+                        </span>
                         {!s.activ && (
-                          <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600">ascuns</span>
+                          <span className="shrink-0 rounded bg-gray-200 px-1 text-[10px] text-gray-600">ascuns</span>
                         )}
-                        <span className="text-[11px] text-gray-400">trimis de {s.folosit} ori</span>
-                      </div>
-                      <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-xs text-gray-500">{s.text}</p>
+                        <span className="ml-auto shrink-0 pl-2 text-[11px] text-gray-400" title="De câte ori a fost trimis">
+                          {s.folosit}×
+                        </span>
+                      </button>
+
+                      {(poateEdita || poateSterge) && (
+                        <div className="flex shrink-0">
+                          {poateEdita && (
+                            <>
+                              <button
+                                onClick={() => deschideEditare(s)}
+                                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-indigo-600"
+                                title="Editează"
+                              >
+                                <PencilSquareIcon className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => comutaActiv(s)}
+                                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                                title={s.activ ? 'Ascunde din listă' : 'Arată în listă'}
+                              >
+                                {s.activ ? <EyeSlashIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                              </button>
+                            </>
+                          )}
+                          {poateSterge && (
+                            <button
+                              onClick={() => sterge(s)}
+                              className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                              title="Șterge"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    {(poateEdita || poateSterge) && (
-                      <div className="flex shrink-0 gap-1">
-                        {poateEdita && (
-                          <>
-                            <button
-                              onClick={() => deschideEditare(s)}
-                              className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600"
-                              title="Editează"
-                            >
-                              <PencilSquareIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => comutaActiv(s)}
-                              className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                              title={s.activ ? 'Ascunde din listă' : 'Arată în listă'}
-                            >
-                              {s.activ ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-                            </button>
-                          </>
-                        )}
-                        {poateSterge && (
-                          <button
-                            onClick={() => sterge(s)}
-                            className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-                            title="Șterge"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
+                    {/* Editat → editorul chiar aici; deschis → cum arată mesajul */}
+                    {editat === s.id ? (
+                      <div className="border-t border-gray-100 p-2">{editor}</div>
+                    ) : (
+                      deschisAcum && (
+                        <div className="space-y-1.5 border-t border-gray-100 p-2">
+                          <span className="flex flex-wrap gap-1 sm:hidden">
+                            <Etichete sablon={s} />
+                          </span>
+                          <BulaWhatsApp
+                            mic
+                            text={completeaza(s.text, valoriExemplu(numeleMeu, s.limba || 'ro'), { samanta: s.id })}
+                          />
+                        </div>
+                      )
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         ))
