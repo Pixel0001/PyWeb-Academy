@@ -76,12 +76,14 @@ function inFormular(s) {
 
 export default function SabloaneClient({
   sabloaneInitiale,
-  numeleMeu,
+  numeleMeu: numeleInitial,
   poateCrea,
   poateEdita,
   poateSterge,
   grupuri = [],
 }) {
+  // Numele cu care se semnează mesajele — se poate schimba chiar de aici
+  const [numeleMeu, setNumeleMeu] = useState(numeleInitial || '')
   const [sabloane, setSabloane] = useState(sabloaneInitiale)
   const [editat, setEditat] = useState(null) // null | 'nou' | id
   const [formular, setFormular] = useState(GOL)
@@ -236,6 +238,7 @@ export default function SabloaneClient({
             Texte gata scrise pe care le trimiți pe WhatsApp dintr-un clic, din lista de leaduri.
             Numele firmei și restul datelor se pun singure.
           </p>
+          <Semnatura nume={numeleMeu} onSalvat={setNumeleMeu} />
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           {poateCrea && deAdaugat.length > 0 && (
@@ -520,6 +523,84 @@ export default function SabloaneClient({
 // ============================================================
 // SUBCOMPONENTE
 // ============================================================
+
+/**
+ * „Mesajele se semnează cu numele: …" — numele tău din cont, pus în
+ * {{numele_meu}}. Se schimbă de aici, fără să umbli în baza de date.
+ */
+function Semnatura({ nume, onSalvat }) {
+  const [editez, setEditez] = useState(false)
+  const [text, setText] = useState(nume)
+  const [salvez, setSalvez] = useState(false)
+
+  async function salveaza() {
+    const curat = text.trim().replace(/\s+/g, ' ')
+    if (curat === nume) return setEditez(false)
+    setSalvez(true)
+    try {
+      const r = await fetch('/api/admin/profil', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: curat }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Nu am putut salva numele')
+      onSalvat(d.name)
+      setEditez(false)
+      toast.success(`Gata — mesajele se semnează acum „${d.name}"`)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSalvez(false)
+    }
+  }
+
+  if (!editez) {
+    return (
+      <p className="mt-1.5 text-xs text-gray-600">
+        ✍️ Mesajele se semnează cu numele: <b>{nume || '—'}</b>{' '}
+        <button
+          type="button"
+          onClick={() => {
+            setText(nume)
+            setEditez(true)
+          }}
+          className="font-medium text-indigo-600 hover:underline"
+        >
+          schimbă
+        </button>
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-gray-600">✍️ Numele tău în mesaje:</span>
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') salveaza()
+          if (e.key === 'Escape') setEditez(false)
+        }}
+        placeholder="ex. Ștefan Racu"
+        className="w-48 rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+      />
+      <button
+        type="button"
+        onClick={salveaza}
+        disabled={salvez || text.trim().length < 2}
+        className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {salvez ? 'Salvez…' : 'Salvează'}
+      </button>
+      <button type="button" onClick={() => setEditez(false)} className="text-xs text-gray-500 hover:underline">
+        renunță
+      </button>
+    </div>
+  )
+}
 
 function Camp({ eticheta, children }) {
   return (
