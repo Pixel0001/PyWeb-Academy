@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireAdmin, getCurrentUser } from '@/lib/session'
 import { checkPermission, checkAnyPermission } from '@/lib/permissions'
-import { variabileNecunoscute } from '@/lib/leads/sabloane'
+import { problemeSablon, metaSablon } from '@/lib/leads/sabloane'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,18 +49,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Nu ai permisiunea să creezi șabloane' }, { status: 403 })
     }
 
-    const { nume, text, categorie } = await request.json()
+    const corp = await request.json()
+    const { nume, text, categorie } = corp
 
     if (!nume?.trim()) return NextResponse.json({ error: 'Dă-i un nume șablonului' }, { status: 400 })
     if (!text?.trim()) return NextResponse.json({ error: 'Șablonul e gol' }, { status: 400 })
 
     // O variabilă scrisă greșit ar pleca literal în mesaj — o prindem de acum.
-    const gresite = variabileNecunoscute(text)
-    if (gresite.length) {
-      return NextResponse.json(
-        { error: `Variabile necunoscute: ${gresite.map((g) => `{{${g}}}`).join(', ')}` },
-        { status: 400 }
-      )
+    const probleme = problemeSablon(text)
+    if (probleme.length) {
+      return NextResponse.json({ error: probleme.join('. ') }, { status: 400 })
     }
 
     const utilizator = await getCurrentUser()
@@ -71,6 +69,7 @@ export async function POST(request) {
         nume: nume.trim().slice(0, 100),
         text: text.trim().slice(0, 4000),
         categorie: categorie?.trim() || null,
+        ...metaSablon(corp),
         ordine: (ultimul?.ordine ?? -1) + 1,
         createdBy: utilizator?.email || null,
       },

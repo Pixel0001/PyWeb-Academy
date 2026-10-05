@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import prisma from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions'
 import { getCurrentUser } from '@/lib/session'
+import { GRUPURI_CATEGORII } from '@/lib/leads/config'
 import SabloaneClient from './SabloaneClient'
 
 export const metadata = {
@@ -38,6 +39,7 @@ export default async function SabloanePage() {
       poateCrea={crea.allowed}
       poateEdita={edita.allowed}
       poateSterge={sterge.allowed}
+      grupuri={GRUPURI_CATEGORII.map((g) => g.grup)}
     />
   )
 }

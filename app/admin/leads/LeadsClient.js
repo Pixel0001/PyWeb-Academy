@@ -1273,6 +1273,7 @@ export default function LeadsClient({
           numeleMeu={numeleMeu}
           onInchide={() => setLeadWhatsApp(null)}
           onTrimis={dupaWhatsApp}
+          grupuriCategorii={optiuni.grupuriCategorii}
         />
       )}
     </div>
