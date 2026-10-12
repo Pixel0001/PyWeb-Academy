@@ -213,7 +213,8 @@ export async function POST(request) {
       const text = String(body.message.text).trim()
 
       if (text.startsWith('/start')) {
-        const cod = text.split(/s+/)[1]
+        // „/start AbC123" → „AbC123" (despărțit după spații, nu după litera „s")
+        const cod = text.split(/\s+/)[1]
 
         if (cod) {
           await conecteazaCont(chatId, cod, body.message.from)
