@@ -551,7 +551,15 @@ export default function LeadsClient({
     const salvat = await salveaza(lead, { status }, 'Nu am putut salva statusul')
     if (!salvat) actualizeazaLocal(lead.id, { status: anterior })
     else {
-      actualizeazaLocal(lead.id, { dataApel: salvat.dataApel })
+      // Data apelului și, dacă nu avea, responsabilul (cel care a schimbat statusul)
+      actualizeazaLocal(lead.id, {
+        dataApel: salvat.dataApel,
+        responsabilId: salvat.responsabilId,
+        responsabil: salvat.responsabil,
+      })
+      if (!lead.responsabilId && salvat.responsabil) {
+        toast.success(`Lead preluat de ${salvat.responsabil.name || salvat.responsabil.email}`, { id: 'preluat' })
+      }
       // Cifrele de sus se mută odată cu statusul
       setStatServer((s) =>
         s

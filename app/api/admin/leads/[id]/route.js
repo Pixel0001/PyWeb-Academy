@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireAdmin } from '@/lib/session'
+import { requireAdmin, getCurrentUser } from '@/lib/session'
 import { checkPermission } from '@/lib/permissions'
 import { VALORI_STATUS, VALORI_SURSA, STATUSURI_APEL } from '@/lib/leads/statusuri'
 import { calculeazaScor } from '@/lib/leads/scoring'
@@ -42,6 +42,17 @@ export async function PATCH(request, { params }) {
       // „Fără răspuns", „Contactat", „Follow up..." = am sunat acum
       if (STATUSURI_APEL.includes(corp.status) && corp.dataApel === undefined) {
         date.dataApel = new Date()
+      }
+
+      // Cine lucrează primul lead-ul (îi schimbă statusul) devine responsabil —
+      // doar dacă nu e deja al cuiva, ca să nu ia nimeni firmele altora.
+      // Revenirea la „New lead” nu înseamnă că te ocupi de el.
+      if (corp.responsabilId === undefined && corp.status !== 'DE_SUNAT') {
+        const [lead, utilizator] = await Promise.all([
+          prisma.webLead.findUnique({ where: { id }, select: { responsabilId: true } }),
+          getCurrentUser(),
+        ])
+        if (lead && !lead.responsabilId && utilizator?.id) date.responsabilId = utilizator.id
       }
     }
 
