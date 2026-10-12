@@ -49,7 +49,9 @@ const FILTRE_GOALE = {
   sursa: '',
   oras: '',
   calitate: '',
+  domeniu: '',
   categorie: '',
+  faraSiteOk: false,
   responsabil: '',
   scorMin: '',
   followUp: '',
@@ -127,7 +129,7 @@ export default function LeadsClient({
     const p = new URLSearchParams()
     if (cautare.trim()) p.set('q', cautare.trim())
     if (filtre.statusuri.length) p.set('status', filtre.statusuri.join(','))
-    for (const cheie of ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
+    for (const cheie of ['tara', 'sursa', 'oras', 'calitate', 'domeniu', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
       if (filtre[cheie]) p.set(cheie, filtre[cheie])
     }
     if (filtre.perioada === 'interval') {
@@ -139,6 +141,7 @@ export default function LeadsClient({
     }
     if (filtre.doarNoi) p.set('doarNoi', '1')
     if (filtre.urgent) p.set('urgent', '1')
+    if (filtre.faraSiteOk) p.set('faraSiteOk', '1')
     return p
   }, [cautare, filtre])
 
@@ -227,11 +230,12 @@ export default function LeadsClient({
   const nrFiltreActive =
     (cautare ? 1 : 0) +
     filtre.statusuri.length +
-    ['tara', 'sursa', 'oras', 'calitate', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
+    ['tara', 'sursa', 'oras', 'calitate', 'domeniu', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
       (c) => filtre[c]
     ).length +
     (filtre.doarNoi ? 1 : 0) +
-    (filtre.urgent ? 1 : 0)
+    (filtre.urgent ? 1 : 0) +
+    (filtre.faraSiteOk ? 1 : 0)
 
   // ============================================================
   // BUCLA DE EXECUȚIE A RULĂRII
@@ -722,6 +726,30 @@ export default function LeadsClient({
   }, [pagina, totalPagini])
 
   // Categoriile: cele căutate în rulări + cele scrise de mână în lead-uri
+  // Filtrul de categorie, pe domenii — nu o listă de sute de nume amestecate
+  const categoriiPeDomenii = useMemo(() => {
+    const numar = new Map(categoriiDB.map((c) => [c.value, c.count]))
+    const ale_noastre = new Set()
+    const grupe = optiuni.grupuriCategorii
+      .filter((g) => !filtre.domeniu || g.grup === filtre.domeniu)
+      .map((g) => ({
+        grup: g.grup,
+        emoji: g.emoji,
+        categorii: g.categorii.map((c) => {
+          ale_noastre.add(c.ro)
+          return { value: c.ro, count: numar.get(c.ro) }
+        }),
+      }))
+    // Categoriile scrise de Google (sau de mână) — doar dacă nu e ales un domeniu
+    const altele = filtre.domeniu
+      ? []
+      : categoriiDB
+          .filter((c) => !ale_noastre.has(c.value) && c.count >= 2)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 40)
+    return { grupe, altele }
+  }, [categoriiDB, optiuni.grupuriCategorii, filtre.domeniu])
+
   const toateCategoriile = useMemo(() => {
     const numar = new Map(categoriiDB.map((c) => [c.value, c.count]))
     const toate = new Set([...optiuni.categorii, ...categoriiDB.map((c) => c.value)])
@@ -1050,14 +1078,51 @@ export default function LeadsClient({
           <option value="NEVERIFICAT">⏳ Neverificat</option>
         </select>
 
-        <select value={filtre.categorie} onChange={(e) => setFiltru('categorie', e.target.value)} className={`${alege(filtre.categorie)} max-w-[11rem]`} aria-label="Categorie">
-          <option value="">Categorie: toate</option>
-          {toateCategoriile.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.value}
-              {c.count ? ` (${c.count})` : ''}
+        <select
+          value={filtre.domeniu}
+          onChange={(e) => {
+            const domeniu = e.target.value
+            const grupa = optiuni.grupuriCategorii.find((g) => g.grup === domeniu)
+            setFiltre((f) => ({
+              ...f,
+              domeniu,
+              // categoria aleasă rămâne doar dacă e în domeniul nou
+              categorie: !domeniu || grupa?.categorii.some((c) => c.ro === f.categorie) ? f.categorie : '',
+            }))
+            setPagina(1)
+          }}
+          className={alege(filtre.domeniu)}
+          aria-label="Domeniu"
+        >
+          <option value="">Domeniu: toate</option>
+          {optiuni.grupuriCategorii.map((g) => (
+            <option key={g.grup} value={g.grup}>
+              {g.emoji} {g.grup}
             </option>
           ))}
+        </select>
+
+        <select value={filtre.categorie} onChange={(e) => setFiltru('categorie', e.target.value)} className={`${alege(filtre.categorie)} max-w-[11rem]`} aria-label="Categorie">
+          <option value="">{filtre.domeniu ? 'Categorie: tot domeniul' : 'Categorie: toate'}</option>
+          {categoriiPeDomenii.grupe.map((g) => (
+            <optgroup key={g.grup} label={`${g.emoji} ${g.grup}`}>
+              {g.categorii.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.value}
+                  {c.count ? ` (${c.count})` : ''}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+          {categoriiPeDomenii.altele.length > 0 && (
+            <optgroup label="Alte categorii (de la Google)">
+              {categoriiPeDomenii.altele.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.value} ({c.count})
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <select value={filtre.responsabil} onChange={(e) => setFiltru('responsabil', e.target.value)} className={alege(filtre.responsabil)} aria-label="Responsabil">
@@ -1122,6 +1187,19 @@ export default function LeadsClient({
         >
           <SparklesIcon className="h-3.5 w-3.5" />
           Doar noi
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFiltru('faraSiteOk', !filtre.faraSiteOk)}
+          title="Ascunde firmele care au deja un site funcțional — rămân cele fără site sau cu probleme"
+          className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+            filtre.faraSiteOk
+              ? 'bg-indigo-600 text-white'
+              : 'border border-gray-300 bg-white text-gray-700 hover:border-indigo-400'
+          }`}
+        >
+          ✅ Ascunde site OK
         </button>
 
         <span className="ml-auto flex items-center gap-2 text-[11px] text-gray-500">

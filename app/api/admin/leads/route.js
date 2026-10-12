@@ -12,6 +12,7 @@ import { VALORI_STATUS, VALORI_SURSA, STATUSURI_INCHISE } from '@/lib/leads/stat
 import { intervalPerioada, aziSiMaine } from '@/lib/leads/timp'
 import { calculeazaScor } from '@/lib/leads/scoring'
 import { verificaSite } from '@/lib/leads/site-check'
+import { GRUPURI_CATEGORII } from '@/lib/leads/config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -61,6 +62,15 @@ export async function construiesteFiltre(searchParams) {
     conditii.push({ OR: [{ calitateSite: null }, { calitateSite: { isSet: false } }] })
   } else if (calitate) {
     conditii.push({ calitateSite: calitate })
+  }
+
+  // Domeniul = o grupă întreagă de categorii („Magazine" = haine, cosmetice, mobilă...)
+  const domeniu = GRUPURI_CATEGORII.find((g) => g.grup === searchParams.get('domeniu'))
+  if (domeniu) conditii.push({ categorii: { hasSome: domeniu.categorii.map((c) => c.ro) } })
+
+  // Ascunde firmele cu site funcțional — nu sunt clienți pentru un site nou
+  if (searchParams.get('faraSiteOk') === '1') {
+    conditii.push({ OR: [{ calitateSite: { not: 'OK' } }, { calitateSite: null }, { calitateSite: { isSet: false } }] })
   }
 
   const categorie = searchParams.get('categorie')
