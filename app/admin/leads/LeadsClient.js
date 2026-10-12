@@ -683,6 +683,14 @@ export default function LeadsClient({
     toast.success(mesaj)
   }
 
+  // Numărul nu e pe WhatsApp: statusul se schimbă, iar butonul dispare de pe lead
+  async function nuAreWhatsApp(lead) {
+    setLeadWhatsApp(null)
+    await schimbaStatus(lead, 'FARA_WHATSAPP')
+    await adaugaNota(lead, '📴 Numărul nu are WhatsApp')
+    toast.success('Marcat: nu are WhatsApp')
+  }
+
   // După trimiterea pe WhatsApp: o notiță pe lead, ca să știi că i-ai scris.
   async function dupaWhatsApp(lead, numeSablon) {
     await adaugaNota(lead, `💬 WhatsApp trimis — șablonul „${numeSablon}"`)
@@ -1273,6 +1281,7 @@ export default function LeadsClient({
           numeleMeu={numeleMeu}
           onInchide={() => setLeadWhatsApp(null)}
           onTrimis={dupaWhatsApp}
+          onNuAreWhatsApp={poateRula ? nuAreWhatsApp : null}
           grupuriCategorii={optiuni.grupuriCategorii}
         />
       )}

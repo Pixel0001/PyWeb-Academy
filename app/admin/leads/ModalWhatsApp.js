@@ -38,7 +38,14 @@ function grupFirma(lead, grupuriCategorii = []) {
   return null
 }
 
-export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, grupuriCategorii = [] }) {
+export default function ModalWhatsApp({
+  lead,
+  numeleMeu,
+  onInchide,
+  onTrimis,
+  onNuAreWhatsApp,
+  grupuriCategorii = [],
+}) {
   const proaspat = cacheSabloane && Date.now() - cacheLa < 60000
   const [sabloane, setSabloane] = useState(proaspat ? cacheSabloane : null)
   const [etapa, setEtapa] = useState(() => etapaPentruStatus(lead.status))
@@ -128,7 +135,7 @@ export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, gr
       onClick={onInchide}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+        className="flex h-[92vh] w-full max-w-3xl flex-col rounded-t-2xl bg-white shadow-xl sm:h-[85vh] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Antet */}
@@ -173,9 +180,9 @@ export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, gr
               ))}
             </div>
 
-            <div className="grid flex-1 gap-0 overflow-hidden sm:grid-cols-[250px_1fr]">
+            <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden sm:grid-cols-[250px_1fr] sm:grid-rows-[minmax(0,1fr)]">
               {/* Lista de șabloane */}
-              <div className="flex max-h-56 flex-col border-b border-gray-100 sm:max-h-none sm:border-b-0 sm:border-r">
+              <div className="flex max-h-56 min-h-0 flex-col border-b border-gray-100 sm:max-h-none sm:border-b-0 sm:border-r">
                 <div className="relative p-2">
                   <MagnifyingGlassIcon className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                   <input
@@ -185,7 +192,7 @@ export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, gr
                     className="w-full rounded-lg border border-gray-200 py-1 pl-7 pr-2 text-xs focus:border-green-500 focus:ring-1 focus:ring-green-500"
                   />
                 </div>
-                <div className="flex-1 overflow-y-auto px-2 pb-2">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
                   {sabloane === null && <p className="p-2 text-xs text-gray-400">Se încarcă...</p>}
 
                   {sabloane?.length === 0 && (
@@ -231,7 +238,7 @@ export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, gr
               </div>
 
               {/* Textul completat, editabil */}
-              <div className="flex flex-col p-3">
+              <div className="flex min-h-0 flex-col p-3">
                 {ales ? (
                   <>
                     <p className="mb-1 text-xs text-gray-500">
@@ -258,9 +265,21 @@ export default function ModalWhatsApp({ lead, numeleMeu, onInchide, onTrimis, gr
         {/* Subsol */}
         {numar && (
           <div className="flex items-center justify-between gap-2 border-t border-gray-100 p-3">
-            <Link href="/admin/sabloane" className="text-xs text-gray-400 hover:text-indigo-600">
-              gestionează șabloanele
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/admin/sabloane" className="text-xs text-gray-400 hover:text-indigo-600">
+                gestionează șabloanele
+              </Link>
+              {onNuAreWhatsApp && (
+                <button
+                  type="button"
+                  onClick={() => onNuAreWhatsApp(lead)}
+                  title="WhatsApp a zis că numărul nu e înregistrat? Marchează firma și butonul dispare."
+                  className="text-xs font-medium text-zinc-500 hover:text-red-600"
+                >
+                  📴 Nu are WhatsApp
+                </button>
+              )}
+            </div>
             <button
               onClick={trimite}
               disabled={!ales || !text.trim()}

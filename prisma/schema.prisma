@@ -1634,6 +1634,7 @@ enum LeadStatus {
   // rămas aceleași ca să nu fie nevoie de migrarea lead-urilor salvate.
   DE_SUNAT // New lead
   FARA_RASPUNS // Fără răspuns
+  FARA_WHATSAPP // numărul nu are WhatsApp
   SUNAT // Contactat
   FOLLOW_UP_1
   FOLLOW_UP_2

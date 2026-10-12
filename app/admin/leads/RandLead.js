@@ -225,7 +225,7 @@ export default function RandLead({
               🔥
             </button>
           )}
-          {telefon && (
+          {telefon && lead.status !== 'FARA_WHATSAPP' && (
             <button
               type="button"
               onClick={() => onWhatsApp(lead)}
