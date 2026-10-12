@@ -31,7 +31,11 @@ export async function GET(request) {
       orderBy: [{ ordine: 'asc' }, { createdAt: 'asc' }],
     })
 
-    return NextResponse.json({ sabloane })
+    // Preferatele sunt ale fiecăruia — fiecare își vede doar stelele lui
+    const utilizator = await getCurrentUser()
+    return NextResponse.json({
+      sabloane: sabloane.map(({ preferatDe, ...s }) => ({ ...s, preferat: (preferatDe || []).includes(utilizator?.id) })),
+    })
   } catch (error) {
     if (['Unauthorized', 'Forbidden'].includes(error.message)) {
       return NextResponse.json({ error: error.message }, { status: 401 })

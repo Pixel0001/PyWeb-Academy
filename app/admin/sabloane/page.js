@@ -34,7 +34,11 @@ export default async function SabloanePage() {
 
   return (
     <SabloaneClient
-      sabloaneInitiale={JSON.parse(JSON.stringify(sabloane))}
+      sabloaneInitiale={JSON.parse(
+        JSON.stringify(
+          sabloane.map(({ preferatDe, ...s }) => ({ ...s, preferat: (preferatDe || []).includes(utilizator?.id) }))
+        )
+      )}
       numeleMeu={utilizator?.name || ''}
       poateCrea={crea.allowed}
       poateEdita={edita.allowed}
