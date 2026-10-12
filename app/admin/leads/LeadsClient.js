@@ -226,7 +226,7 @@ export default function LeadsClient({
   }
 
   // „De trimis rapid": doar firmele cărora nu le-am scris, fără cele închise
-  const DE_TRIMIS_RAPID = ['FARA_WHATSAPP', 'NUMAR_GRESIT', 'NU_MA_SUNA', 'REFUZ', 'CLIENT', 'IN_LUCRU', 'LIVRAT', 'TEST']
+  const DE_TRIMIS_RAPID = ['FARA_WHATSAPP', 'LEAD_FALS', 'NUMAR_GRESIT', 'NU_MA_SUNA', 'REFUZ', 'CLIENT', 'IN_LUCRU', 'LIVRAT', 'TEST']
   const rapidActiv =
     filtre.whatsapp === 'nescrise' && DE_TRIMIS_RAPID.every((s) => (filtre.statusuriExclus || []).includes(s))
   const comutaRapid = () => {
