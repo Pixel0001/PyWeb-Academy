@@ -202,6 +202,18 @@ export default function SabloaneClient({
     }
   }
 
+  // ★ Preferatele tale — apar primele când trimiți un mesaj
+  async function comutaPreferat(s) {
+    setSabloane((lista) => lista.map((x) => (x.id === s.id ? { ...x, preferat: !s.preferat } : x)))
+    const r = await fetch(`/api/admin/sabloane/${s.id}/preferat`, { method: 'POST' })
+    if (!r.ok) {
+      setSabloane((lista) => lista.map((x) => (x.id === s.id ? { ...x, preferat: s.preferat } : x)))
+      return toast.error('Nu am putut salva preferatul')
+    }
+    const d = await r.json()
+    setSabloane((lista) => lista.map((x) => (x.id === s.id ? { ...x, preferat: d.preferat } : x)))
+  }
+
   async function comutaActiv(s) {
     const r = await fetch(`/api/admin/sabloane/${s.id}`, {
       method: 'PATCH',
@@ -226,7 +238,10 @@ export default function SabloaneClient({
     () =>
       ETAPE.map((e) => ({
         ...e,
-        sabloane: sabloane.filter((s) => (s.etapa || 'PRIMUL_CONTACT') === e.value),
+        // Preferatele tale sus, apoi ordinea obișnuită
+        sabloane: sabloane
+          .filter((s) => (s.etapa || 'PRIMUL_CONTACT') === e.value)
+          .sort((a, b) => Number(Boolean(b.preferat)) - Number(Boolean(a.preferat))),
       })).filter((e) => e.sabloane.length),
     [sabloane]
   )
@@ -461,6 +476,16 @@ export default function SabloaneClient({
                     }`}
                   >
                     <div className="flex items-center gap-1.5 px-2 py-1">
+                      <button
+                        type="button"
+                        onClick={() => comutaPreferat(s)}
+                        title={s.preferat ? 'Scoate de la preferate' : 'Pune la preferate — apare primul când trimiți'}
+                        className={`shrink-0 text-sm leading-none transition ${
+                          s.preferat ? 'text-amber-400' : 'text-gray-300 hover:text-amber-400'
+                        }`}
+                      >
+                        {s.preferat ? '★' : '☆'}
+                      </button>
                       <button
                         type="button"
                         onClick={() => setDeschis(deschisAcum ? null : s.id)}

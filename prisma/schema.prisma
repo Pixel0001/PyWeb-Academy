@@ -1634,6 +1634,7 @@ enum LeadStatus {
   // rămas aceleași ca să nu fie nevoie de migrarea lead-urilor salvate.
   DE_SUNAT // New lead
   FARA_RASPUNS // Fără răspuns
+  FARA_WHATSAPP // numărul nu are WhatsApp
   SUNAT // Contactat
   FOLLOW_UP_1
   FOLLOW_UP_2
@@ -1817,6 +1818,7 @@ model SablonMesaj {
   situatii  String[] @default([]) // pentru ce site e scris (LIPSA, MORT...); gol = orice
   cuvinte   String[] @default([]) // cuvintele nișei („cofet", „tort") — urcă șablonul la firmele potrivite
   cheie     String? // cheia din biblioteca de șabloane gata scrise, dacă vine de acolo
+  preferatDe String[] @default([]) // id-urile celor care l-au pus la preferate — le apare primul
   ordine    Int      @default(0) // ordinea în listă
   activ     Boolean  @default(true)
   folosit   Int      @default(0) // de câte ori a fost trimis — ca să vezi ce merge

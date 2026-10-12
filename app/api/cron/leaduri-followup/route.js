@@ -28,7 +28,11 @@ export async function GET(request) {
   try {
     // Două căi de intrare: Vercel Cron (cu secret) sau un admin logat.
     const authHeader = request.headers.get('authorization')
-    const esteCron = authHeader === `Bearer ${process.env.CRON_SECRET}`
+    // Vercel Cron trimite cheia în antet; un serviciu extern (cron-job.org) o poate pune în link: ?secret=…
+    const secretLink = new URL(request.url).searchParams.get('secret')
+    const esteCron =
+      Boolean(process.env.CRON_SECRET) &&
+      (authHeader === `Bearer ${process.env.CRON_SECRET}` || secretLink === process.env.CRON_SECRET)
 
     let esteAdmin = false
     if (!esteCron) {

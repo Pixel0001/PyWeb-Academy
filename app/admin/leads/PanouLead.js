@@ -334,7 +334,7 @@ export default function PanouLead({
             <PhoneIcon className="h-3 w-3" /> Sună
           </a>
         )}
-        {numarWa && (
+        {numarWa && lead.status !== 'FARA_WHATSAPP' && (
           <>
             <button
               type="button"
