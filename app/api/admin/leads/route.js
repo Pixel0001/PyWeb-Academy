@@ -14,6 +14,9 @@ import { calculeazaScor } from '@/lib/leads/scoring'
 import { verificaSite } from '@/lib/leads/site-check'
 import { GRUPURI_CATEGORII } from '@/lib/leads/config'
 
+// Începutul notiței pe care o lasă fereastra de WhatsApp la trimitere
+const NOTA_WHATSAPP = '💬 WhatsApp trimis'
+
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -35,6 +38,19 @@ export async function construiesteFiltre(searchParams) {
     .filter((s) => VALORI_STATUS.includes(s))
   if (statusuri.length === 1) conditii.push({ status: statusuri[0] })
   else if (statusuri.length > 1) conditii.push({ status: { in: statusuri } })
+
+  // Statusurile ascunse: „tot, mai puțin Refuz și A plătit"
+  const exclus = (searchParams.get('statusExclus') || '')
+    .split(',')
+    .filter((s) => VALORI_STATUS.includes(s))
+  if (exclus.length) conditii.push({ status: { notIn: exclus } })
+
+  // Cui i-am scris deja pe WhatsApp — după notița lăsată la trimitere,
+  // deci se aplică și mesajelor trimise înainte de filtrul ăsta
+  const whatsapp = searchParams.get('whatsapp')
+  const notaTrimis = { continut: { startsWith: NOTA_WHATSAPP } }
+  if (whatsapp === 'nescrise') conditii.push({ notiteIstoric: { none: notaTrimis } })
+  else if (whatsapp === 'scrise') conditii.push({ notiteIstoric: { some: notaTrimis } })
 
   const sursa = searchParams.get('sursa')
   if (sursa === 'GOOGLE_MAPS') {

@@ -45,6 +45,8 @@ const CHEIE_FILTRE = 'pyweb:leaduri:filtre'
 
 const FILTRE_GOALE = {
   statusuri: [],
+  statusuriExclus: [],
+  whatsapp: '',
   tara: '',
   sursa: '',
   oras: '',
@@ -129,6 +131,8 @@ export default function LeadsClient({
     const p = new URLSearchParams()
     if (cautare.trim()) p.set('q', cautare.trim())
     if (filtre.statusuri.length) p.set('status', filtre.statusuri.join(','))
+    if (filtre.statusuriExclus?.length) p.set('statusExclus', filtre.statusuriExclus.join(','))
+    if (filtre.whatsapp) p.set('whatsapp', filtre.whatsapp)
     for (const cheie of ['tara', 'sursa', 'oras', 'calitate', 'domeniu', 'categorie', 'responsabil', 'scorMin', 'followUp', 'sortare']) {
       if (filtre[cheie]) p.set(cheie, filtre[cheie])
     }
@@ -206,13 +210,36 @@ export default function LeadsClient({
     setPagina(1)
   }
 
+  // Un status are 3 stări: oprit → arată doar ăsta → ascunde-l → oprit
   const comutaStatus = (valoare) => {
-    setFiltre((f) => ({
-      ...f,
-      statusuri: f.statusuri.includes(valoare)
-        ? f.statusuri.filter((s) => s !== valoare)
-        : [...f.statusuri, valoare],
-    }))
+    setFiltre((f) => {
+      const exclus = f.statusuriExclus || []
+      if (f.statusuri.includes(valoare)) {
+        return { ...f, statusuri: f.statusuri.filter((s) => s !== valoare), statusuriExclus: [...exclus, valoare] }
+      }
+      if (exclus.includes(valoare)) {
+        return { ...f, statusuriExclus: exclus.filter((s) => s !== valoare) }
+      }
+      return { ...f, statusuri: [...f.statusuri, valoare] }
+    })
+    setPagina(1)
+  }
+
+  // „De trimis rapid": doar firmele cărora nu le-am scris, fără cele închise
+  const DE_TRIMIS_RAPID = ['FARA_WHATSAPP', 'NUMAR_GRESIT', 'NU_MA_SUNA', 'REFUZ', 'CLIENT', 'IN_LUCRU', 'LIVRAT', 'TEST']
+  const rapidActiv =
+    filtre.whatsapp === 'nescrise' && DE_TRIMIS_RAPID.every((s) => (filtre.statusuriExclus || []).includes(s))
+  const comutaRapid = () => {
+    setFiltre((f) =>
+      rapidActiv
+        ? { ...f, whatsapp: '', statusuriExclus: (f.statusuriExclus || []).filter((s) => !DE_TRIMIS_RAPID.includes(s)) }
+        : {
+            ...f,
+            whatsapp: 'nescrise',
+            statusuri: f.statusuri.filter((s) => !DE_TRIMIS_RAPID.includes(s)),
+            statusuriExclus: [...new Set([...(f.statusuriExclus || []), ...DE_TRIMIS_RAPID])],
+          }
+    )
     setPagina(1)
   }
 
@@ -230,6 +257,8 @@ export default function LeadsClient({
   const nrFiltreActive =
     (cautare ? 1 : 0) +
     filtre.statusuri.length +
+    (filtre.statusuriExclus?.length || 0) +
+    (filtre.whatsapp ? 1 : 0) +
     ['tara', 'sursa', 'oras', 'calitate', 'domeniu', 'categorie', 'responsabil', 'scorMin', 'followUp', 'perioada'].filter(
       (c) => filtre[c]
     ).length +
@@ -698,6 +727,11 @@ export default function LeadsClient({
   // După trimiterea pe WhatsApp: o notiță pe lead, ca să știi că i-ai scris.
   async function dupaWhatsApp(lead, numeSablon) {
     await adaugaNota(lead, `💬 WhatsApp trimis — șablonul „${numeSablon}"`)
+    // Cu filtrul „nescriși”, firma căreia i-ai scris iese din listă pe loc — treci la următoarea
+    if (filtre.whatsapp === 'nescrise') {
+      setLeaduri((l) => l.filter((x) => x.id !== lead.id))
+      setTotalFiltrat((t) => Math.max(t - 1, 0))
+    }
   }
 
   function dupaSalvare(lead) {
@@ -994,9 +1028,12 @@ export default function LeadsClient({
       >
         <button
           type="button"
-          onClick={() => setFiltru('statusuri', [])}
+          onClick={() => {
+            setFiltre((f) => ({ ...f, statusuri: [], statusuriExclus: [] }))
+            setPagina(1)
+          }}
           className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-            filtre.statusuri.length === 0
+            filtre.statusuri.length === 0 && !filtre.statusuriExclus?.length
               ? 'bg-indigo-600 text-white'
               : 'border border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-400'
           }`}
@@ -1005,20 +1042,29 @@ export default function LeadsClient({
         </button>
         {STATUSURI.map((s) => {
           const activ = filtre.statusuri.includes(s.value)
+          const ascuns = (filtre.statusuriExclus || []).includes(s.value)
           const numar = sv.peStatus[s.value] || 0
           return (
             <button
               key={s.value}
               type="button"
               onClick={() => comutaStatus(s.value)}
-              title={activ ? `${s.label} — apasă din nou ca să scoți filtrul` : s.label}
+              title={
+                activ
+                  ? `Doar „${s.label}" — apasă din nou ca să-l ASCUNZI`
+                  : ascuns
+                    ? `„${s.label}" e ascuns — apasă ca să scoți filtrul`
+                    : `${s.label} — apasă ca să arăți doar statusul ăsta`
+              }
               className={`rounded-full px-2 py-1 text-xs font-medium transition-colors ${
                 activ
                   ? 'bg-indigo-600 text-white ring-2 ring-indigo-200'
-                  : 'border border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-400'
+                  : ascuns
+                    ? 'border border-red-300 bg-red-50 text-red-700 line-through decoration-red-400'
+                    : 'border border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-400'
               }`}
             >
-              {s.emoji} {s.label}
+              {ascuns ? '🚫' : s.emoji} {s.label}
               {numar > 0 && <span className={`ml-1 ${activ ? 'opacity-80' : 'text-gray-400'}`}>{numar}</span>}
               {activ && <span className="ml-1 opacity-80">×</span>}
             </button>
@@ -1200,6 +1246,25 @@ export default function LeadsClient({
           }`}
         >
           ✅ Ascunde site OK
+        </button>
+
+        <select value={filtre.whatsapp} onChange={(e) => setFiltru('whatsapp', e.target.value)} className={alege(filtre.whatsapp)} aria-label="WhatsApp">
+          <option value="">WhatsApp: toți</option>
+          <option value="nescrise">✉️ Nescriși încă</option>
+          <option value="scrise">💬 Deja scriși</option>
+        </select>
+
+        <button
+          type="button"
+          onClick={comutaRapid}
+          title="Doar firmele cărora nu le-ai scris încă pe WhatsApp, fără cele închise (refuz, client, nr. greșit, fără WhatsApp...)"
+          className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+            rapidActiv
+              ? 'bg-green-600 text-white'
+              : 'border border-green-300 bg-green-50 text-green-800 hover:border-green-500'
+          }`}
+        >
+          ⚡ De trimis rapid
         </button>
 
         <span className="ml-auto flex items-center gap-2 text-[11px] text-gray-500">
