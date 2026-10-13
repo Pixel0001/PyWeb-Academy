@@ -29,6 +29,10 @@ import {
 import { esteSocial } from '@/lib/leads/social'
 import { numarWhatsApp, linkWhatsApp } from '@/lib/leads/sabloane'
 import { IconWhatsApp } from './RandLead'
+import { useSession } from 'next-auth/react'
+import { usePermissions } from '@/hooks/usePermissions'
+import FormularTask from '@/components/admin/lucru/FormularTask'
+import FormularProgramare from '@/components/admin/lucru/FormularProgramare'
 
 const ORA_IMPLICITA = 10
 
@@ -89,6 +93,21 @@ export default function PanouLead({
 }) {
   const [notaNoua, setNotaNoua] = useState('')
   const [salveaza, setSalveaza] = useState(false)
+  // ✅ Task / 📅 Programare legate direct de lead
+  const [fereastra, setFereastra] = useState(null)
+  const { data: sesiune } = useSession()
+  const { hasPermission } = usePermissions()
+  const eu = sesiune?.user?.id
+  const oameni = echipa.map((o) => ({ id: o.id, name: o.name || o.email, telegram: o.telegramLegat }))
+  const legatura = {
+    tip: 'lead',
+    id: lead.id,
+    nume: lead.denumire,
+    detaliu: [lead.oras, lead.telefon].filter(Boolean).join(' · '),
+    telefon: lead.telefon || lead.telefonLocal,
+    adresa: lead.adresa,
+    oras: lead.oras,
+  }
 
   const status = getStatus(lead.status)
   const sursa = getSursa(lead.sursa)
@@ -409,7 +428,45 @@ export default function PanouLead({
           <ArrowTopRightOnSquareIcon className="h-3 w-3" />
           Fișa completă
         </Link>
+        {hasPermission('tasks.create') && (
+          <button
+            type="button"
+            onClick={() => setFereastra('task')}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            ✅ Task
+          </button>
+        )}
+        {hasPermission('appointments.create') && (
+          <button
+            type="button"
+            onClick={() => setFereastra('programare')}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            📅 Programează
+          </button>
+        )}
       </div>
+
+      {fereastra === 'task' && (
+        <FormularTask
+          implicit={{ lead: legatura, title: `Sună la ${lead.denumire}` }}
+          echipa={oameni}
+          categorii={[]}
+          proiecte={[]}
+          eu={eu}
+          onInchide={() => setFereastra(null)}
+        />
+      )}
+      {fereastra === 'programare' && (
+        <FormularProgramare
+          implicit={{ lead: legatura }}
+          echipa={oameni}
+          categorii={[]}
+          eu={eu}
+          onInchide={() => setFereastra(null)}
+        />
+      )}
     </div>
   )
 }

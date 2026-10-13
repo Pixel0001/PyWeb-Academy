@@ -440,7 +440,21 @@ export const PERMISSIONS = {
     label: 'Șterge șabloane',
     description: 'Poate șterge definitiv șabloane de mesaje',
     category: 'Șabloane mesaje'
-  }
+  },
+
+  // Taskuri, proiecte și programări (portate din StefanPWA)
+  'tasks.view': { label: 'Vezi taskurile', description: 'Poate deschide pagina de taskuri și Kanban-ul', category: 'Taskuri & Proiecte' },
+  'tasks.create': { label: 'Creează taskuri', description: 'Poate adăuga taskuri (și din voce), inclusiv atașamente', category: 'Taskuri & Proiecte' },
+  'tasks.edit': { label: 'Editează taskuri', description: 'Poate modifica orice task, inclusiv cele create de alții', category: 'Taskuri & Proiecte' },
+  'tasks.delete': { label: 'Șterge taskuri', description: 'Poate șterge definitiv taskuri', category: 'Taskuri & Proiecte' },
+  'projects.view': { label: 'Vezi proiectele', description: 'Poate vedea proiectele și harta lor', category: 'Taskuri & Proiecte' },
+  'projects.create': { label: 'Creează proiecte', description: 'Poate adăuga proiecte noi', category: 'Taskuri & Proiecte' },
+  'projects.edit': { label: 'Editează proiecte', description: 'Poate modifica proiectele (status, adresă, locație)', category: 'Taskuri & Proiecte' },
+  'projects.delete': { label: 'Șterge proiecte', description: 'Poate șterge proiecte (taskurile rămân, fără proiect)', category: 'Taskuri & Proiecte' },
+  'appointments.view': { label: 'Vezi programările', description: 'Poate vedea calendarul de programări', category: 'Programări' },
+  'appointments.create': { label: 'Creează programări', description: 'Poate adăuga programări (libere sau legate de un lead/proiect)', category: 'Programări' },
+  'appointments.edit': { label: 'Editează programări', description: 'Poate reprograma și schimba statusul programărilor', category: 'Programări' },
+  'appointments.delete': { label: 'Șterge programări', description: 'Poate șterge definitiv programări', category: 'Programări' }
 }
 
 // Grupează permisiunile pe categorii
@@ -504,6 +518,8 @@ export const PERMISSION_CATEGORIES = [
   'Submisii Probleme',
   'Leaduri Web',
   'Șabloane mesaje',
+  'Taskuri & Proiecte',
+  'Programări',
   'Apollo',
   'Sistem'
 ]

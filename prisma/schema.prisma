@@ -1831,3 +1831,239 @@ model SablonMesaj {
   @@index([activ, ordine])
   @@map("sabloane_mesaj")
 }
+
+// ==================== TASKURI, PROIECTE, PROGRAMĂRI ====================
+// Portate din StefanPWA. Asignații, creatorul și responsabilii se țin ca ID-uri
+// simple (fără relații spre User), ca să nu atingem modelul User; numele lor
+// se citesc la afișare dintr-o singură interogare pe echipă.
+
+enum TaskStatus {
+  NEW
+  ASSIGNED
+  READ
+  IN_PROGRESS
+  ON_HOLD
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  DONE
+  ARCHIVED
+}
+
+enum AppointmentStatus {
+  NEW
+  CONFIRMED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+  NO_SHOW
+}
+
+// Numărătoare pentru #123 la taskuri și proiecte
+model Counter {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String @unique
+  value Int    @default(0)
+
+  @@map("counters")
+}
+
+// Categorii cu culoare — comune pentru taskuri și programări
+model Category {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                   String
+  color                  String   @default("#6366f1")
+  defaultDurationMinutes Int      @default(30)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  tasks        Task[]
+  appointments Appointment[]
+
+  @@map("categories")
+}
+
+model Project {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  seq         Int?
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+
+  ownerId       String  @db.ObjectId
+  responsabilId String? @db.ObjectId // taskurile noi din proiect merg implicit la el
+
+  // Clientul: text liber și/sau legat de un lead web
+  clientName  String?
+  clientPhone String?
+  leadId      String? @db.ObjectId
+
+  // Locație (opțional)
+  address String?
+  lat     Float?
+  lng     Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks        Task[]
+  appointments Appointment[]
+
+  @@index([status])
+  @@index([leadId])
+  @@map("projects")
+}
+
+model Task {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  seq         Int?
+  title       String
+  description String?
+  status      TaskStatus   @default(NEW)
+  priority    TaskPriority @default(MEDIUM)
+  progress    Int          @default(0)
+
+  creatorId   String   @db.ObjectId
+  assigneeIds String[] @default([]) @db.ObjectId
+
+  projectId String?  @db.ObjectId
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  categoryId String?   @db.ObjectId
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Opțional: taskul ține de un lead web (ex. „sună-l pe X")
+  leadId String? @db.ObjectId
+
+  dueAt       DateTime?
+  createdFrom String    @default("WEB") // WEB | VOICE | TELEGRAM
+
+  // Notificarea de întârziere se trimite o singură dată
+  overdueNotifiedAt DateTime?
+
+  // Reamintire periodică (minute); null = oprită
+  reminderIntervalMinutes Int?
+  nextReminderAt          DateTime?
+  // Ultimele mesaje de reamintire trimise ([{chatId, msgId}]) — se șterg la următoarea
+  reminderMsgs            Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments    TaskComment[]
+  activities  TaskActivity[]
+  attachments TaskAttachment[]
+
+  @@index([status])
+  @@index([assigneeIds])
+  @@index([creatorId])
+  @@index([projectId])
+  @@index([dueAt, status])
+  @@index([nextReminderAt])
+  @@index([seq])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @db.ObjectId
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  userName  String?
+  body      String
+  source    String   @default("WEB")
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_comments")
+}
+
+model TaskActivity {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  taskId     String      @db.ObjectId
+  task       Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String      @db.ObjectId
+  userName   String?
+  // CREATED | STATUS_CHANGED | PROGRESS | EDITED | COMMENTED | ATTACHMENT_ADDED | ATTACHMENT_DELETED
+  action     String
+  fromStatus TaskStatus?
+  toStatus   TaskStatus?
+  meta       Json?
+  note       String?
+  createdAt  DateTime    @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_activities")
+}
+
+model TaskAttachment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @db.ObjectId
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  userName  String?
+  name      String
+  url       String
+  size      Int
+  mimeType  String?
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("task_attachments")
+}
+
+// Programare: cu oricine (antreprenor, client, partener) — fără legătură cu
+// elevii sau grupele. Contactul e text liber; opțional se leagă de un lead
+// web sau de un proiect.
+model Appointment {
+  id      String            @id @default(auto()) @map("_id") @db.ObjectId
+  title   String
+  message String?
+  status  AppointmentStatus @default(NEW)
+
+  startAt DateTime
+  endAt   DateTime
+  dateKey String // „YYYY-MM-DD" la Chișinău, pentru zile rapide
+
+  contactName  String
+  contactPhone String?
+  contactEmail String?
+  company      String?
+  location     String?
+
+  leadId    String?  @db.ObjectId
+  projectId String?  @db.ObjectId
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  categoryId String?   @db.ObjectId
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  creatorId     String  @db.ObjectId
+  responsabilId String? @db.ObjectId // cine merge la întâlnire — primește reminderele
+
+  // Reminderele pe Telegram (doar către echipă, niciodată către contact)
+  reminderOffsets String[] @default(["DAY_BEFORE_8AM", "H3"])
+  remindersSent   String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dateKey])
+  @@index([startAt])
+  @@index([status, startAt])
+  @@index([leadId])
+  @@index([projectId])
+  @@map("appointments")
+}
