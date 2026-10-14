@@ -11,7 +11,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import toast from 'react-hot-toast'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { linkuriHarta, statusProiect, refScurt, STATUSURI_PROIECT } from '@/lib/lucru/constante'
-import { clsInput, cere } from './ui'
+import { dlgInput as clsInput, cere } from './ui'
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 const STIL = 'mapbox://styles/mapbox/streets-v12'
@@ -23,7 +23,7 @@ const esc = (s) =>
 export function LinkuriNavigare({ lat, lng, address, mic = false }) {
   const l = linkuriHarta({ lat, lng, address })
   if (!l) return null
-  const cls = `inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white font-medium text-gray-700 hover:bg-gray-50 ${mic ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`
+  const cls = `inline-flex items-center gap-1 tap rounded-lg border border-line bg-surface-2 font-semibold text-ink hover:bg-surface ${mic ? 'h-7 px-2.5 text-[11px]' : 'px-3 py-1.5 text-xs'}`
   return (
     <div className="flex flex-wrap gap-1.5">
       <a href={l.waze} target="_blank" rel="noopener noreferrer" className={cls}>🚗 Waze</a>
@@ -36,7 +36,7 @@ export function LinkuriNavigare({ lat, lng, address, mic = false }) {
 function HartaOSM({ lat, lng, inaltime = 'h-64' }) {
   const d = 0.008
   const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&layer=mapnik&marker=${lat},${lng}`
-  return <iframe title="Hartă" src={src} className={`${inaltime} w-full rounded-xl border border-gray-200`} loading="lazy" />
+  return <iframe title="Hartă" src={src} className={`${inaltime} w-full rounded-xl border border-line`} loading="lazy" />
 }
 
 /** Un singur pin, cu popup de navigare. */
@@ -71,7 +71,7 @@ export function HartaPunct({ lat, lng, address, inaltime = 'h-64' }) {
   }, [lat, lng, address])
 
   if (!TOKEN) return <HartaOSM lat={lat} lng={lng} inaltime={inaltime} />
-  return <div ref={cutie} className={`${inaltime} w-full overflow-hidden rounded-xl border border-gray-200`} />
+  return <div ref={cutie} className={`${inaltime} w-full overflow-hidden rounded-xl border border-line`} />
 }
 
 /**
@@ -167,17 +167,17 @@ export function AlegeLocatie({ valoare, onSchimbare, adresa, onAdresa }) {
           type="button"
           onClick={() => cauta()}
           disabled={caut}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="tap inline-flex h-11 shrink-0 items-center gap-1 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-60"
         >
           <MagnifyingGlassIcon className="h-4 w-4" /> {caut ? '…' : 'Caută'}
         </button>
       </div>
 
       {rezultate.length > 0 && (
-        <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
           {rezultate.map((r, i) => (
             <li key={i}>
-              <button type="button" onClick={() => alege(r)} className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-indigo-50">
+              <button type="button" onClick={() => alege(r)} className="w-full px-3 py-2 text-left text-xs text-ink hover:bg-surface-2">
                 📍 {r.nume}
               </button>
             </li>
@@ -187,8 +187,8 @@ export function AlegeLocatie({ valoare, onSchimbare, adresa, onAdresa }) {
 
       {TOKEN ? (
         <>
-          <div ref={cutie} className="h-56 w-full overflow-hidden rounded-xl border border-gray-200" />
-          <p className="text-[11px] text-gray-500">Dă clic pe hartă sau trage pinul ca să fixezi locul exact.</p>
+          <div ref={cutie} className="h-56 w-full overflow-hidden rounded-xl border border-line" />
+          <p className="text-[11px] text-ink-soft">Dă clic pe hartă sau trage pinul ca să fixezi locul exact.</p>
         </>
       ) : (
         valoare && <HartaOSM lat={valoare.lat} lng={valoare.lng} inaltime="h-48" />
@@ -213,7 +213,7 @@ export function AlegeLocatie({ valoare, onSchimbare, adresa, onAdresa }) {
         />
       </div>
       {valoare && (
-        <button type="button" onClick={() => onSchimbare(null)} className="text-xs text-gray-500 hover:text-red-600">
+        <button type="button" onClick={() => onSchimbare(null)} className="text-xs text-ink-soft hover:text-st-cancelled">
           ✕ Șterge locația
         </button>
       )}
@@ -351,7 +351,7 @@ export function HartaProiecte({ proiecte }) {
 
   if (!pini.length) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+      <div className="lcard grid place-items-center p-16 text-center text-sm text-ink-soft">
         Niciun proiect nu are încă locație. Deschide un proiect → Editează → caută adresa.
       </div>
     )
@@ -365,11 +365,11 @@ export function HartaProiecte({ proiecte }) {
         </div>
         <ul className="grid gap-2 sm:grid-cols-2">
           {pini.map((p) => (
-            <li key={p.id} className="rounded-xl border border-gray-200 bg-white p-3">
-              <a href={`/admin/projects/${p.id}`} className="text-sm font-semibold text-gray-900 hover:text-indigo-700">
+            <li key={p.id} className="lcard p-3">
+              <a href={`/admin/projects/${p.id}`} className="text-sm font-semibold text-ink hover:text-brand">
                 {p.name}
               </a>
-              {p.address && <p className="mb-2 text-xs text-gray-500">{p.address}</p>}
+              {p.address && <p className="mb-2 text-xs text-ink-soft">{p.address}</p>}
               <LinkuriNavigare lat={p.lat} lng={p.lng} mic />
             </li>
           ))}
@@ -377,5 +377,5 @@ export function HartaProiecte({ proiecte }) {
       </div>
     )
   }
-  return <div ref={cutie} className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-xl border border-gray-200" />
+  return <div ref={cutie} className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-xl border border-line" />
 }

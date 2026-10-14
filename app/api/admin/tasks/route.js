@@ -20,14 +20,25 @@ export async function GET(request) {
 
   const sp = new URL(request.url).searchParams
   const where = construiesteFiltre(sp, user)
-  const limita = Math.min(Number(sp.get('limit')) || 300, 500)
+  // Paginare ca în StefanPWA: 20 pe pagină implicit, „all" = tot
+  const ps = sp.get('ps')
+  const marime = ps === 'all' ? 2000 : Math.min(Math.max(Number(ps) || Number(sp.get('limit')) || 20, 1), 2000)
+  const pagina = Math.max(1, Number(sp.get('page')) || 1)
+  const sortare = sp.get('sort')
+  const orderBy =
+    sortare === 'dueAsc'
+      ? [{ dueAt: 'asc' }, { createdAt: 'desc' }]
+      : sortare === 'dueDesc'
+        ? [{ dueAt: 'desc' }, { createdAt: 'desc' }]
+        : [{ status: 'asc' }, { createdAt: 'desc' }]
 
   const [taskuri, total, alemele, intarziate] = await Promise.all([
     prisma.task.findMany({
       where,
       select: { ...SELECT_TASK, _count: { select: { comments: true, attachments: true } } },
-      orderBy: [{ updatedAt: 'desc' }],
-      take: limita,
+      orderBy,
+      skip: (pagina - 1) * marime,
+      take: marime,
     }),
     prisma.task.count({ where }),
     prisma.task.count({ where: { assigneeIds: { has: user.id }, status: { notIn: STATUSURI_TASK_INCHISE } } }),
@@ -38,6 +49,8 @@ export async function GET(request) {
   return NextResponse.json({
     taskuri: taskuri.map((t) => ({ ...t, lead: t.leadId ? leaduri[t.leadId] || null : null })),
     total,
+    pagina,
+    totalPagini: Math.max(1, Math.ceil(total / marime)),
     statistici: { alemele, intarziate },
   })
 }

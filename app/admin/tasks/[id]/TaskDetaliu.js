@@ -1,88 +1,43 @@
 'use client'
 
 /**
- * Pagina unui task: status, progres, detalii, fișiere, comentarii și istoric.
+ * Pagina unui task — ca în StefanPWA: antet cu #număr și status, detalii,
+ * butoanele de status, atașamente, comentarii și istoricul complet cu
+ * durata dintre evenimente.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { ArrowLeftIcon, PencilSquareIcon, TrashIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
-import { STATUSURI_TASK, statusTask, INTERVALE_REAMINTIRE } from '@/lib/lucru/constante'
-import { dataOra, relativ } from '@/lib/lucru/timp'
-import {
-  cere,
-  clsBtnAlb,
-  InsignaStatusTask,
-  InsignaPrioritate,
-  InsignaCategorie,
-  Ref,
-  Avatar,
-} from '@/components/admin/lucru/ui'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { STATUSURI_TASK, ST_TASK, PROGRES, statusTask, prioritate, INTERVALE_REAMINTIRE } from '@/lib/lucru/constante'
+import { fmtDue, fmtDataOra, fmtDurata } from '@/lib/lucru/timp'
+import { cere, MetaRow, dlgTextarea } from '@/components/admin/lucru/ui'
 import FormularTask from '@/components/admin/lucru/FormularTask'
 import Atasamente from '@/components/admin/lucru/Atasamente'
-import { Termen } from '../TasksClient'
 
-const SURSE = { WEB: 'panou', VOICE: '🎤 voce', TELEGRAM: 'Telegram' }
+const btnActiune =
+  'tap inline-flex h-9 items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-medium hover:bg-surface-2 disabled:opacity-50'
 
-function textActivitate(a) {
-  switch (a.action) {
-    case 'CREATED':
-      return `a creat taskul${a.note ? ` (${a.note})` : ''}`
-    case 'STATUS_CHANGED':
-      return (
-        <>
-          a mutat din <b>{statusTask(a.fromStatus).label}</b> în <b>{statusTask(a.toStatus).label}</b>
-          {a.meta?.sursa === 'TELEGRAM' && <span className="text-gray-400"> · din Telegram</span>}
-        </>
-      )
-    case 'PROGRESS':
-      return (
-        <>
-          a schimbat progresul: {a.meta?.de ?? 0}% → <b>{a.meta?.la}%</b>
-          {a.meta?.sursa === 'TELEGRAM' && <span className="text-gray-400"> · din Telegram</span>}
-        </>
-      )
-    case 'EDITED':
-      return (
-        <>
-          {a.note || 'a editat taskul'}
-          {a.meta?.termenNou !== undefined && (
-            <span className="text-gray-500">
-              {' '}
-              (termen: {a.meta.termenVechi || 'fără'} → {a.meta.termenNou || 'fără'})
-            </span>
-          )}
-        </>
-      )
-    case 'COMMENTED':
-      return 'a comentat'
-    case 'ATTACHMENT_ADDED':
-      return (
-        <>
-          a atașat <b>{a.note}</b>
-        </>
-      )
-    case 'ATTACHMENT_DELETED':
-      return (
-        <>
-          a șters fișierul <b>{a.note}</b>
-        </>
-      )
-    default:
-      return a.note || a.action
+function evenimente(task, nume) {
+  const ev = [{ key: 'creat', at: task.createdAt, dot: 'bg-st-new', action: 'CREATED', userName: nume[task.creatorId] || '—' }]
+  const activitati = [...(task.activities || [])].reverse()
+  for (const a of activitati) {
+    const baza = { key: a.id, at: a.createdAt, userName: a.userName || nume[a.userId] || '—', action: a.action, note: a.note, meta: a.meta }
+    if (a.action === 'CREATED') continue
+    if (a.action === 'STATUS_CHANGED') {
+      if (!a.toStatus) continue
+      ev.push({ ...baza, dot: ST_TASK[a.toStatus]?.dot || 'bg-brand', fromStatus: a.fromStatus, toStatus: a.toStatus })
+    } else if (a.action === 'PROGRESS') ev.push({ ...baza, dot: 'bg-st-progress' })
+    else if (a.action === 'EDITED') ev.push({ ...baza, dot: 'bg-brand/60' })
+    else if (a.action === 'COMMENTED') ev.push({ ...baza, dot: 'bg-st-confirmed' })
+    else if (a.action === 'ATTACHMENT_ADDED') ev.push({ ...baza, dot: 'bg-st-progress' })
+    else if (a.action === 'ATTACHMENT_DELETED') ev.push({ ...baza, dot: 'bg-st-cancelled' })
+    else ev.push({ ...baza, dot: 'bg-brand' })
   }
-}
-
-const EMOJI_ACTIVITATE = {
-  CREATED: '🆕',
-  STATUS_CHANGED: '🔄',
-  PROGRESS: '📈',
-  EDITED: '✏️',
-  COMMENTED: '💬',
-  ATTACHMENT_ADDED: '📎',
-  ATTACHMENT_DELETED: '🗑️',
+  for (let i = 1; i < ev.length; i++) ev[i].durata = new Date(ev[i].at) - new Date(ev[i - 1].at)
+  return ev
 }
 
 export default function TaskDetaliu({ id, eu, esteSuperAdmin, echipa, categorii, proiecte, poateEdita, poateSterge }) {
@@ -90,60 +45,73 @@ export default function TaskDetaliu({ id, eu, esteSuperAdmin, echipa, categorii,
   const [task, setTask] = useState(null)
   const [eroare, setEroare] = useState(null)
   const [editez, setEditez] = useState(false)
-  const [comentariu, setComentariu] = useState('')
+  const [ciorna, setCiorna] = useState('')
   const [trimit, setTrimit] = useState(false)
-  const [progres, setProgres] = useState(0)
+  const [ocupat, setOcupat] = useState(false)
 
   const nume = useMemo(() => Object.fromEntries(echipa.map((o) => [o.id, o.name])), [echipa])
 
   const incarca = useCallback(async () => {
     try {
-      const { task } = await cere(`/api/admin/tasks/${id}`)
-      setTask(task)
-      setProgres(task.progress)
+      const r = await cere(`/api/admin/tasks/${id}`)
+      setTask(r.task)
     } catch (e) {
       setEroare(e.message)
     }
   }, [id])
 
   useEffect(() => {
-    incarca()
-  }, [incarca])
+    let viu = true
+    cere(`/api/admin/tasks/${id}`)
+      .then((r) => viu && setTask(r.task))
+      .catch((e) => viu && setEroare(e.message))
+    return () => {
+      viu = false
+    }
+  }, [id])
 
   if (eroare) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
-        {eroare} ·{' '}
-        <Link href="/admin/tasks" className="font-semibold underline">
-          Înapoi la taskuri
-        </Link>
+      <div className="lucru mx-auto w-full max-w-2xl">
+        <div className="lcard p-6 text-sm text-st-cancelled">
+          {eroare} ·{' '}
+          <Link href="/admin/tasks" className="font-semibold underline">
+            Înapoi la task-uri
+          </Link>
+        </div>
       </div>
     )
   }
-  if (!task) return <div className="h-64 animate-pulse rounded-xl bg-gray-100" />
+  if (!task) return <div className="mx-auto h-64 w-full max-w-2xl animate-pulse rounded-2xl bg-surface-2" />
 
-  const alMeu = task.creatorId === eu || task.assigneeIds.includes(eu)
-  const pot = poateEdita || esteSuperAdmin || alMeu
+  const pot = poateEdita || esteSuperAdmin || task.creatorId === eu || task.assigneeIds.includes(eu)
   const potSterge = poateSterge || esteSuperAdmin || task.creatorId === eu
+  const inchis = ['DONE', 'CANCELLED'].includes(task.status)
+  const intarziere = task.dueAt && !inchis ? Date.now() - new Date(task.dueAt).getTime() : 0
+  const asignati = task.assigneeIds.map((x) => nume[x]).filter(Boolean).join(', ')
+  const ev = evenimente(task, nume)
 
   async function patch(corp, mesaj) {
+    setOcupat(true)
     try {
       await cere(`/api/admin/tasks/${id}`, { metoda: 'PATCH', corp })
       if (mesaj) toast.success(mesaj)
       await incarca()
     } catch (e) {
       toast.error(e.message)
-      setProgres(task.progress)
+    } finally {
+      setOcupat(false)
     }
   }
 
   async function trimiteComentariu(e) {
     e.preventDefault()
-    if (!comentariu.trim()) return
+    if (!ciorna.trim()) return
     setTrimit(true)
     try {
-      await cere(`/api/admin/tasks/${id}/comentarii`, { metoda: 'POST', corp: { body: comentariu } })
-      setComentariu('')
+      await cere(`/api/admin/tasks/${id}/comentarii`, { metoda: 'POST', corp: { body: ciorna } })
+      setCiorna('')
+      toast.success('Comentariu adăugat')
       await incarca()
     } catch (err) {
       toast.error(err.message)
@@ -153,221 +121,252 @@ export default function TaskDetaliu({ id, eu, esteSuperAdmin, echipa, categorii,
   }
 
   async function sterge() {
-    if (!confirm(`Ștergi definitiv taskul „${task.title}" cu tot cu comentarii și fișiere?`)) return
+    if (!confirm('Ștergi definitiv taskul, cu tot cu comentarii și fișiere?')) return
     try {
       await cere(`/api/admin/tasks/${id}`, { metoda: 'DELETE' })
-      toast.success('Taskul a fost șters')
+      toast.success('Task șters')
       router.push('/admin/tasks')
     } catch (e) {
       toast.error(e.message)
     }
   }
 
-  const reamintire = INTERVALE_REAMINTIRE.find((r) => r.value === (task.reminderIntervalMinutes || 0))
-
   return (
-    <div className="mx-auto max-w-5xl space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href="/admin/tasks" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-indigo-700">
-          <ArrowLeftIcon className="h-4 w-4" /> Taskuri
+    <div className="lucru mx-auto w-full max-w-2xl text-ink">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <Link href="/admin/tasks" className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink">
+          ← Înapoi la task-uri
         </Link>
-        <div className="flex gap-1.5">
+        <div className="flex items-center gap-2">
           {pot && (
-            <button type="button" onClick={() => setEditez(true)} className={clsBtnAlb}>
-              <PencilSquareIcon className="h-4 w-4" /> Editează
+            <button type="button" onClick={() => setEditez(true)} className={`${btnActiune} text-ink-soft`}>
+              <PencilIcon className="size-4" /> Editează
             </button>
           )}
           {potSterge && (
-            <button type="button" onClick={sterge} className={`${clsBtnAlb} text-red-600 hover:bg-red-50`}>
-              <TrashIcon className="h-4 w-4" />
+            <button type="button" onClick={sterge} className={`${btnActiune} text-st-cancelled`}>
+              <TrashIcon className="size-4" /> Șterge
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Antet ─────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Ref seq={task.seq} />
-          <InsignaStatusTask status={task.status} />
-          <InsignaPrioritate valoare={task.priority} />
-          <InsignaCategorie categorie={task.category} />
-          <Termen dueAt={task.dueAt} status={task.status} />
+      {/* ── Antet ─────────────────────────────────────── */}
+      <div className="lcard mb-3 p-4">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {task.seq != null && <span className="rounded bg-brand/10 px-2 py-0.5 font-mono text-sm font-bold text-brand">#{task.seq}</span>}
+          <span className="rounded bg-surface-2 px-2 py-0.5 text-[11px] text-ink-soft">Task</span>
+          <span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${ST_TASK[task.status].badge}`}>{statusTask(task.status).label}</span>
+          {intarziere > 0 && (
+            <span className="rounded bg-st-cancelled/15 px-2 py-0.5 text-[11px] font-semibold text-st-cancelled">⏰ Întârziere {fmtDurata(intarziere)}</span>
+          )}
+          {task.category && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[11px] text-ink-soft">
+              <span className="size-1.5 rounded-full" style={{ background: task.category.color }} />
+              {task.category.name}
+            </span>
+          )}
         </div>
-        <h1 className="mt-2 text-xl font-bold text-gray-900">{task.title}</h1>
-        {task.description && <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">{task.description}</p>}
+
+        <h1 className="mb-3 break-words text-xl font-bold leading-tight">{task.title}</h1>
+
+        {task.description && <p className="mb-3 whitespace-pre-wrap rounded-xl bg-surface-2 px-3 py-2.5 text-sm">{task.description}</p>}
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+          <MetaRow eticheta="Prioritate" valoare={prioritate(task.priority).label} />
+          {asignati && <MetaRow eticheta="Asignat" valoare={asignati} />}
+          {task.project && (
+            <MetaRow eticheta="Proiect">
+              <Link href={`/admin/projects/${task.project.id}`} className="text-sm font-medium text-brand hover:underline">
+                {task.project.name}
+              </Link>
+            </MetaRow>
+          )}
+          {task.project?.lat != null ? (
+            <MetaRow eticheta="Locație">
+              <a
+                href={`https://maps.google.com/maps?q=${task.project.lat},${task.project.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline"
+              >
+                📍 {task.project.address || 'Vezi pe hartă'}
+              </a>
+            </MetaRow>
+          ) : (
+            task.project?.address && (
+              <MetaRow eticheta="Locație">
+                <a
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(task.project.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline"
+                >
+                  📍 {task.project.address}
+                </a>
+              </MetaRow>
+            )
+          )}
+          {task.lead && (
+            <MetaRow eticheta="Lead">
+              <Link href="/admin/leads" className="text-sm font-medium text-brand hover:underline">
+                {task.lead.denumire}
+              </Link>
+              {task.lead.telefon && (
+                <a href={`tel:${task.lead.telefon}`} className="block text-[11px] text-ink-soft">
+                  📞 {task.lead.telefon}
+                </a>
+              )}
+            </MetaRow>
+          )}
+          {task.progress > 0 && <MetaRow eticheta="Progres" valoare={`${task.progress}%`} />}
+          {task.dueAt && <MetaRow eticheta="Scadent" valoare={fmtDue(task.dueAt)} alerta={intarziere > 0} />}
+          {task.reminderIntervalMinutes && (
+            <MetaRow
+              eticheta="Reamintire"
+              valoare={INTERVALE_REAMINTIRE.find((r) => r.value === task.reminderIntervalMinutes)?.label || `${task.reminderIntervalMinutes} min`}
+            />
+          )}
+          <MetaRow eticheta="Creat" valoare={fmtDataOra(task.createdAt)} />
+          <MetaRow eticheta="Creat de" valoare={`${nume[task.creatorId] || '—'}${task.createdFrom === 'VOICE' ? ' · 🎤' : task.createdFrom === 'TELEGRAM' ? ' · Telegram' : ''}`} />
+        </div>
 
         {pot && (
-          <div className="mt-4 space-y-3 border-t border-gray-100 pt-3">
+          <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
             <div className="flex flex-wrap gap-1.5">
-              {STATUSURI_TASK.map((s) => (
+              {STATUSURI_TASK.map((s) => {
+                const activ = s.value === task.status
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => !activ && patch({ status: s.value }, `Status: ${s.label}`)}
+                    disabled={ocupat}
+                    className={[
+                      'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50',
+                      ST_TASK[s.value].btn,
+                      activ ? ST_TASK[s.value].activ : '',
+                      activ ? 'scale-105 shadow-sm' : 'opacity-70',
+                    ].join(' ')}
+                  >
+                    {s.label}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[11px] font-semibold text-ink-soft">Progres</span>
+              {PROGRES.map((p) => (
                 <button
-                  key={s.value}
+                  key={p}
                   type="button"
-                  disabled={task.status === s.value}
-                  onClick={() => patch({ status: s.value }, `${s.emoji} ${s.label}`)}
-                  className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
-                    task.status === s.value ? `${s.culoare} ring-2 ring-indigo-300` : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  disabled={ocupat}
+                  onClick={() => p !== task.progress && patch({ progress: p }, `Progres: ${p}%`)}
+                  className={`h-7 rounded-full border px-2.5 text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                    task.progress === p ? 'border-brand bg-brand text-white' : 'border-line text-ink-soft hover:border-brand'
                   }`}
                 >
-                  {s.emoji} {s.label}
+                  {p}%
                 </button>
               ))}
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-16 text-xs font-semibold text-gray-600">Progres</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={5}
-                value={progres}
-                onChange={(e) => setProgres(Number(e.target.value))}
-                onPointerUp={() => progres !== task.progress && patch({ progress: progres })}
-                onKeyUp={() => progres !== task.progress && patch({ progress: progres })}
-                className="flex-1 accent-indigo-600"
-              />
-              <span className="w-10 text-right text-sm font-bold text-indigo-700">{progres}%</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        <div className="space-y-3 lg:col-span-2">
-          {/* ── Fișiere ─────────────────────────────────── */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <Atasamente
-              taskId={task.id}
-              initiale={task.attachments}
-              poateSterge={(a) => a.userId === eu || poateEdita || esteSuperAdmin}
-              onSchimbare={incarca}
-            />
-          </div>
+      {/* ── Atașamente ──────────────────────────────── */}
+      <div className="mb-3">
+        <Atasamente taskId={task.id} initiale={task.attachments} poateSterge={(a) => a.userId === eu || poateEdita || esteSuperAdmin} onSchimbare={incarca} />
+      </div>
 
-          {/* ── Comentarii ──────────────────────────────── */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">💬 Comentarii {task.comments.length > 0 && `(${task.comments.length})`}</h3>
-            {task.comments.length === 0 && <p className="mb-2 text-xs text-gray-400">Niciun comentariu. Cei implicați primesc comentariile pe Telegram.</p>}
-            <ul className="space-y-3">
-              {task.comments.map((c) => (
-                <li key={c.id} className="flex gap-2">
-                  <Avatar nume={c.userName || nume[c.userId]} />
-                  <div className="min-w-0 flex-1 rounded-lg bg-gray-50 px-3 py-2">
-                    <p className="text-[11px] text-gray-500">
-                      <b className="text-gray-800">{c.userName || nume[c.userId] || 'Cineva'}</b> · {relativ(c.createdAt)}
-                      {c.source === 'TELEGRAM' && ' · din Telegram'}
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm text-gray-800">{c.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <form onSubmit={trimiteComentariu} className="mt-3 flex items-end gap-2">
-              <textarea
-                value={comentariu}
-                onChange={(e) => setComentariu(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) trimiteComentariu(e)
-                }}
-                rows={2}
-                placeholder="Scrie un comentariu… (Ctrl+Enter trimite)"
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-              <button type="submit" disabled={trimit || !comentariu.trim()} className="rounded-lg bg-indigo-600 p-2.5 text-white hover:bg-indigo-700 disabled:opacity-50" aria-label="Trimite">
-                <PaperAirplaneIcon className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
+      {/* ── Comentarii ──────────────────────────────── */}
+      <div className="lcard mb-3 p-4">
+        <h2 className="mb-3 text-sm font-bold">Comentarii {task.comments.length > 0 && `(${task.comments.length})`}</h2>
+        {!task.comments.length && <p className="mb-3 text-sm text-ink-soft">Niciun comentariu încă.</p>}
+        <div className="mb-4 flex flex-col gap-4">
+          {task.comments.map((c) => (
+            <div key={c.id}>
+              <div className="mb-0.5 flex flex-wrap items-baseline gap-2">
+                <span className="text-sm font-semibold">{c.userName || nume[c.userId] || '—'}</span>
+                <span className="text-[11px] text-ink-soft">
+                  {fmtDataOra(c.createdAt)}
+                  {c.source === 'TELEGRAM' ? ' · via Telegram' : ''}
+                </span>
+              </div>
+              <p className="whitespace-pre-wrap text-sm">{c.body}</p>
+            </div>
+          ))}
         </div>
+        <form onSubmit={trimiteComentariu} className="flex flex-col gap-2">
+          <textarea value={ciorna} onChange={(e) => setCiorna(e.target.value)} placeholder="Scrie un comentariu…" rows={3} className={`${dlgTextarea} resize-none`} />
+          <button
+            type="submit"
+            disabled={trimit || !ciorna.trim()}
+            className="tap h-10 rounded-xl bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-50"
+          >
+            {trimit ? 'Se trimite…' : 'Adaugă comentariu'}
+          </button>
+        </form>
+      </div>
 
-        <div className="space-y-3">
-          {/* ── Detalii ─────────────────────────────────── */}
-          <div className="space-y-2.5 rounded-xl border border-gray-200 bg-white p-4 text-sm">
-            <Detaliu eticheta="Cine se ocupă">
-              {task.assigneeIds.length ? (
-                <div className="flex flex-wrap gap-1">
-                  {task.assigneeIds.map((aid) => (
-                    <span key={aid} className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2 text-xs">
-                      <Avatar nume={nume[aid] || '?'} mic /> {nume[aid] || 'cont inactiv'}
-                    </span>
-                  ))}
+      {/* ── Istoric ─────────────────────────────────── */}
+      <div className="lcard mb-3 p-4">
+        <h2 className="mb-4 text-sm font-bold">📋 Istoric complet</h2>
+        <ol className="flex flex-col">
+          {ev.map((e, i) => {
+            const ultim = i === ev.length - 1
+            return (
+              <li key={e.key} className="flex gap-3">
+                <div className="flex flex-col items-center pt-1">
+                  <span className={`size-2.5 shrink-0 rounded-full ${e.dot}`} />
+                  {!ultim && <span className="my-1.5 w-0.5 flex-1 bg-line" />}
                 </div>
-              ) : (
-                '—'
-              )}
-            </Detaliu>
-            <Detaliu eticheta="Creat de">
-              {nume[task.creatorId] || '—'} · {dataOra(task.createdAt)}
-              {task.createdFrom !== 'WEB' && <span className="text-gray-500"> · {SURSE[task.createdFrom] || task.createdFrom}</span>}
-            </Detaliu>
-            <Detaliu eticheta="Termen">{task.dueAt ? dataOra(task.dueAt) : 'fără'}</Detaliu>
-            <Detaliu eticheta="Reamintire">
-              {reamintire?.label || '—'}
-              {task.nextReminderAt && !['DONE', 'CANCELLED'].includes(task.status) && (
-                <span className="text-gray-500"> · următoarea {dataOra(task.nextReminderAt)}</span>
-              )}
-            </Detaliu>
-            {task.project && (
-              <Detaliu eticheta="Proiect">
-                <Link href={`/admin/projects/${task.project.id}`} className="font-medium text-indigo-700 hover:underline">
-                  📁 {task.project.name}
-                </Link>
-              </Detaliu>
-            )}
-            {task.lead && (
-              <Detaliu eticheta="Lead">
-                <Link href="/admin/leads" className="font-medium text-indigo-700 hover:underline">
-                  🎯 {task.lead.denumire}
-                </Link>
-                {task.lead.telefon && (
-                  <a href={`tel:${task.lead.telefon}`} className="block text-xs text-gray-500 hover:text-indigo-700">
-                    📞 {task.lead.telefon}
-                  </a>
-                )}
-              </Detaliu>
-            )}
-            <Detaliu eticheta="Ultima modificare">{relativ(task.updatedAt)}</Detaliu>
+                <div className={`min-w-0 flex-1 ${!ultim ? 'pb-5' : ''}`}>
+                  <p className={`text-sm font-semibold ${e.action === 'ATTACHMENT_DELETED' ? 'text-st-cancelled' : ''}`}>
+                    {e.action === 'CREATED' && '🆕 Creat'}
+                    {e.action === 'STATUS_CHANGED' && (
+                      <>
+                        🔄 {e.fromStatus ? `${statusTask(e.fromStatus).label} → ` : ''}
+                        {statusTask(e.toStatus).label}
+                      </>
+                    )}
+                    {e.action === 'PROGRESS' && `📈 Progres ${e.meta?.de ?? 0}% → ${e.meta?.la ?? 0}%`}
+                    {e.action === 'EDITED' && '✏️ Editat'}
+                    {e.action === 'COMMENTED' && '💬 Comentariu adăugat'}
+                    {e.action === 'ATTACHMENT_ADDED' && '📎 Atașament adăugat'}
+                    {e.action === 'ATTACHMENT_DELETED' && '🗑 Atașament șters'}
+                  </p>
+                  <p className="text-[11px] text-ink-soft">
+                    {e.userName} · {fmtDataOra(e.at)}
+                    {e.meta?.sursa === 'TELEGRAM' && ' · via Telegram'}
+                  </p>
+                  {e.action === 'EDITED' && e.note && <p className="mt-0.5 text-[11px] text-ink-soft">{e.note}</p>}
+                  {e.action === 'EDITED' && e.meta?.termenNou !== undefined && (
+                    <p className="mt-0.5 text-[11px]">
+                      📅 <span className="font-medium">Deadline:</span>{' '}
+                      <span className="text-ink-soft line-through">{e.meta.termenVechi || '—'}</span> →{' '}
+                      <span className="font-medium">{e.meta.termenNou || 'șters'}</span>
+                    </p>
+                  )}
+                  {e.action === 'COMMENTED' && e.note && <p className="mt-1 truncate text-[11px] italic text-ink-soft">«{e.note}»</p>}
+                  {e.action?.startsWith('ATTACHMENT') && e.note && <p className="mt-0.5 text-[11px] text-ink-soft">{e.note}</p>}
+                  {e.durata > 0 && <p className="mt-0.5 text-[10px] text-ink-soft/60">⏱ {fmtDurata(e.durata)} de la evenimentul anterior</p>}
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+        {ev.length > 1 && (
+          <div className="mt-3 border-t border-line pt-3 text-[11px] text-ink-soft">
+            Durată totală de la creare:{' '}
+            <span className="font-semibold text-ink">{fmtDurata(new Date(ev[ev.length - 1].at) - new Date(ev[0].at))}</span>
           </div>
-
-          {/* ── Istoric ─────────────────────────────────── */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-gray-900">🕓 Istoric</h3>
-            <ol className="relative space-y-3 border-l border-gray-200 pl-4">
-              {task.activities.map((a) => (
-                <li key={a.id} className="text-xs text-gray-700">
-                  <span className="absolute -left-[9px] grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[10px] ring-1 ring-gray-200">
-                    {EMOJI_ACTIVITATE[a.action] || '•'}
-                  </span>
-                  <b>{a.userName || nume[a.userId] || 'Cineva'}</b> {textActivitate(a)}
-                  <div className="text-[10px] text-gray-400">{dataOra(a.createdAt)}</div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
+        )}
       </div>
 
       {editez && (
-        <FormularTask
-          task={task}
-          echipa={echipa}
-          categorii={categorii}
-          proiecte={proiecte}
-          eu={eu}
-          onInchide={() => setEditez(false)}
-          onSalvat={incarca}
-        />
+        <FormularTask task={task} echipa={echipa} categorii={categorii} proiecte={proiecte} eu={eu} onInchide={() => setEditez(false)} onSalvat={incarca} />
       )}
-    </div>
-  )
-}
-
-function Detaliu({ eticheta, children }) {
-  return (
-    <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{eticheta}</div>
-      <div className="text-gray-800">{children}</div>
     </div>
   )
 }

@@ -34,6 +34,8 @@ export async function GET(request) {
   else if (OBJECT_ID.test(resp || '')) conditii.push({ responsabilId: resp })
   const statusuri = (sp.get('status') || '').split(',').filter((s) => VALORI_STATUS_PROGRAMARE.includes(s))
   if (statusuri.length) conditii.push({ status: { in: statusuri } })
+  const categorie = sp.get('category')
+  if (OBJECT_ID.test(categorie || '')) conditii.push({ categoryId: categorie })
   const q = (sp.get('q') || '').trim()
   if (q) {
     conditii.push({

@@ -1,76 +1,111 @@
 'use client'
 
 /**
- * Task nou / editare. La un task nou poți dicta (🎤) și poți atașa fișiere
- * care urcă imediat după salvare.
+ * Task nou / editare — dialogul din StefanPWA (CreateDialog / EditDialog).
+ * În plus: 🎤 dictare și legătura opțională cu un lead.
  */
 
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { PRIORITATI, INTERVALE_REAMINTIRE, marimeFisier } from '@/lib/lucru/constante'
 import { cheieZi, oraLocala, momentLocal } from '@/lib/lucru/timp'
-import { Modal, clsInput, clsEticheta, clsBtn, clsBtnAlb, cere } from './ui'
+import { Dialog, dlgInput, dlgTextarea, lbl, btnSalveaza, cere } from './ui'
 import ButonVoce from './ButonVoce'
 import CautaLegatura from './CautaLegatura'
 import { urcaFisier } from './Atasamente'
 
-export function AlegeOameni({ echipa, valoare, onSchimbare, eu }) {
-  const comuta = (id) => onSchimbare(valoare.includes(id) ? valoare.filter((x) => x !== id) : [...valoare, id])
+/** Asignații: chips „👤 Nume ✕" + „Adaugă persoană" (MultiAssignPicker). */
+export function AlegeOameni({ echipa, valoare, onSchimbare, eu, eticheta = 'Asignat' }) {
+  const disponibili = echipa.filter((o) => !valoare.includes(o.id))
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {echipa.map((o) => {
-        const ales = valoare.includes(o.id)
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => comuta(o.id)}
-            title={o.telegram ? 'Primește notificări pe Telegram' : 'Nu are Telegram legat — vede taskul doar în panou'}
-            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-              ales ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {ales ? '✓' : '+'} {o.id === eu ? `${o.name} (eu)` : o.name}
-            {o.telegram && <span className={ales ? 'text-indigo-200' : 'text-sky-500'}>✈</span>}
-          </button>
-        )
-      })}
+    <div className="flex flex-col gap-2">
+      <label className="text-xs font-semibold text-ink-soft">{eticheta}</label>
+      {valoare.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {valoare.map((id) => {
+            const o = echipa.find((x) => x.id === id)
+            if (!o) return null
+            return (
+              <div key={id} className="flex items-center gap-1 rounded-full border border-line bg-surface-2 py-1 pl-2.5 pr-1">
+                <span className="text-xs font-medium text-ink">
+                  👤 {o.name}
+                  {o.id === eu ? ' (eu)' : ''}
+                </span>
+                {o.telegram && (
+                  <span className="text-[10px] text-sky-500" title="Primește pe Telegram">
+                    ✈
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onSchimbare(valoare.filter((x) => x !== id))}
+                  className="ml-0.5 grid size-5 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-line hover:text-ink"
+                  aria-label={`Scoate ${o.name}`}
+                >
+                  <XMarkIcon className="size-3" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {disponibili.length > 0 && (
+        <select
+          value=""
+          onChange={(e) => e.target.value && onSchimbare([...valoare, e.target.value])}
+          className="h-10 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm text-ink outline-none focus:border-brand"
+        >
+          <option value="">＋ Adaugă persoană</option>
+          {disponibili.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+              {o.id === eu ? ' (eu)' : ''}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }
 
-export function AlegeCategorie({ categorii, valoare, onSchimbare }) {
-  if (!categorii.length) return <p className="text-xs text-gray-400">Nicio categorie încă (le creezi din „🏷️ Categorii”).</p>
+/** Categoriile ca pastile (CategoryChips din StefanPWA). */
+export function AlegeCategorie({ categorii, valoare, onSchimbare, eticheta = 'Categorie' }) {
+  if (!categorii.length) return null
   return (
-    <div className="flex flex-wrap gap-1.5">
-      <button
-        type="button"
-        onClick={() => onSchimbare('')}
-        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${!valoare ? 'border-gray-800 bg-gray-800 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
-      >
-        Fără
-      </button>
-      {categorii.map((c) => {
-        const ales = valoare === c.id
-        return (
+    <div>
+      <label className="mb-1.5 block text-xs font-semibold text-ink-soft">{eticheta}</label>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => onSchimbare('')}
+          className={`h-7 rounded-full border px-3 text-xs font-medium transition-colors ${
+            !valoare ? 'border-brand bg-brand text-white' : 'border-line text-ink-soft hover:border-brand'
+          }`}
+        >
+          Fără categorie
+        </button>
+        {categorii.map((c) => (
           <button
             key={c.id}
             type="button"
-            onClick={() => onSchimbare(ales ? '' : c.id)}
-            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold"
-            style={ales ? { background: c.color, borderColor: c.color, color: '#fff' } : { borderColor: `${c.color}66`, color: c.color }}
+            onClick={() => onSchimbare(c.id)}
+            className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
+              valoare === c.id ? 'border-brand bg-brand/10 text-brand' : 'border-line text-ink-soft hover:border-brand'
+            }`}
           >
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: ales ? '#fff' : c.color }} />
+            <span className="size-2 rounded-full" style={{ background: c.color }} />
             {c.name}
           </button>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }
 
 function dinTask(t, eu, implicit) {
   implicit = implicit || {}
+  const ora = t?.dueAt ? oraLocala(t.dueAt) : ''
   return {
     title: t?.title || implicit.title || '',
     description: t?.description || '',
@@ -80,7 +115,7 @@ function dinTask(t, eu, implicit) {
     categoryId: t?.categoryId || '',
     assigneeIds: t?.assigneeIds || implicit.assigneeIds || (eu ? [eu] : []),
     dueDate: t?.dueAt ? cheieZi(t.dueAt) : '',
-    dueTime: t?.dueAt ? oraLocala(t.dueAt) : '',
+    dueTime: ora && ora !== '00:00' ? ora : '',
     reminderIntervalMinutes: t?.reminderIntervalMinutes || 0,
     lead: t?.lead
       ? { tip: 'lead', id: t.lead.id, nume: t.lead.denumire, detaliu: [t.lead.oras, t.lead.telefon].filter(Boolean).join(' · ') }
@@ -94,6 +129,7 @@ export default function FormularTask({ task, implicit, echipa, categorii, proiec
   const [fisiere, setFisiere] = useState([])
   const [transcriere, setTranscriere] = useState('')
   const [salvez, setSalvez] = useState(null)
+  const [eroare, setEroare] = useState(null)
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
 
   function dinVoce({ transcriere: t, campuri: c }) {
@@ -113,13 +149,23 @@ export default function FormularTask({ task, implicit, echipa, categorii, proiec
     }))
   }
 
-  async function trimite(e) {
-    e.preventDefault()
-    if (!f.title.trim()) {
-      toast.error('Scrie titlul.')
+  function alegeProiect(v) {
+    if (v === '__nou') {
+      const nume = prompt('Numele proiectului nou:')
+      if (nume?.trim()) setF((x) => ({ ...x, projectId: '', newProjectName: nume.trim() }))
       return
     }
-    const dueAt = f.dueDate ? momentLocal(f.dueDate, f.dueTime || '18:00')?.toISOString() : null
+    setF((x) => ({ ...x, projectId: v, newProjectName: '' }))
+  }
+
+  async function trimite(e) {
+    e.preventDefault()
+    setEroare(null)
+    if (!f.title.trim()) {
+      setEroare('Titlul e obligatoriu.')
+      return
+    }
+    const dueAt = f.dueDate ? momentLocal(f.dueDate, f.dueTime || '00:00')?.toISOString() : null
     const corp = {
       title: f.title,
       description: f.description,
@@ -131,161 +177,114 @@ export default function FormularTask({ task, implicit, echipa, categorii, proiec
       reminderIntervalMinutes: Number(f.reminderIntervalMinutes) || 0,
       leadId: f.lead?.id || null,
     }
-    if (!editare && f.newProjectName && !f.projectId) corp.newProjectName = f.newProjectName
+    if (f.newProjectName && !f.projectId) corp.newProjectName = f.newProjectName
     if (!editare && transcriere) corp.sursa = 'VOICE'
 
-    setSalvez('Salvez…')
+    setSalvez('Se salvează…')
     try {
       const { task: salvat } = await cere(editare ? `/api/admin/tasks/${task.id}` : '/api/admin/tasks', {
         metoda: editare ? 'PATCH' : 'POST',
         corp,
       })
       for (const [i, fis] of fisiere.entries()) {
-        setSalvez(`Urc fișierul ${i + 1}/${fisiere.length}…`)
+        setSalvez(`Fișier ${i + 1} / ${fisiere.length}…`)
         await urcaFisier(salvat.id, fis).catch((err) => toast.error(err.message))
       }
-      toast.success(editare ? 'Salvat' : `Task creat ${salvat.seq ? `#${String(salvat.seq).padStart(3, '0')}` : ''}`)
+      toast.success(editare ? 'Salvat' : 'Task creat')
       onSalvat?.(salvat)
       onInchide()
     } catch (err) {
-      toast.error(err.message)
+      setEroare(err.message)
     } finally {
       setSalvez(null)
     }
   }
 
+  const titlu = editare ? `Editează task${task.seq != null ? ` #${task.seq}` : ''}` : 'Task nou'
+
   return (
-    <Modal
-      titlu={editare ? `Editează taskul` : 'Task nou'}
-      subtitlu={editare ? task.title : 'Scrie sau dictează: ce, cine, până când'}
-      onInchide={onInchide}
-      subsol={
-        <>
-          <button type="button" onClick={onInchide} className={clsBtnAlb}>
-            Renunță
-          </button>
-          <button type="submit" form="formular-task" disabled={Boolean(salvez)} className={clsBtn}>
-            {salvez || (editare ? 'Salvează' : 'Creează taskul')}
-          </button>
-        </>
-      }
-    >
-      <form id="formular-task" onSubmit={trimite} className="space-y-4">
+    <Dialog titlu={titlu} onInchide={onInchide}>
+      <form onSubmit={trimite} className="flex flex-col gap-3">
         {!editare && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-violet-200 bg-violet-50/60 p-2.5">
-            <ButonVoce tip="task" onRezultat={dinVoce} eticheta="🎤 Dictează taskul" />
-            <p className="min-w-0 flex-1 text-xs text-violet-900">
-              {transcriere ? (
-                <>
-                  „<i>{transcriere}</i>”
-                </>
-              ) : (
-                'Ex.: „Pentru Mihaela, urgent, sună la Dulcinella până joi la 3 despre ofertă"'
-              )}
+          <div className="flex items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2">
+            <ButonVoce tip="task" onRezultat={dinVoce} eticheta="Dictează" mic />
+            <p className="min-w-0 flex-1 truncate text-[11px] text-ink-soft">
+              {transcriere ? `„${transcriere}”` : 'Spune ce, cine și până când — completez eu'}
             </p>
           </div>
         )}
 
-        <div>
-          <label className={clsEticheta}>Titlu *</label>
-          <input className={clsInput} value={f.title} onChange={(e) => set('title', e.target.value)} autoFocus={!editare} placeholder="Ce trebuie făcut" />
-        </div>
-        <div>
-          <label className={clsEticheta}>Descriere</label>
-          <textarea className={clsInput} rows={3} value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Detalii, linkuri, pași…" />
-        </div>
+        <input
+          value={f.title}
+          onChange={(e) => set('title', e.target.value)}
+          placeholder="Titlu *"
+          required
+          autoFocus={!editare}
+          className={dlgInput}
+        />
+        <textarea value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Descriere" rows={3} className={dlgTextarea} />
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className={clsEticheta}>Prioritate</label>
-            <div className="flex flex-wrap gap-1">
-              {PRIORITATI.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => set('priority', p.value)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${f.priority === p.value ? `${p.culoare} ring-2 ring-indigo-400` : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                >
-                  {p.emoji} {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className={clsEticheta}>Proiect</label>
-            <select className={clsInput} value={f.projectId} onChange={(e) => setF((x) => ({ ...x, projectId: e.target.value, newProjectName: '' }))}>
-              <option value="">— Fără proiect —</option>
-              {proiecte.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {f.newProjectName && !f.projectId && (
-              <p className="mt-1 text-[11px] text-violet-700">
-                ✨ Se creează proiectul nou „{f.newProjectName}”{' '}
-                <button type="button" className="underline" onClick={() => set('newProjectName', '')}>
-                  nu
-                </button>
-              </p>
-            )}
-          </div>
-        </div>
+        <select value={f.priority} onChange={(e) => set('priority', e.target.value)} className={dlgInput}>
+          {PRIORITATI.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+
+        <select value={f.newProjectName ? '__nou' : f.projectId} onChange={(e) => alegeProiect(e.target.value)} className={dlgInput}>
+          <option value="">Fără proiect</option>
+          {proiecte.map((p) => (
+            <option key={p.id} value={p.id}>
+              Proiect: {p.name}
+            </option>
+          ))}
+          <option value="__nou">{f.newProjectName ? `＋ Proiect nou: ${f.newProjectName}` : '＋ Creează proiect nou…'}</option>
+        </select>
 
         <div>
-          <label className={clsEticheta}>Cine se ocupă</label>
-          <AlegeOameni echipa={echipa} valoare={f.assigneeIds} onSchimbare={(v) => set('assigneeIds', v)} eu={eu} />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div>
-            <label className={clsEticheta}>Termen — ziua</label>
-            <input type="date" className={clsInput} value={f.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
-          </div>
-          <div>
-            <label className={clsEticheta}>Ora</label>
-            <input type="time" className={clsInput} value={f.dueTime} onChange={(e) => set('dueTime', e.target.value)} disabled={!f.dueDate} placeholder="18:00" />
-          </div>
-          <div>
-            <label className={clsEticheta}>Reamintire pe Telegram</label>
-            <select className={clsInput} value={f.reminderIntervalMinutes} onChange={(e) => set('reminderIntervalMinutes', Number(e.target.value))}>
-              {INTERVALE_REAMINTIRE.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {f.dueDate && (
-          <div className="-mt-2 flex flex-wrap gap-1">
-            <button type="button" className="text-[11px] text-gray-500 hover:text-red-600" onClick={() => setF((x) => ({ ...x, dueDate: '', dueTime: '' }))}>
-              ✕ fără termen
-            </button>
-            {!f.dueTime && <span className="text-[11px] text-gray-400">· fără oră = până la 18:00</span>}
-          </div>
-        )}
-
-        <div>
-          <label className={clsEticheta}>Categorie</label>
-          <AlegeCategorie categorii={categorii} valoare={f.categoryId} onSchimbare={(v) => set('categoryId', v)} />
-        </div>
-
-        <div>
-          <label className={clsEticheta}>Legat de un lead (opțional)</label>
+          <label className={lbl}>Lead (opțional)</label>
           <CautaLegatura tipuri={['lead']} valoare={f.lead} onAlege={(v) => set('lead', v)} />
+        </div>
+
+        <AlegeOameni echipa={echipa} valoare={f.assigneeIds} onSchimbare={(v) => set('assigneeIds', v)} eu={eu} />
+
+        <div>
+          <label className={lbl}>Termen</label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input type="date" value={f.dueDate} onChange={(e) => set('dueDate', e.target.value)} className={dlgInput} />
+            <input type="time" value={f.dueTime} onChange={(e) => set('dueTime', e.target.value)} className={dlgInput} />
+          </div>
+        </div>
+
+        <AlegeCategorie categorii={categorii} valoare={f.categoryId} onSchimbare={(v) => set('categoryId', v)} />
+
+        <div>
+          <label className={lbl}>Reamintire periodică (Telegram)</label>
+          <select
+            value={f.reminderIntervalMinutes}
+            onChange={(e) => set('reminderIntervalMinutes', Number(e.target.value))}
+            className={dlgInput}
+          >
+            {INTERVALE_REAMINTIRE.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.value ? r.label : 'Niciodată'}
+              </option>
+            ))}
+          </select>
         </div>
 
         {!editare && (
           <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label className={clsEticheta}>Fișiere {fisiere.length > 0 && `(${fisiere.length})`}</label>
-              <label className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
-                📎 Adaugă
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-xs font-semibold text-ink-soft">Atașamente {fisiere.length > 0 && `(${fisiere.length})`}</span>
+              <label className="tap cursor-pointer rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-brand hover:bg-brand-soft">
+                ＋ Fișier
                 <input
                   type="file"
                   multiple
                   className="sr-only"
+                  disabled={Boolean(salvez)}
                   onChange={(e) => {
                     setFisiere((l) => [...l, ...(e.target.files || [])])
                     e.target.value = ''
@@ -294,12 +293,17 @@ export default function FormularTask({ task, implicit, echipa, categorii, proiec
               </label>
             </div>
             {fisiere.length > 0 && (
-              <ul className="space-y-1">
+              <ul className="flex flex-col gap-1">
                 {fisiere.map((fis, i) => (
-                  <li key={i} className="flex items-center gap-2 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs">
-                    <span className="min-w-0 flex-1 truncate">{fis.name}</span>
-                    <span className="text-gray-500">{marimeFisier(fis.size)}</span>
-                    <button type="button" onClick={() => setFisiere((l) => l.filter((_, j) => j !== i))} className="text-red-500 hover:text-red-700">
+                  <li key={i} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5">
+                    <span className="min-w-0 flex-1 truncate text-xs">{fis.name}</span>
+                    <span className="shrink-0 text-[11px] text-ink-soft">{marimeFisier(fis.size)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFisiere((l) => l.filter((_, j) => j !== i))}
+                      className="tap shrink-0 text-xs text-st-cancelled"
+                      disabled={Boolean(salvez)}
+                    >
                       ✕
                     </button>
                   </li>
@@ -308,7 +312,12 @@ export default function FormularTask({ task, implicit, echipa, categorii, proiec
             )}
           </div>
         )}
+
+        {eroare && <p className="text-sm text-st-cancelled">{eroare}</p>}
+        <button type="submit" disabled={Boolean(salvez)} className={btnSalveaza}>
+          {salvez || (editare ? 'Salvează' : 'Creează task')}
+        </button>
       </form>
-    </Modal>
+    </Dialog>
   )
 }
