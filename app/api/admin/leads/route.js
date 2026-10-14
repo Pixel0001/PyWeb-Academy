@@ -404,6 +404,14 @@ export async function POST(request) {
       include: INCLUDE_LISTA,
     })
 
+    // Responsabilul ales la „Lead nou" primește lead-ul în privat pe Telegram
+    if (lead.responsabilId) {
+      const { anuntaResponsabil } = await import('@/lib/leads/atribuire')
+      await anuntaResponsabil(lead.id, { actor: utilizator ? { id: utilizator.id, name: autor } : null }).catch((e) =>
+        console.error('[leads] anunț responsabil:', e?.message)
+      )
+    }
+
     return NextResponse.json({ lead }, { status: 201 })
   } catch (error) {
     if (['Unauthorized', 'Forbidden'].includes(error.message)) {

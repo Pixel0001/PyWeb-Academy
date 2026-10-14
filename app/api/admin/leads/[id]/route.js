@@ -12,6 +12,7 @@ import { VALORI_STATUS, VALORI_SURSA, STATUSURI_APEL } from '@/lib/leads/statusu
 import { calculeazaScor } from '@/lib/leads/scoring'
 import { verificaSite } from '@/lib/leads/site-check'
 import { INCLUDE_LISTA, normalizeazaSite } from '../route'
+import { anuntaResponsabil } from '@/lib/leads/atribuire'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -134,7 +135,23 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Nimic de actualizat' }, { status: 400 })
     }
 
+    // Cine era responsabil înainte — ca să știm dacă s-a schimbat
+    const inainte =
+      date.responsabilId !== undefined
+        ? await prisma.webLead.findUnique({ where: { id }, select: { responsabilId: true } })
+        : null
+
     const lead = await prisma.webLead.update({ where: { id }, data: date, include: INCLUDE_LISTA })
+
+    // Noul responsabil primește lead-ul în privat pe Telegram (ca în Olla CRM)
+    if (lead.responsabilId && inainte && inainte.responsabilId !== lead.responsabilId) {
+      const actor = await getCurrentUser().catch(() => null)
+      await anuntaResponsabil(id, {
+        actor: actor ? { id: actor.id, name: actor.name || actor.email } : null,
+        auto: corp.responsabilId === undefined,
+      }).catch((e) => console.error('[leads] anunț responsabil:', e?.message))
+    }
+
     return NextResponse.json({ lead })
   } catch (error) {
     if (['Unauthorized', 'Forbidden'].includes(error.message)) {

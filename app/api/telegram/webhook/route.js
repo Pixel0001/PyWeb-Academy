@@ -564,6 +564,13 @@ export async function POST(request) {
       }
 
       // ── tk: / tp: / pg: — taskuri și programări ──
+      // ── wl: — status lead web, din mesajul „Ți-a fost atribuit un lead" ──
+      if (data?.startsWith('wl:')) {
+        const { trateazaButonLead } = await import('@/lib/leads/atribuire')
+        await trateazaButonLead(body.callback_query)
+        return NextResponse.json({ ok: true })
+      }
+
       if ((await import('@/lib/lucru/bot')).esteCallbackLucru(data)) {
         const { trateazaButon } = await import('@/lib/lucru/bot')
         await trateazaButon(body.callback_query)
