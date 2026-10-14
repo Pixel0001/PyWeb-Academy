@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import prisma from '@/lib/prisma'
 
 export const runtime = 'nodejs'
-export const maxDuration = 10
+// Mesajele vocale (transcriere + AI) se procesează după răspuns, cu after()
+export const maxDuration = 60
 
 const BOT_TOKEN = process.env.TELEGRAM_LESSONS_BOT_TOKEN
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET
@@ -195,76 +196,6 @@ ${lines.join('\n')}
   return { text, keyboard }
 }
 
-// ============================================
-// TASKURI ȘI PROGRAMĂRI (butoanele din lib/lucru/telegram.js)
-// ============================================
-
-/**
- * tk:<STATUS>:<taskId> · tp:<procent>:<taskId> · pg:<STATUS>:<apptId>
- * Cine apasă e găsit după chat-ul Telegram legat de cont; mesajul se
- * editează pe loc cu noua stare.
- */
-async function butonLucru({ callbackQueryId, data, chatId, messageId, text }) {
-  const [tip, valoare, id] = data.split(':')
-  if (!valoare || !/^[a-f\d]{24}$/i.test(id || '')) {
-    await answerCallback(callbackQueryId, '❌ Date invalide')
-    return
-  }
-
-  const om = await prisma.user.findFirst({
-    where: { telegramChatId: String(chatId), active: true },
-    select: { id: true, name: true, email: true, role: true },
-  })
-  if (!om || !['SUPERADMIN', 'ADMIN'].includes(om.role)) {
-    await answerCallback(callbackQueryId, '❌ Contul nu e legat. Securitate → Telegram → Conectează.')
-    return
-  }
-  const actor = { id: om.id, name: om.name || om.email, role: om.role }
-
-  try {
-    if (tip === 'pg') {
-      const { schimbaStatusProgramare, textDupaButon } = await import('@/lib/lucru/programari')
-      const { butoaneProgramare } = await import('@/lib/lucru/telegram')
-      const { statusProgramare } = await import('@/lib/lucru/constante')
-      const p = await schimbaStatusProgramare(id, actor, valoare)
-      await Promise.all([
-        answerCallback(callbackQueryId, `✅ ${statusProgramare(valoare).label}`),
-        editMessage(chatId, messageId, await textDupaButon(p), butoaneProgramare(p)),
-      ])
-      return
-    }
-
-    const { schimbaStatus, schimbaProgres } = await import('@/lib/lucru/taskuri')
-    const { textTask, butoaneTask } = await import('@/lib/lucru/telegram')
-    const { statusTask } = await import('@/lib/lucru/constante')
-    const { echipa, harteNume } = await import('@/lib/lucru/echipa')
-
-    const task =
-      tip === 'tp'
-        ? await schimbaProgres(id, actor, Number(valoare), { sursa: 'TELEGRAM' })
-        : await schimbaStatus(id, actor, valoare, { sursa: 'TELEGRAM' })
-
-    // Păstrăm antetul mesajului inițial („Task nou", „Reamintire"…)
-    const antet = String(text || '').split('\n')[0]
-    const nume = harteNume(await echipa())
-    await Promise.all([
-      answerCallback(
-        callbackQueryId,
-        tip === 'tp' ? `📈 Progres ${task.progress}%` : `${statusTask(task.status).emoji} ${statusTask(task.status).label}`
-      ),
-      editMessage(
-        chatId,
-        messageId,
-        textTask(task, { antet: antet ? `<b>${antet.replace(/[<>&]/g, '')}</b>` : undefined, nume, proiect: task.project }),
-        butoaneTask(task)
-      ),
-    ])
-  } catch (e) {
-    console.error('[telegram/lucru]', e?.message)
-    await answerCallback(callbackQueryId, `❌ ${String(e?.message || 'Eroare').slice(0, 150)}`)
-  }
-}
-
 export async function POST(request) {
   try {
     // Verificare secret
@@ -277,6 +208,14 @@ export async function POST(request) {
 
     const body = await request.json()
 
+    // ── Mesaje vocale → task / programare (botul de lucru) ────────
+    if (body.message && !body.message.text && (body.message.voice || body.message.audio)) {
+      const { trateazaMesaj } = await import('@/lib/lucru/bot')
+      // Transcrierea durează: Telegram primește răspunsul imediat, munca continuă după
+      after(() => trateazaMesaj(body.message).catch((e) => console.error('[bot/voce]', e)))
+      return NextResponse.json({ ok: true })
+    }
+
     // ── Mesaje text: /start <cod> pentru conectarea contului ──────
     if (body.message?.text) {
       const chatId = body.message.chat.id
@@ -288,6 +227,8 @@ export async function POST(request) {
 
         if (cod) {
           await conecteazaCont(chatId, cod, body.message.from)
+        } else if (await (await import('@/lib/lucru/bot')).trateazaMesaj(body.message)) {
+          // Cont deja legat → meniul botului
         } else {
           await raspunde(
             chatId,
@@ -306,6 +247,9 @@ export async function POST(request) {
         return NextResponse.json({ ok: true })
       }
 
+      // Restul: meniul botului, /tasks, comentarii prin reply…
+      const { trateazaMesaj } = await import('@/lib/lucru/bot')
+      await trateazaMesaj(body.message)
       return NextResponse.json({ ok: true })
     }
 
@@ -620,8 +564,9 @@ export async function POST(request) {
       }
 
       // ── tk: / tp: / pg: — taskuri și programări ──
-      if (data?.startsWith('tk:') || data?.startsWith('tp:') || data?.startsWith('pg:')) {
-        await butonLucru({ callbackQueryId, data, chatId, messageId, text: message.text })
+      if ((await import('@/lib/lucru/bot')).esteCallbackLucru(data)) {
+        const { trateazaButon } = await import('@/lib/lucru/bot')
+        await trateazaButon(body.callback_query)
         return NextResponse.json({ ok: true })
       }
 

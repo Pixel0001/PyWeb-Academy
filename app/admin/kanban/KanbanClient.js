@@ -1,218 +1,312 @@
 'use client'
 
 /**
- * Kanban: o coloană pe status, tragi cardul ca să-l muți.
- * Pe telefon (fără drag) schimbi statusul din meniul cardului.
+ * Kanban — TaskKanban din StefanPWA: pastile rapide de termen, bara de
+ * filtre (în browser, instant), coloane pe status cu drag & drop.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { PlusIcon, ChatBubbleLeftIcon, PaperClipIcon } from '@heroicons/react/24/outline'
-import { STATUSURI_TASK, ORDINE_PRIORITATE, statusTask } from '@/lib/lucru/constante'
-import { cere, clsBtn, clsBtnAlb, InsignaPrioritate, InsignaCategorie, Ref, Avatare } from '@/components/admin/lucru/ui'
-import FiltreTaskuri, { useFiltreTaskuri } from '@/components/admin/lucru/FiltreTaskuri'
+import { STATUSURI_TASK, ST_TASK, PRIORITATI, PRIO_TEXT, statusTask, prioritate } from '@/lib/lucru/constante'
+import { cheieZi, adaugaZile, inceputSaptamana } from '@/lib/lucru/timp'
+import { cere, fldCls, pastila, TitluPagina, btnContur } from '@/components/admin/lucru/ui'
 import FormularTask from '@/components/admin/lucru/FormularTask'
-import { Termen } from '../tasks/TasksClient'
+
+const LIMITA = 100
+const CHEIE = 'filters:kanban'
+const RAPIDE = [
+  ['today', 'Azi'],
+  ['tomorrow', 'Mâine'],
+  ['week', 'Săptămâna asta'],
+  ['month', 'Luna asta'],
+]
+
+function potrivesteTermen(dueAt, filtru) {
+  if (!filtru) return true
+  if (filtru === 'none') return !dueAt
+  if (!dueAt) return false
+  const d = new Date(dueAt)
+  if (filtru === 'overdue') return d < new Date()
+  const zi = cheieZi(d)
+  const azi = cheieZi()
+  if (filtru === 'today') return zi === azi
+  if (filtru === 'tomorrow') return zi === adaugaZile(azi, 1)
+  if (filtru === 'week') {
+    const luni = inceputSaptamana(azi)
+    return zi >= luni && zi <= adaugaZile(luni, 6)
+  }
+  if (filtru === 'month') return zi.slice(0, 7) === azi.slice(0, 7)
+  return true
+}
+
+function citeste() {
+  try {
+    return JSON.parse(localStorage.getItem(CHEIE) || '{}')
+  } catch {
+    return {}
+  }
+}
 
 export default function KanbanClient({ eu, echipa, categorii, proiecte, poateCrea }) {
-  const f = useFiltreTaskuri('pyweb.kanban.filtre')
   const [taskuri, setTaskuri] = useState([])
-  const [incarc, setIncarc] = useState(true)
+  const [total, setTotal] = useState(0)
   const [trag, setTrag] = useState(null)
   const [peste, setPeste] = useState(null)
   const [formular, setFormular] = useState(false)
-  const [ascunse, setAscunse] = useState({ CANCELLED: true, READ: false })
+  const [f, setF] = useState({ q: '', status: '', prio: '', assignee: '', project: '', category: '', due: '' })
+  const [gata, setGata] = useState(false)
 
   const nume = useMemo(() => Object.fromEntries(echipa.map((o) => [o.id, o.name])), [echipa])
 
-  const incarca = useCallback(async () => {
-    if (!f.gata) return
-    setIncarc(true)
-    try {
-      const { taskuri } = await cere(`/api/admin/tasks?${f.query}&limit=500`)
-      setTaskuri(taskuri)
-    } catch (e) {
-      toast.error(e.message)
-    } finally {
-      setIncarc(false)
-    }
-  }, [f.query, f.gata])
+  const incarca = () =>
+    cere(`/api/admin/tasks?scope=all&ps=${LIMITA}`)
+      .then((r) => {
+        setTaskuri(r.taskuri)
+        setTotal(r.total)
+      })
+      .catch((e) => toast.error(e.message))
 
   useEffect(() => {
-    incarca()
-  }, [incarca])
+    let viu = true
+    const salvate = citeste()
+    cere(`/api/admin/tasks?scope=all&ps=${LIMITA}`)
+      .then((r) => {
+        if (!viu) return
+        setF((x) => ({ ...x, ...salvate }))
+        setGata(true)
+        setTaskuri(r.taskuri)
+        setTotal(r.total)
+      })
+      .catch((e) => toast.error(e.message))
+    return () => {
+      viu = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!gata) return
+    try {
+      if (Object.values(f).some(Boolean)) localStorage.setItem(CHEIE, JSON.stringify(f))
+      else localStorage.removeItem(CHEIE)
+    } catch {
+      /* fără stocare */
+    }
+  }, [f, gata])
+
+  const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
+  const areFiltre = Object.values(f).some(Boolean)
+
+  const filtrate = useMemo(() => {
+    const termen = f.q.trim().toLowerCase()
+    return taskuri.filter((t) => {
+      if (f.status && t.status !== f.status) return false
+      if (f.prio && t.priority !== f.prio) return false
+      if (f.assignee && !t.assigneeIds.includes(f.assignee)) return false
+      if (f.project && t.projectId !== f.project) return false
+      if (f.category && t.categoryId !== f.category) return false
+      if (!potrivesteTermen(t.dueAt, f.due)) return false
+      if (termen && !t.title.toLowerCase().includes(termen) && String(t.seq) !== termen.replace('#', '')) return false
+      return true
+    })
+  }, [taskuri, f])
+
+  const peColoana = useMemo(() => {
+    const m = new Map(STATUSURI_TASK.map((s) => [s.value, []]))
+    for (const t of filtrate) m.get(t.status)?.push(t)
+    return m
+  }, [filtrate])
 
   async function muta(id, status) {
     const t = taskuri.find((x) => x.id === id)
     if (!t || t.status === status) return
     const vechi = taskuri
-    setTaskuri((l) => l.map((x) => (x.id === id ? { ...x, status, progress: status === 'DONE' ? 100 : x.progress } : x)))
+    setTaskuri((l) => l.map((x) => (x.id === id ? { ...x, status } : x)))
     try {
       await cere(`/api/admin/tasks/${id}`, { metoda: 'PATCH', corp: { status } })
-      toast.success(`${statusTask(status).emoji} ${t.title.slice(0, 40)} → ${statusTask(status).label}`)
+      toast.success(`Mutat în „${statusTask(status).label}"`)
     } catch (e) {
       setTaskuri(vechi)
       toast.error(e.message)
     }
   }
 
-  const coloane = useMemo(() => {
-    const pe = Object.fromEntries(STATUSURI_TASK.map((s) => [s.value, []]))
-    for (const t of taskuri) pe[t.status]?.push(t)
-    for (const l of Object.values(pe)) {
-      l.sort(
-        (a, b) =>
-          (ORDINE_PRIORITATE[a.priority] ?? 2) - (ORDINE_PRIORITATE[b.priority] ?? 2) ||
-          (a.dueAt ? new Date(a.dueAt).getTime() : Infinity) - (b.dueAt ? new Date(b.dueAt).getTime() : Infinity)
-      )
-    }
-    return STATUSURI_TASK.map((s) => ({ ...s, taskuri: pe[s.value] }))
-  }, [taskuri])
-
   return (
-    <div className="space-y-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold text-gray-900">Kanban</h1>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">{taskuri.length}</span>
-          {incarc && <span className="text-xs text-gray-400">se încarcă…</span>}
+    <div className="lucru w-full text-ink">
+      <TitluPagina
+        dreapta={
+          <div className="flex gap-2">
+            <Link href="/admin/tasks" className={btnContur}>
+              ☰ Listă
+            </Link>
+            {poateCrea && (
+              <button type="button" onClick={() => setFormular(true)} className="tap h-9 rounded-lg bg-brand px-3 text-xs font-semibold text-white hover:bg-brand-strong">
+                ＋ Task nou
+              </button>
+            )}
+          </div>
+        }
+      >
+        Kanban
+      </TitluPagina>
+
+      {total > LIMITA && (
+        <div className="mb-3 rounded-xl border border-amber-300/40 bg-amber-100/60 px-4 py-2.5 text-xs text-amber-900">
+          Kanban afișează primele {LIMITA} task-uri. Folosește <strong>lista</strong> pentru filtrare avansată cu mai multe date.
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {STATUSURI_TASK.filter((s) => ['READ', 'CANCELLED'].includes(s.value)).map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => setAscunse((a) => ({ ...a, [s.value]: !a[s.value] }))}
-              className={`rounded-lg border px-2 py-1 text-xs ${ascunse[s.value] ? 'border-dashed border-gray-300 text-gray-400' : 'border-gray-300 text-gray-700'}`}
-            >
-              {ascunse[s.value] ? '＋' : '−'} {s.label}
-            </button>
-          ))}
-          <Link href="/admin/tasks" className={clsBtnAlb}>
-            ☰ Listă
-          </Link>
-          {poateCrea && (
-            <button type="button" onClick={() => setFormular(true)} className={clsBtn}>
-              <PlusIcon className="h-4 w-4" /> Task nou
-            </button>
-          )}
-        </div>
+      )}
+
+      {/* Pastile rapide */}
+      <div className="mb-2 flex flex-wrap gap-2">
+        {RAPIDE.map(([k, l]) => (
+          <button key={k} type="button" onClick={() => set('due', f.due === k ? '' : k)} className={pastila(f.due === k)}>
+            {l}
+          </button>
+        ))}
+        {areFiltre && (
+          <button
+            type="button"
+            onClick={() => setF({ q: '', status: '', prio: '', assignee: '', project: '', category: '', due: '' })}
+            className="tap ml-auto rounded-full border border-line px-4 py-1.5 text-sm text-ink-soft hover:bg-surface-2"
+          >
+            Șterge filtrele
+          </button>
+        )}
       </div>
 
-      <FiltreTaskuri f={f} echipa={echipa} categorii={categorii} proiecte={proiecte} eu={eu} />
-
-      <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-3">
-        {coloane
-          .filter((c) => !ascunse[c.value])
-          .map((c) => (
-            <div
-              key={c.value}
-              onDragOver={(e) => {
-                if (!trag) return
-                e.preventDefault()
-                setPeste(c.value)
-              }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) setPeste((p) => (p === c.value ? null : p))
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                const id = e.dataTransfer.getData('text/plain') || trag
-                setPeste(null)
-                setTrag(null)
-                if (id) muta(id, c.value)
-              }}
-              className={`flex w-[270px] shrink-0 flex-col rounded-xl border bg-gray-50/80 transition-colors ${
-                peste === c.value ? 'border-indigo-400 bg-indigo-50/60' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex items-center gap-2 rounded-t-xl border-b border-gray-200 bg-white px-3 py-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.punct }} />
-                <span className="text-sm font-semibold text-gray-800">
-                  {c.emoji} {c.label}
-                </span>
-                <span className="ml-auto rounded-full bg-gray-100 px-1.5 text-[11px] font-semibold text-gray-500">{c.taskuri.length}</span>
-              </div>
-              <div className="flex min-h-[120px] flex-col gap-2 p-2">
-                {c.taskuri.map((t) => (
-                  <div
-                    key={t.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', t.id)
-                      e.dataTransfer.effectAllowed = 'move'
-                      setTrag(t.id)
-                    }}
-                    onDragEnd={() => {
-                      setTrag(null)
-                      setPeste(null)
-                    }}
-                    className={`cursor-grab rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm hover:border-indigo-300 active:cursor-grabbing ${trag === t.id ? 'opacity-40' : ''}`}
-                    style={t.category ? { borderLeft: `3px solid ${t.category.color}` } : undefined}
-                  >
-                    <Link href={`/admin/tasks/${t.id}`} className="block" draggable={false}>
-                      <div className="flex items-start gap-1.5">
-                        <Ref seq={t.seq} />
-                        <span className={`text-sm font-medium leading-snug ${t.status === 'DONE' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{t.title}</span>
-                      </div>
-                    </Link>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                      {t.priority !== 'MEDIUM' && <InsignaPrioritate valoare={t.priority} mic />}
-                      <Termen dueAt={t.dueAt} status={t.status} />
-                      <InsignaCategorie categorie={t.category} />
-                    </div>
-                    {t.project && <p className="mt-1 truncate text-[11px] text-gray-500">📁 {t.project.name}</p>}
-                    {t.progress > 0 && t.status !== 'DONE' && (
-                      <div className="mt-1.5 h-1 rounded bg-gray-100">
-                        <div className="h-1 rounded bg-indigo-500" style={{ width: `${t.progress}%` }} />
-                      </div>
-                    )}
-                    <div className="mt-2 flex items-center gap-2">
-                      <Avatare ids={t.assigneeIds} nume={nume} />
-                      {t._count?.comments > 0 && (
-                        <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500">
-                          <ChatBubbleLeftIcon className="h-3 w-3" />
-                          {t._count.comments}
-                        </span>
-                      )}
-                      {t._count?.attachments > 0 && (
-                        <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500">
-                          <PaperClipIcon className="h-3 w-3" />
-                          {t._count.attachments}
-                        </span>
-                      )}
-                      {/* Pe telefon nu se poate trage — mutarea se face de aici */}
-                      <select
-                        value={t.status}
-                        onChange={(e) => muta(t.id, e.target.value)}
-                        className="ml-auto max-w-[96px] rounded border border-gray-200 bg-white px-1 py-0.5 text-[10px] text-gray-600"
-                        aria-label="Mută în"
-                      >
-                        {STATUSURI_TASK.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.emoji} {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                ))}
-                {!c.taskuri.length && <p className="py-6 text-center text-[11px] text-gray-400">Trage aici</p>}
-              </div>
-            </div>
+      {/* Filtre */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          value={f.q}
+          onChange={(e) => set('q', e.target.value)}
+          placeholder="Caută task…"
+          className="h-9 min-w-36 flex-1 rounded-lg border border-line bg-surface px-3 text-sm outline-none focus:border-brand"
+        />
+        <select value={f.status} onChange={(e) => set('status', e.target.value)} className={fldCls(f.status)}>
+          <option value="">Status</option>
+          {STATUSURI_TASK.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
           ))}
+        </select>
+        <select value={f.prio} onChange={(e) => set('prio', e.target.value)} className={fldCls(f.prio)}>
+          <option value="">Prioritate</option>
+          {[...PRIORITATI].reverse().map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <select value={f.assignee} onChange={(e) => set('assignee', e.target.value)} className={fldCls(f.assignee)}>
+          <option value="">Persoană</option>
+          {echipa.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
+        <select value={f.project} onChange={(e) => set('project', e.target.value)} className={fldCls(f.project)}>
+          <option value="">Proiect</option>
+          {proiecte.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        {categorii.length > 0 && (
+          <select value={f.category} onChange={(e) => set('category', e.target.value)} className={fldCls(f.category)}>
+            <option value="">Categorie</option>
+            {categorii.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <select value={f.due} onChange={(e) => set('due', e.target.value)} className={fldCls(f.due)}>
+          <option value="">Orice termen</option>
+          <option value="overdue">Întârziate</option>
+          <option value="today">Azi</option>
+          <option value="tomorrow">Mâine</option>
+          <option value="week">Săptămâna asta</option>
+          <option value="month">Luna asta</option>
+          <option value="none">Fără termen</option>
+        </select>
+      </div>
+
+      {/* Tabla — întoarsă pe X ca bara de scroll să fie sus */}
+      <div className="overflow-x-auto pt-1 [transform:rotateX(180deg)]">
+        <div className="flex gap-3 pb-2 [transform:rotateX(180deg)]">
+          {STATUSURI_TASK.map((col) => {
+            const lista = peColoana.get(col.value) || []
+            const activ = peste === col.value
+            return (
+              <div
+                key={col.value}
+                className="flex w-64 shrink-0 flex-col"
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  if (peste !== col.value) setPeste(col.value)
+                }}
+                onDragLeave={(e) => {
+                  if (e.currentTarget === e.target) setPeste(null)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const id = e.dataTransfer.getData('text/plain') || trag
+                  if (id) muta(id, col.value)
+                  setPeste(null)
+                  setTrag(null)
+                }}
+              >
+                <div className="mb-2 flex items-center gap-2 px-1">
+                  <span className={`size-2.5 rounded-full ${ST_TASK[col.value].dot}`} />
+                  <h3 className="text-sm font-semibold">{col.label}</h3>
+                  <span className="ml-auto rounded-full bg-surface-2 px-2 text-xs text-ink-soft">{lista.length}</span>
+                </div>
+                <div className={`flex min-h-24 flex-1 flex-col gap-2 rounded-2xl p-2 transition-colors ${activ ? 'bg-brand-soft ring-2 ring-brand' : 'bg-surface-2/60'}`}>
+                  {lista.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/admin/tasks/${t.id}`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', t.id)
+                        e.dataTransfer.effectAllowed = 'move'
+                        setTrag(t.id)
+                      }}
+                      onDragEnd={() => {
+                        setTrag(null)
+                        setPeste(null)
+                      }}
+                      className={`lcard block cursor-grab p-2.5 hover:opacity-90 active:cursor-grabbing ${trag === t.id ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.title}</span>
+                        {t.category && <span className="mt-1 size-2 shrink-0 rounded-full" style={{ background: t.category.color }} title={t.category.name} />}
+                      </div>
+                      {t.seq != null && (
+                        <span className="mt-1 inline-block rounded bg-brand/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">#{t.seq}</span>
+                      )}
+                      <p className="mt-1 truncate text-[11px] text-ink-soft">
+                        <span className={PRIO_TEXT[t.priority]}>{prioritate(t.priority).label}</span>
+                        {t.project && ` · ${t.project.name}`}
+                        {t.assigneeIds.length > 0 && ` · ${t.assigneeIds.map((x) => nume[x]).filter(Boolean).join(', ')}`}
+                        {t.progress > 0 && ` · ${t.progress}%`}
+                      </p>
+                    </Link>
+                  ))}
+                  {!lista.length && <p className="py-3 text-center text-xs text-ink-soft">—</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {formular && (
-        <FormularTask
-          echipa={echipa}
-          categorii={categorii}
-          proiecte={proiecte}
-          eu={eu}
-          onInchide={() => setFormular(false)}
-          onSalvat={incarca}
-        />
+        <FormularTask echipa={echipa} categorii={categorii} proiecte={proiecte} eu={eu} onInchide={() => setFormular(false)} onSalvat={incarca} />
       )}
     </div>
   )

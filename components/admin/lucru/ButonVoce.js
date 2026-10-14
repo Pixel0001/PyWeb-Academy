@@ -88,7 +88,7 @@ export default function ButonVoce({ tip = 'task', onRezultat, eticheta = 'Dictea
       <button
         type="button"
         onClick={opreste}
-        className={`inline-flex items-center gap-1.5 rounded-lg bg-red-600 font-semibold text-white hover:bg-red-700 ${mic ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
+        className={`inline-flex items-center gap-1.5 rounded-lg bg-st-cancelled font-semibold text-white hover:opacity-90 ${mic ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
       >
         <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
         <StopIcon className="h-4 w-4" /> Gata ({secunde}s)
@@ -101,7 +101,7 @@ export default function ButonVoce({ tip = 'task', onRezultat, eticheta = 'Dictea
       onClick={porneste}
       disabled={stare === 'procesez'}
       title="Spune ce trebuie făcut, pentru cine și până când — completez eu formularul"
-      className={`inline-flex items-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-70 ${mic ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
+      className={`inline-flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 font-semibold text-brand hover:bg-brand/20 disabled:opacity-70 ${mic ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
     >
       <MicrophoneIcon className="h-4 w-4" />
       {stare === 'procesez' ? 'Ascult și scriu…' : eticheta}

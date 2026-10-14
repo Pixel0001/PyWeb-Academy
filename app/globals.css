@@ -354,3 +354,55 @@ h1, h2, h3, h4, h5, h6 {
   scrollbar-width: thin;
   scrollbar-color: #7c3aed transparent;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Taskuri / Proiecte / Programări — designul din StefanPWA, cu culorile PyWeb
+   (brand indigo, ca meniul din admin). Clasele au prefixul „l" ca să nu se
+   bată cu .card-ul site-ului public.
+───────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --color-brand: #4f46e5;
+  --color-brand-strong: #4338ca;
+  --color-brand-soft: #e0e7ff;
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+  --color-line: #e2e8f0;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef0f4;
+
+  --color-st-new: #64748b;
+  --color-st-confirmed: #2563eb;
+  --color-st-progress: #d97706;
+  --color-st-done: #059669;
+  --color-st-cancelled: #e11d48;
+  --color-st-noshow: #9333ea;
+}
+
+@layer utilities {
+  .lcard {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+  }
+  .tap {
+    transition: transform 0.08s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .tap:active {
+    transform: scale(0.97);
+  }
+  .sel-arrow {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.35rem center;
+    background-size: 1.15em 1.15em;
+  }
+}
+
+/* Colțurile din StefanPWA (site-ul public are --radius-* mai mari în :root) */
+.lucru {
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1rem;
+}

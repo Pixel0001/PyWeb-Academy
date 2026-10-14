@@ -1,28 +1,38 @@
 'use client'
 
 /**
- * Bucăți mici de interfață comune pentru Taskuri, Kanban, Proiecte și Programări.
+ * Bucăți de interfață comune pentru Taskuri, Kanban, Proiecte, Programări și
+ * Calendar — copiate după StefanPWA (aceleași forme și dimensiuni), cu
+ * culorile PyWeb (tokenii brand / ink / line / st-* din globals.css).
  */
 
-import { useEffect } from 'react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import {
-  statusTask,
-  prioritate,
-  statusProiect,
-  statusProgramare,
-  refScurt,
-} from '@/lib/lucru/constante'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { XMarkIcon, EllipsisVerticalIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
-export const clsInput =
-  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50'
-export const clsEticheta = 'mb-1 block text-xs font-semibold text-gray-600'
-export const clsBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60'
-export const clsBtnAlb =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60'
-export const clsChip =
-  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors'
+export const dlgInput =
+  'h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm text-ink outline-none focus:border-brand'
+export const dlgTextarea =
+  'w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none focus:border-brand'
+export const lbl = 'mb-1 block text-xs font-semibold text-ink-soft'
+export const btnSalveaza =
+  'tap h-12 w-full rounded-xl bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-60'
+export const btnContur =
+  'tap h-9 shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-line px-3 text-xs text-ink-soft hover:bg-surface-2'
+export const btnIcon =
+  'tap grid size-8 shrink-0 place-items-center rounded-lg border border-line text-ink-soft hover:bg-surface-2'
+export const cautareCls =
+  'h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-brand'
+
+/** Select de filtru: se colorează când are o valoare aleasă. */
+export const fldCls = (val) =>
+  `h-9 min-w-0 max-w-full appearance-none sel-arrow rounded-lg border pl-2 pr-7 text-xs outline-none focus:border-brand ${
+    val ? 'border-brand bg-brand/10 font-semibold text-brand' : 'border-line bg-surface text-ink'
+  }`
+
+/** Pastilă (scope / vedere): plină când e activă. */
+export const pastila = (activ) =>
+  `tap shrink-0 rounded-full px-4 py-1.5 text-sm font-medium ${activ ? 'bg-brand text-white' : 'lcard text-ink-soft'}`
 
 /** fetch + JSON + mesajul de eroare al serverului. */
 export async function cere(url, { metoda = 'GET', corp, ...rest } = {}) {
@@ -42,7 +52,8 @@ export async function cere(url, { metoda = 'GET', corp, ...rest } = {}) {
   return date
 }
 
-export function Modal({ titlu, subtitlu, onInchide, children, latime = 'max-w-2xl', subsol }) {
+/** Dialogul din StefanPWA: foaie de jos pe telefon, card centrat pe desktop. */
+export function Dialog({ titlu, onInchide, children, latime = 'max-w-lg' }) {
   useEffect(() => {
     const esc = (e) => e.key === 'Escape' && onInchide()
     window.addEventListener('keydown', esc)
@@ -55,127 +66,234 @@ export function Modal({ titlu, subtitlu, onInchide, children, latime = 'max-w-2x
   }, [onInchide])
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-start justify-center p-2 sm:p-6">
-        <div className="fixed inset-0 bg-black/50" onClick={onInchide} />
-        <div role="dialog" aria-modal="true" aria-label={titlu} className={`relative my-2 w-full ${latime} rounded-2xl bg-white shadow-xl sm:my-4`}>
-          <div className="sticky top-0 z-10 flex items-start justify-between gap-3 rounded-t-2xl border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-semibold text-gray-900 sm:text-lg">{titlu}</h2>
-              {subtitlu && <p className="text-xs text-gray-500">{subtitlu}</p>}
-            </div>
-            <button type="button" onClick={onInchide} className="rounded-lg p-2 hover:bg-gray-100" aria-label="Închide">
-              <XMarkIcon className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
-          <div className="space-y-4 p-4 sm:p-6">{children}</div>
-          {subsol && (
-            <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-              {subsol}
-            </div>
-          )}
+    <div
+      className="lucru fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onInchide()}
+    >
+      <div className={`lcard max-h-[92dvh] w-full ${latime} overflow-auto rounded-b-none rounded-t-2xl p-5 text-ink sm:rounded-2xl`}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-bold">{titlu}</h2>
+          <button
+            type="button"
+            onClick={onInchide}
+            className="tap grid size-9 place-items-center rounded-lg text-ink-soft hover:bg-surface-2"
+            aria-label="Închide"
+          >
+            <XMarkIcon className="size-4" />
+          </button>
         </div>
+        {children}
       </div>
     </div>
   )
 }
 
-export function InsignaStatusTask({ status, mic = false }) {
-  const s = statusTask(status)
+/** Meniu flotant (portal), închis la clic în afară sau la scroll. */
+function useMeniuFlotant() {
+  const [deschis, setDeschis] = useState(false)
+  const [poz, setPoz] = useState({ top: 0, left: 0, minWidth: 0 })
+  const buton = useRef(null)
+
+  useEffect(() => {
+    if (!deschis) return
+    const inchide = () => setDeschis(false)
+    document.addEventListener('mousedown', inchide)
+    window.addEventListener('scroll', inchide, true)
+    return () => {
+      document.removeEventListener('mousedown', inchide)
+      window.removeEventListener('scroll', inchide, true)
+    }
+  }, [deschis])
+
+  function comuta(e, aliniereDreapta = false) {
+    e.stopPropagation()
+    e.preventDefault()
+    const r = buton.current?.getBoundingClientRect()
+    if (r) {
+      const latime = Math.max(r.width, 160)
+      setPoz({
+        top: r.bottom + 4,
+        left: aliniereDreapta ? Math.max(8, r.right - latime) : Math.min(r.left, window.innerWidth - latime - 8),
+        minWidth: latime,
+      })
+    }
+    setDeschis((d) => !d)
+  }
+  return { deschis, setDeschis, poz, buton, comuta }
+}
+
+/**
+ * Pastila de status care deschide lista de statusuri (StatusDropdown din StefanPWA).
+ * optiuni = [{ value, label, dot }], badge = clasele pastilei curente.
+ */
+export function StatusDropdown({ status, eticheta, badge, optiuni, onChange, pending = false }) {
+  const { deschis, setDeschis, poz, buton, comuta } = useMeniuFlotant()
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border ${mic ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-[11px]'} font-semibold ${s.culoare}`}>
-      {s.emoji} {s.label}
-    </span>
+    <>
+      <button
+        ref={buton}
+        type="button"
+        disabled={pending}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => comuta(e)}
+        className={`h-7 shrink-0 rounded-full px-2.5 text-[11px] font-semibold transition-opacity disabled:opacity-50 ${badge}`}
+      >
+        {eticheta}
+      </button>
+      {deschis &&
+        createPortal(
+          <div
+            style={{ position: 'fixed', top: poz.top, left: poz.left, minWidth: poz.minWidth, zIndex: 9999 }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="lucru rounded-xl border border-line bg-surface p-1 shadow-xl"
+          >
+            {optiuni.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onChange(o.value)
+                  setDeschis(false)
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[12px] font-medium hover:bg-surface-2 ${o.value === status ? 'font-bold' : ''}`}
+              >
+                <span className={`size-2 shrink-0 rounded-full ${o.dot}`} />
+                <span className={o.value === status ? 'text-ink' : 'text-ink-soft'}>{o.label}</span>
+                {o.value === status && <span className="ml-auto text-[10px] text-brand">✓</span>}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+    </>
   )
 }
 
-export function InsignaPrioritate({ valoare, mic = false }) {
-  const p = prioritate(valoare)
+/** Meniul „⋮" de pe telefon (CardActionsMenu din StefanPWA). */
+export function MeniuActiuni({ items, className = '' }) {
+  const { deschis, setDeschis, poz, buton, comuta } = useMeniuFlotant()
+  if (!items.length) return null
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full ${mic ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-[11px]'} font-semibold ${p.culoare}`}>
-      {p.emoji} {p.label}
-    </span>
+    <>
+      <button ref={buton} type="button" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => comuta(e, true)} className={`${btnIcon} ${className}`} aria-label="Acțiuni">
+        <EllipsisVerticalIcon className="size-4" />
+      </button>
+      {deschis &&
+        createPortal(
+          <div
+            style={{ position: 'fixed', top: poz.top, left: poz.left, minWidth: poz.minWidth, zIndex: 9999 }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="lucru rounded-xl border border-line bg-surface p-1 shadow-xl"
+          >
+            {items.map((it) => (
+              <button
+                key={it.key}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDeschis(false)
+                  it.onClick()
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium hover:bg-surface-2 ${it.pericol ? 'text-st-cancelled' : 'text-ink'}`}
+              >
+                {it.icon}
+                {it.label}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+    </>
   )
 }
 
-export function InsignaStatusProiect({ status }) {
-  const s = statusProiect(status)
-  return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold ${s.culoare}`}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.punct }} /> {s.label}
-    </span>
-  )
+function butoanePagini(curenta, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pagini = new Set([1, total])
+  for (let i = Math.max(2, curenta - 2); i <= Math.min(total - 1, curenta + 2); i++) pagini.add(i)
+  const sortate = [...pagini].sort((a, b) => a - b)
+  const rez = []
+  sortate.forEach((p, i) => {
+    if (i > 0 && p - sortate[i - 1] > 1) rez.push('…')
+    rez.push(p)
+  })
+  return rez
 }
 
-export function InsignaStatusProgramare({ status }) {
-  const s = statusProgramare(status)
+/** Paginarea numerică cu „20 / pag." (ca în StefanPWA). */
+export function Paginare({ pagina, totalPagini, onPagina, marime, onMarime }) {
+  if (totalPagini <= 1 && !marime) return null
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold ${s.culoare}`}>
-      {s.emoji} {s.label}
-    </span>
-  )
-}
-
-export function InsignaCategorie({ categorie }) {
-  if (!categorie) return null
-  return (
-    <span
-      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold"
-      style={{ background: `${categorie.color}1a`, color: categorie.color }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: categorie.color }} />
-      {categorie.name}
-    </span>
-  )
-}
-
-export function Ref({ seq }) {
-  if (seq == null) return null
-  return <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-indigo-600">{refScurt(seq)}</span>
-}
-
-/** Inițialele cuiva, într-un cerculeț. */
-export function Avatar({ nume, mic = false }) {
-  const init = String(nume || '?')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
-  return (
-    <span
-      title={nume}
-      className={`inline-grid shrink-0 place-items-center rounded-full bg-indigo-100 font-bold text-indigo-700 ring-2 ring-white ${mic ? 'h-5 w-5 text-[9px]' : 'h-7 w-7 text-[11px]'}`}
-    >
-      {init || '?'}
-    </span>
-  )
-}
-
-export function Avatare({ ids, nume, mic = true, max = 3 }) {
-  const lista = (ids || []).filter((id) => nume[id])
-  if (!lista.length) return null
-  return (
-    <span className="inline-flex -space-x-1.5">
-      {lista.slice(0, max).map((id) => (
-        <Avatar key={id} nume={nume[id]} mic={mic} />
-      ))}
-      {lista.length > max && (
-        <span className="inline-grid h-5 w-5 place-items-center rounded-full bg-gray-200 text-[9px] font-bold text-gray-600 ring-2 ring-white">
-          +{lista.length - max}
-        </span>
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-1">
+      <button
+        disabled={pagina <= 1}
+        onClick={() => onPagina(pagina - 1)}
+        className="tap grid size-9 place-items-center rounded-lg border border-line text-ink-soft hover:bg-surface-2 disabled:opacity-40"
+        aria-label="Înapoi"
+      >
+        <ChevronLeftIcon className="size-4" />
+      </button>
+      {butoanePagini(pagina, totalPagini).map((b, i) =>
+        b === '…' ? (
+          <span key={`e${i}`} className="flex h-9 w-6 items-center justify-center text-sm text-ink-soft">
+            …
+          </span>
+        ) : (
+          <button
+            key={b}
+            onClick={() => onPagina(b)}
+            className={`tap h-9 min-w-[36px] rounded-lg px-2.5 text-sm font-medium ${
+              b === pagina ? 'bg-brand text-white' : 'border border-line text-ink hover:bg-surface-2'
+            }`}
+          >
+            {b}
+          </button>
+        )
       )}
-    </span>
+      <button
+        disabled={pagina >= totalPagini}
+        onClick={() => onPagina(pagina + 1)}
+        className="tap grid size-9 place-items-center rounded-lg border border-line text-ink-soft hover:bg-surface-2 disabled:opacity-40"
+        aria-label="Înainte"
+      >
+        <ChevronRightIcon className="size-4" />
+      </button>
+      {onMarime && (
+        <select
+          value={marime || '20'}
+          onChange={(e) => onMarime(e.target.value)}
+          className="ml-2 h-9 rounded-lg border border-line bg-surface px-2 text-xs outline-none focus:border-brand"
+          title="Pe pagină"
+        >
+          {['20', '50', '100', '200', '500'].map((n) => (
+            <option key={n} value={n}>
+              {n} / pag.
+            </option>
+          ))}
+          <option value="all">Toate</option>
+        </select>
+      )}
+    </div>
   )
 }
 
-export function Gol({ emoji = '📭', titlu, text, children }) {
+/** Linie de încărcare subțire, ca în StefanPWA. */
+export function BaraIncarcare({ activ }) {
+  if (!activ) return null
+  return <div className="mb-2 h-0.5 animate-pulse rounded-full bg-brand opacity-60" />
+}
+
+export function Gol({ children }) {
+  return <div className="lcard grid place-items-center p-8 text-center text-sm text-ink-soft">{children}</div>
+}
+
+/** Rând de detaliu „ETICHETĂ / valoare" (MetaRow din StefanPWA). */
+export function MetaRow({ eticheta, valoare, alerta = false, children }) {
   return (
-    <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
-      <div className="text-3xl">{emoji}</div>
-      <p className="mt-2 text-sm font-semibold text-gray-800">{titlu}</p>
-      {text && <p className="mt-1 text-xs text-gray-500">{text}</p>}
-      {children && <div className="mt-3">{children}</div>}
+    <div className="min-w-0">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-soft">{eticheta}</p>
+      {children || <p className={`break-words text-sm font-medium ${alerta ? 'text-st-cancelled' : 'text-ink'}`}>{valoare}</p>}
     </div>
   )
 }
@@ -188,6 +306,16 @@ export function AccesInterzis({ permisiune }) {
         Nu ai permisiunea <code className="font-mono">{permisiune}</code>. Cere-i unui SUPERADMIN să ți-o acorde din
         Securitate → Permisiuni.
       </p>
+    </div>
+  )
+}
+
+/** Titlul paginii (în StefanPWA e în bara de sus). */
+export function TitluPagina({ children, dreapta }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h1 className="text-lg font-bold text-ink lg:text-xl">{children}</h1>
+      {dreapta}
     </div>
   )
 }

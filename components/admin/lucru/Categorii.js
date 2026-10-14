@@ -1,22 +1,22 @@
 'use client'
 
-/** 🏷️ Categoriile cu culoare — comune pentru taskuri și programări. */
+/** Categoriile cu culoare (CategoriesManager din StefanPWA) — comune pentru taskuri și programări. */
 
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { CULORI_CATEGORII } from '@/lib/lucru/constante'
-import { Modal, clsInput, clsBtn, cere } from './ui'
+import { Dialog, dlgInput, lbl, cere } from './ui'
 
 function Culori({ valoare, onSchimbare }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1.5">
       {CULORI_CATEGORII.map((c) => (
         <button
           key={c}
           type="button"
           onClick={() => onSchimbare(c)}
-          className={`h-6 w-6 rounded-full ${valoare === c ? 'ring-2 ring-gray-900 ring-offset-1' : ''}`}
+          className={`tap size-7 rounded-full ${valoare === c ? 'ring-2 ring-ink ring-offset-2' : ''}`}
           style={{ background: c }}
           aria-label={c}
         />
@@ -37,6 +37,7 @@ export default function Categorii({ categorii, onSchimbare, onInchide }) {
       const { categorie } = await cere('/api/admin/categorii', { metoda: 'POST', corp: nou })
       onSchimbare([...categorii, categorie].sort((a, b) => a.name.localeCompare(b.name)))
       setNou((x) => ({ ...x, name: '' }))
+      toast.success('Categorie adăugată')
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -64,36 +65,36 @@ export default function Categorii({ categorii, onSchimbare, onInchide }) {
   }
 
   return (
-    <Modal titlu="🏷️ Categorii" subtitlu="Pentru taskuri și programări (durata se folosește la programări)" onInchide={onInchide} latime="max-w-lg">
-      <form onSubmit={adauga} className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-        <div className="flex gap-2">
-          <input className={clsInput} value={nou.name} onChange={(e) => setNou({ ...nou, name: e.target.value })} placeholder="Ex.: Site nou, Mentenanță, Întâlnire" />
+    <Dialog titlu="Categorii" onInchide={onInchide}>
+      <form onSubmit={adauga} className="mb-4 flex flex-col gap-3">
+        <input className={dlgInput} value={nou.name} onChange={(e) => setNou({ ...nou, name: e.target.value })} placeholder="Nume categorie *" />
+        <div>
+          <label className={lbl}>Durată implicită programare (minute)</label>
           <input
             type="number"
             min={5}
             step={5}
-            className={`${clsInput} w-24`}
+            className={dlgInput}
             value={nou.defaultDurationMinutes}
             onChange={(e) => setNou({ ...nou, defaultDurationMinutes: Number(e.target.value) })}
-            title="Durata implicită a unei programări (minute)"
           />
-          <button type="submit" disabled={lucrez || !nou.name.trim()} className={clsBtn}>
-            Adaugă
-          </button>
         </div>
         <Culori valoare={nou.color} onSchimbare={(color) => setNou({ ...nou, color })} />
+        <button type="submit" disabled={lucrez || !nou.name.trim()} className="tap h-11 rounded-xl bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-60">
+          Adaugă categorie
+        </button>
       </form>
 
       {categorii.length === 0 ? (
-        <p className="text-center text-sm text-gray-500">Nicio categorie încă.</p>
+        <p className="text-center text-sm text-ink-soft">Nicio categorie încă.</p>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <ul className="flex flex-col gap-2">
           {categorii.map((c) => (
-            <li key={c.id} className="space-y-1.5 py-2.5">
+            <li key={c.id} className="lcard flex flex-col gap-2 p-3">
               <div className="flex items-center gap-2">
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: c.color }} />
+                <span className="size-3 shrink-0 rounded-full" style={{ background: c.color }} />
                 <input
-                  className="min-w-0 flex-1 rounded border border-transparent px-1 py-0.5 text-sm font-medium hover:border-gray-200 focus:border-indigo-400 focus:outline-none"
+                  className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 text-sm font-semibold text-ink hover:border-line focus:border-brand focus:outline-none"
                   defaultValue={c.name}
                   onBlur={(e) => e.target.value.trim() && e.target.value !== c.name && modifica(c, { name: e.target.value.trim() })}
                 />
@@ -101,14 +102,14 @@ export default function Categorii({ categorii, onSchimbare, onInchide }) {
                   type="number"
                   min={5}
                   step={5}
-                  className="w-16 rounded border border-gray-200 px-1 py-0.5 text-xs"
+                  className="h-8 w-16 rounded-lg border border-line bg-surface-2 px-1.5 text-xs"
                   defaultValue={c.defaultDurationMinutes}
                   onBlur={(e) => Number(e.target.value) !== c.defaultDurationMinutes && modifica(c, { defaultDurationMinutes: Number(e.target.value) })}
                   title="Minute"
                 />
-                <span className="text-[11px] text-gray-400">min</span>
-                <button type="button" onClick={() => sterge(c)} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
-                  <TrashIcon className="h-4 w-4" />
+                <span className="text-[11px] text-ink-soft">min</span>
+                <button type="button" onClick={() => sterge(c)} className="tap grid size-8 place-items-center rounded-lg text-st-cancelled hover:bg-surface-2">
+                  <TrashIcon className="size-4" />
                 </button>
               </div>
               <Culori valoare={c.color} onSchimbare={(color) => modifica(c, { color })} />
@@ -116,6 +117,6 @@ export default function Categorii({ categorii, onSchimbare, onInchide }) {
           ))}
         </ul>
       )}
-    </Modal>
+    </Dialog>
   )
 }

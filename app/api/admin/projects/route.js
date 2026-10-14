@@ -37,12 +37,20 @@ export async function GET(request) {
     )
   }
 
-  const proiecte = await prisma.project.findMany({
-    where: conditii.length ? { AND: conditii } : {},
-    select: SELECT_PROIECT,
-    orderBy: [{ updatedAt: 'desc' }],
-    take: 500,
-  })
+  const where = conditii.length ? { AND: conditii } : {}
+  const ps = sp.get('ps')
+  const marime = ps === 'all' ? 2000 : Math.min(Math.max(Number(ps) || 20, 1), 2000)
+  const pagina = Math.max(1, Number(sp.get('page')) || 1)
+  const [proiecte, total] = await Promise.all([
+    prisma.project.findMany({
+      where,
+      select: SELECT_PROIECT,
+      orderBy: [{ updatedAt: 'desc' }],
+      skip: (pagina - 1) * marime,
+      take: marime,
+    }),
+    prisma.project.count({ where }),
+  ])
   const [taskuri, leaduri] = await Promise.all([
     numaraTaskuri(proiecte.map((p) => p.id)),
     numeLeaduri(proiecte.map((p) => p.leadId)),
@@ -53,6 +61,9 @@ export async function GET(request) {
       taskuri: taskuri[p.id] || { total: 0, gata: 0, deschise: 0 },
       lead: p.leadId ? leaduri[p.leadId] || null : null,
     })),
+    total,
+    pagina,
+    totalPagini: Math.max(1, Math.ceil(total / marime)),
   })
 }
 
